@@ -1,0 +1,3479 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur d'Ordonnances - Dr. Cobuccio</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; margin-bottom: 30px; font-size: 24px; }
+        .form-section { margin-bottom: 25px; }
+        .form-section h2 { font-size: 16px; color: #34495e; margin-bottom: 10px; font-weight: 600; }
+        label { display: block; margin-bottom: 5px; color: #555; font-size: 14px; }
+        textarea, input[type="text"], input[type="date"], input[type="email"], input[type="number"], select {
+            width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; font-family: Arial, sans-serif;
+        }
+        textarea { resize: vertical; min-height: 120px; }
+        .weight-input { max-width: 200px; }
+        .medication-item { background: #f8f9fa; padding: 15px; margin-bottom: 15px; border-radius: 4px; border: 1px solid #e0e0e0; }
+        .medication-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .medication-name { font-weight: 600; color: #2c3e50; }
+        .remove-btn { background: #e74c3c; color: white; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .remove-btn:hover { background: #c0392b; }
+        .dosing-textarea { margin-top: 10px; }
+        .button-group { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+        button { padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; transition: background 0.3s; }
+        .btn-primary { background: #3498db; color: white; }
+        .btn-primary:hover { background: #2980b9; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-success:hover { background: #229954; }
+        .btn-secondary { background: #95a5a6; color: white; }
+        .btn-secondary:hover { background: #7f8c8d; }
+        .btn-teal { background: #4ECDC4; color: white; }
+        .btn-teal:hover { background: #3dbdb5; }
+        .btn-small { padding: 6px 12px; font-size: 12px; }
+        .custom-med-inputs { display: none; margin-top: 10px; }
+        .custom-med-inputs.active { display: block; }
+        .custom-med-inputs input { margin-bottom: 10px; }
+        .upload-section { background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border: 2px dashed #4CAF50; padding: 25px; border-radius: 8px; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .upload-section:hover, .upload-section.dragover { background: linear-gradient(135deg, #c8e6c9 0%, #a5d6a7 100%); border-color: #2E7D32; }
+        .upload-section input[type="file"] { display: none; }
+        .upload-icon { font-size: 48px; margin-bottom: 10px; }
+        .upload-text { font-weight: 600; color: #2E7D32; margin-bottom: 5px; }
+        .upload-hint { font-size: 12px; color: #666; }
+        .upload-status { margin-top: 15px; padding: 12px; border-radius: 4px; display: none; text-align: left; }
+        .upload-status.success { display: block; background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .upload-status.error { display: block; background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .upload-status.loading { display: block; background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+        .extracted-preview { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-top: 15px; display: none; max-height: 300px; overflow-y: auto; }
+        .extracted-preview h3 { font-size: 14px; color: #495057; margin-bottom: 10px; }
+        .extracted-preview pre { font-size: 12px; white-space: pre-wrap; color: #333; font-family: 'Courier New', monospace; }
+        .notes-section { background: #fff8e1; border: 1px solid #ffcc02; padding: 20px; border-radius: 8px; }
+        .notes-section h2 { color: #f57c00; }
+        .notes-section textarea { border-color: #ffcc02; min-height: 150px; }
+        .notes-required { color: #e65100; font-size: 12px; margin-top: 5px; }
+        .dossier-status { background: #e3f2fd; border: 1px solid #2196F3; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .dossier-status h3 { color: #1565C0; margin-bottom: 10px; font-size: 14px; }
+        .dossier-files { list-style: none; }
+        .dossier-files li { padding: 5px 0; font-size: 13px; color: #333; display: flex; align-items: center; gap: 8px; }
+        .dossier-files li.ready { color: #2E7D32; }
+        .dossier-files li.pending { color: #999; font-style: italic; }
+        .file-icon { width: 20px; text-align: center; }
+        .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #f3f3f3; border-top: 2px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite; vertical-align: middle; margin-left: 8px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .divider { margin: 20px 0; text-align: center; color: #999; font-size: 13px; }
+        .divider::before, .divider::after { content: ""; display: inline-block; width: 40%; height: 1px; background: #ddd; vertical-align: middle; margin: 0 10px; }
+        .chronometer-section { 
+            position: fixed; 
+            top: 20px; 
+            right: 20px; 
+            z-index: 1000; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            padding: 12px 20px; 
+            border-radius: 8px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            gap: 15px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            max-width: 400px;
+        }
+        .chronometer-display { font-family: 'Courier New', monospace; font-size: 24px; font-weight: bold; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        .chronometer-label { color: rgba(255,255,255,0.8); font-size: 11px; margin-bottom: 2px; }
+        .chronometer-controls { display: flex; gap: 6px; }
+        .chronometer-controls button { padding: 6px 12px; font-size: 11px; border-radius: 20px; }
+        .btn-pause { background: #f39c12; color: white; }
+        .btn-pause:hover { background: #e67e22; }
+        .btn-resume { background: #27ae60; color: white; }
+        .btn-resume:hover { background: #229954; }
+        .btn-reset { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); }
+        .btn-reset:hover { background: rgba(255,255,255,0.3); }
+        .chronometer-status { font-size: 11px; color: rgba(255,255,255,0.7); }
+        .chronometer-final { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 10px 15px; border-radius: 8px; margin-bottom: 20px; display: none; }
+        .chronometer-final strong { font-family: 'Courier New', monospace; }
+        .vaccine-section { background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border: 1px solid #2196F3; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .vaccine-section h2 { color: #1565C0; }
+        .booster-section { background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); border: 1px solid #9C27B0; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .booster-section h2 { color: #7B1FA2; }
+        .checkbox-multiselect { border: 1px solid #ddd; border-radius: 4px; background: white; max-height: 200px; overflow-y: auto; }
+        .checkbox-item { padding: 8px 12px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: background 0.2s; }
+        .checkbox-item:last-child { border-bottom: none; }
+        .checkbox-item:hover { background: #f5f5f5; }
+        .checkbox-item.selected { background: #e3f2fd; }
+        .checkbox-item input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+        .checkbox-item label { flex: 1; cursor: pointer; font-size: 14px; }
+        .checkbox-item .lot-warning { color: #f57c00; font-size: 12px; }
+        .checkbox-item .lot-expired { color: #d32f2f; font-size: 12px; }
+        .checkbox-item.disabled { opacity: 0.5; cursor: not-allowed; background: #ffebee; }
+        .checkbox-item.disabled input, .checkbox-item.disabled label { cursor: not-allowed; }
+        .vaccine-table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; border-radius: 4px; overflow: hidden; }
+        .vaccine-table th { background: #37474f; color: white; padding: 10px 12px; text-align: left; font-size: 13px; font-weight: 600; }
+        .vaccine-table td { padding: 10px 12px; border-bottom: 1px solid #eee; font-size: 14px; }
+        .vaccine-table tr:last-child td { border-bottom: none; }
+        .vaccine-table tr:hover { background: #f5f5f5; }
+        .vaccine-table select, .vaccine-table input[type="date"] { padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+        .vaccine-table .remove-row { background: #ef5350; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; }
+        .vaccine-table .remove-row:hover { background: #d32f2f; }
+        .expiry-warning { color: #f57c00; font-size: 11px; display: block; margin-top: 2px; }
+        .no-data-message { text-align: center; color: #999; font-style: italic; padding: 20px; }
+        .schedule-section { background: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+        .schedule-section h3 { font-size: 14px; color: #666; margin-bottom: 10px; }
+        .data-status { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 10px; }
+        .data-status-item { font-size: 12px; padding: 5px 10px; border-radius: 4px; }
+        .data-status-item.loaded { background: #e8f5e9; color: #2e7d32; }
+        .data-status-item.missing { background: #fff3e0; color: #ef6c00; }
+        
+        /* PATIENT HISTORY */
+        .history-consultation { background: #f5f5f5; padding: 12px; margin-bottom: 10px; border-radius: 6px; border-left: 4px solid #2196F3; }
+        .history-consultation h5 { margin: 0 0 8px 0; color: #1976D2; font-size: 14px; }
+        .history-section { margin-bottom: 8px; font-size: 13px; }
+        .history-section strong { color: #555; }
+        .history-list { margin: 5px 0 5px 15px; padding: 0; }
+        .history-list li { margin-bottom: 3px; color: #666; }
+        
+        /* HOME SCREEN */
+        .home-screen { text-align: center; padding: 60px 20px; position: relative; }
+        .home-screen h1 { font-size: 32px; margin-bottom: 10px; color: #2c3e50; }
+        .scenario-choice { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; max-width: 700px; margin: 0 auto; }
+        .scenario-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px 30px; border-radius: 12px; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .scenario-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
+        .scenario-card.voyage { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .scenario-card.rappel { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .scenario-card h2 { font-size: 22px; margin-bottom: 15px; font-weight: bold; }
+        .scenario-card p { font-size: 14px; opacity: 0.95; line-height: 1.6; margin: 0; }
+        .scenario-icon { font-size: 52px; margin-bottom: 15px; }
+        .hidden { display: none !important; }
+        
+        /* ACCORDION SECTIONS */
+        .accordion-section { margin-bottom: 15px; border-radius: 8px; overflow: hidden; border: 2px solid #e0e0e0; transition: all 0.3s; }
+        .accordion-section.active { border-color: #2196F3; }
+        .accordion-header { background: #f5f5f5; padding: 15px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s; user-select: none; }
+        .accordion-header:hover { background: #e3f2fd; }
+        .accordion-section.active .accordion-header { background: #e3f2fd; font-weight: 600; }
+        .accordion-title { font-size: 18px; display: flex; align-items: center; gap: 10px; }
+        .accordion-icon { transition: transform 0.3s; font-size: 14px; color: #666; }
+        .accordion-section.active .accordion-icon { transform: rotate(90deg); color: #2196F3; }
+        .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; background: white; }
+        .accordion-section.active .accordion-content { max-height: 5000px; }
+        .accordion-body { padding: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HOME SCREEN -->
+        <div id="homeScreen" class="home-screen">
+            <h1>🏥 Travel Doctor App</h1>
+            
+            <h2 style="color: #555; font-size: 18px; margin: 40px 0 30px 0;">Choisissez le type de consultation</h2>
+            
+            <div class="scenario-choice">
+                <div class="scenario-card voyage" onclick="startNewPatient()">
+                    <div class="scenario-icon">✈️</div>
+                    <h2>NOUVEAU VOYAGEUR</h2>
+                    <p>Première consultation</p>
+                </div>
+                
+                <div class="scenario-card rappel" onclick="startKnownPatient()">
+                    <div class="scenario-icon">📂</div>
+                    <h2>PATIENT CONNU</h2>
+                    <p>Nouveau voyage ou rappel</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- KNOWN PATIENT - CONSULTATION TYPE CHOICE -->
+        <div id="knownPatientChoice" class="home-screen hidden">
+            <h1>🏥 Travel Doctor App</h1>
+            <button type="button" class="btn-secondary btn-small" onclick="returnToHome()" style="position: absolute; top: 20px; right: 20px;">🏠 Retour</button>
+            
+            <div style="background: #e3f2fd; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                <h3 style="color: #1565C0; margin-bottom: 10px;">📂 Charger le dossier patient (JSON)</h3>
+                <input type="file" id="jsonUploadHome" accept=".json" onchange="handleJsonImportHome(event)">
+                <div id="jsonStatusHome" style="background: white; padding: 12px; border-radius: 4px; margin-top: 10px; display: none;">
+                    <strong id="jsonPatientNameHome"></strong> • <span id="jsonPatientDobHome"></span> • <span id="jsonConsultCountHome"></span>
+                </div>
+            </div>
+            
+            <div id="consultTypeChoice" style="display: none;">
+                <h2 style="color: #555; font-size: 18px; margin-bottom: 30px;">Quel type de consultation ?</h2>
+                
+                <div class="scenario-choice">
+                    <div class="scenario-card voyage" onclick="startNewVoyage()">
+                        <div class="scenario-icon">✈️</div>
+                        <h2>NOUVEAU VOYAGE</h2>
+                        <p>Upload PDF KoBoToolbox</p>
+                    </div>
+                    
+                    <div class="scenario-card rappel" onclick="startRappelOnly()">
+                        <div class="scenario-icon">💉</div>
+                        <h2>RAPPEL VACCIN</h2>
+                        <p>Pas de nouveau voyage</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN APP -->
+        <div id="appContent" style="display: none;">
+            <!-- FLOATING CHRONOMETER -->
+            <div class="chronometer-section" id="chronometerSection">
+                <div>
+                    <div class="chronometer-label">⏱️ Consultation</div>
+                    <div class="chronometer-display" id="chronometerDisplay">00:00:00</div>
+                    <div class="chronometer-status" id="chronometerStatus">En cours...</div>
+                </div>
+                <div class="chronometer-controls">
+                    <button type="button" class="btn-pause" id="btnPauseResume" onclick="toggleChronometer()">⏸️</button>
+                    <button type="button" class="btn-reset" onclick="resetChronometer()">🔄</button>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h1>🏥 Travel Doctor App</h1>
+                <button type="button" class="btn-secondary btn-small" onclick="returnToHome()">🏠 Retour</button>
+            </div>
+
+        <div class="schedule-section">
+            <h3>⚙️ Gestion des données</h3>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                <button type="button" class="btn-primary btn-small" onclick="document.getElementById('lotsUpload').click()">📦 Importer lots vaccins</button>
+                <input type="file" id="lotsUpload" accept=".xlsx,.xls" style="display:none" onchange="handleLotsUpload(event)">
+                <button type="button" class="btn-secondary btn-small" onclick="clearStoredData()">🗑️ Effacer lots</button>
+            </div>
+            <div class="data-status" id="dataStatus">
+                <span class="data-status-item loaded">📅 Calendrier: intégré (27 vaccins)</span>
+                <span class="data-status-item missing" id="lotsStatus">📦 Lots: non importés</span>
+            </div>
+        </div>
+
+        <div class="chronometer-final" id="chronometerFinal">✅ Consultation terminée — Durée totale: <strong id="finalTimeDisplay">00:00:00</strong></div>
+
+        <!-- UNIFIED PATIENT SECTION - ACCORDION (FIRST) -->
+        <div id="accordionPatient" class="accordion-section active">
+            <div class="accordion-header" onclick="toggleAccordion('accordionPatient')">
+                <div class="accordion-title">
+                    <span class="accordion-icon">▶</span>
+                    <span>📂 Dossier Patient</span>
+                </div>
+            </div>
+            <div class="accordion-content">
+                <div class="accordion-body">
+                    <!-- PDF UPLOAD SECTION (integrated) -->
+                    <div id="pdfUploadSection" style="margin-bottom: 20px;">
+                        <h3 style="margin-bottom: 15px;">📤 Upload du formulaire KoBoToolbox</h3>
+                        <div class="upload-section" id="uploadZone" onclick="document.getElementById('pdfUpload').click()">
+                            <input type="file" id="pdfUpload" accept=".pdf">
+                            <div class="upload-icon">📄</div>
+                            <div class="upload-text">Cliquez ou glissez-déposez le PDF KoBoToolbox</div>
+                            <div class="upload-hint">Les données patient seront extraites automatiquement</div>
+                        </div>
+                        <div class="upload-status" id="uploadStatus"></div>
+                        <div class="extracted-preview" id="extractedPreview" style="display: none; background: #f5f5f5; padding: 20px; border-radius: 8px; margin-top: 15px;">
+                            <h3 style="color: #1565C0; margin-bottom: 15px;">📋 Données extraites du PDF</h3>
+                            <div id="extractedContent" style="background: white; padding: 15px; border-radius: 8px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- PATIENT SUMMARY (compact) -->
+                    <div id="patientCompactView" style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong id="displayPatientName" style="font-size: 16px; color: #333;">-</strong>
+                                <span id="displayPatientInfo" style="margin-left: 10px; color: #666; font-size: 14px;">-</span>
+                            </div>
+                            <button type="button" class="btn-secondary btn-small" onclick="togglePatientEdit()">✏️ Modifier</button>
+                        </div>
+                    </div>
+                    
+                    <!-- EDIT MODE (hidden) -->
+                    <div id="patientEditMode" style="display: none; background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <label style="font-size: 12px; font-weight: 600;">Nom et prénom :</label>
+                        <input type="text" id="manualName" placeholder="Ex: Vessaz Bettina" onchange="updatePatientSummary()" style="margin-bottom: 10px;">
+                        
+                        <label style="font-size: 12px; font-weight: 600;">Date de naissance :</label>
+                        <input type="date" id="manualDob" onchange="updateCalculatedAge(); updatePatientSummary();" style="margin-bottom: 5px;">
+                        <div id="calculatedAge" style="font-size: 12px; color: #2c3e50; margin-bottom: 10px; font-weight: 600;"></div>
+                        
+                        <label style="font-size: 12px; font-weight: 600;">Adresse :</label>
+                        <textarea id="manualAddress" placeholder="Route du Rin 28&#10;1563 Dompierre" style="min-height: 60px; margin-bottom: 10px;" onchange="updatePatientSummary()"></textarea>
+                        
+                        <label style="font-size: 12px; font-weight: 600;">Email :</label>
+                        <input type="email" id="manualEmail" placeholder="Ex: patient@example.com" onchange="updatePatientSummary()" style="margin-bottom: 10px;">
+                        
+                        <label style="font-size: 12px; font-weight: 600;">Téléphone :</label>
+                        <input type="tel" id="manualPhone" placeholder="Ex: 076 342 46 17" onchange="updatePatientSummary()" style="margin-bottom: 10px;">
+                        
+                        <button type="button" class="btn-secondary btn-small" onclick="togglePatientEdit()">✓ Valider</button>
+                    </div>
+                    
+                    <!-- CONSULTATION COUNT + TOGGLE -->
+                    <div id="consultCountSection" style="display: none; background: #f5f5f5; padding: 12px; border-radius: 8px; margin-bottom: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span id="consultCountText" style="font-weight: 600; color: #1565C0;">-</span>
+                            <button type="button" class="btn-secondary btn-small" onclick="toggleHistory()" id="toggleHistoryBtn">▼ Voir historique</button>
+                        </div>
+                    </div>
+                    
+                    <!-- PATIENT HISTORY (collapsible) -->
+                    <div id="patientHistory" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NOTES SECTION - ACCORDION -->
+        <div id="accordionNotes" class="accordion-section">
+            <div class="accordion-header" onclick="toggleAccordion('accordionNotes')">
+                <div class="accordion-title">
+                    <span class="accordion-icon">▶</span>
+                    <span>📝 Notes de consultation</span>
+                </div>
+            </div>
+            <div class="accordion-content">
+                <div class="accordion-body">
+
+                    <label for="conseilsSelect" style="font-weight: 600;">Conseils donnés :</label>
+                    <div class="checkbox-multiselect" id="conseilsCheckboxList" style="max-height: 180px; margin-bottom: 15px;">
+                        <div class="checkbox-item" onclick="toggleConseil(this)">
+                            <input type="checkbox" id="conseil_moustiques">
+                            <label for="conseil_moustiques">Protection moustiques</label>
+                        </div>
+                        <div class="checkbox-item" onclick="toggleConseil(this)">
+                            <input type="checkbox" id="conseil_diarrhee">
+                            <label for="conseil_diarrhee">Prévention diarrhée voyageurs</label>
+                        </div>
+                        <div class="checkbox-item" onclick="toggleConseil(this)">
+                            <input type="checkbox" id="conseil_fievre">
+                            <label for="conseil_fievre">Fièvre de retour de voyage</label>
+                        </div>
+                        <div class="checkbox-item" onclick="toggleConseil(this)">
+                            <input type="checkbox" id="conseil_rage">
+                            <label for="conseil_rage">Risque rage</label>
+                        </div>
+                        <div class="checkbox-item" onclick="toggleConseil(this)">
+                            <input type="checkbox" id="conseil_baignade">
+                            <label for="conseil_baignade">Baignade en eau douce</label>
+                        </div>
+                        <div class="checkbox-item" onclick="toggleConseil(this)">
+                            <input type="checkbox" id="conseil_ist">
+                            <label for="conseil_ist">IST</label>
+                        </div>
+                        <div class="checkbox-item" onclick="toggleConseil(this)">
+                            <input type="checkbox" id="conseil_altitude">
+                            <label for="conseil_altitude">Altitude</label>
+                        </div>
+                        <div class="checkbox-item" onclick="toggleConseil(this)">
+                            <input type="checkbox" id="conseil_plongee">
+                            <label for="conseil_plongee">Plongée</label>
+                        </div>
+                        <div class="checkbox-item" onclick="toggleConseil(this)">
+                            <input type="checkbox" id="conseil_whatsapp">
+                            <label for="conseil_whatsapp">Donné contact WhatsApp si problème en voyage</label>
+                        </div>
+                    </div>
+                    <label for="consultationNotes">Notes additionnelles :</label>
+                    <textarea id="consultationNotes" placeholder="Ex:&#10;- Remarques particulières...&#10;- Conseils spécifiques..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- VACCINES SECTION - ACCORDION -->
+        <div id="accordionVaccines" class="accordion-section">
+            <div class="accordion-header" onclick="toggleAccordion('accordionVaccines')">
+                <div class="accordion-title">
+                    <span class="accordion-icon">▶</span>
+                    <span>💉 Vaccins & Rappels</span>
+                </div>
+            </div>
+            <div class="accordion-content">
+                <div class="accordion-body">
+                    <h3 style="margin-bottom: 15px;">Vaccins administrés aujourd'hui</h3>
+                    <label>Sélectionner les vaccins :</label>
+                    <div class="checkbox-multiselect" id="vaccineCheckboxList">
+                        <div class="no-data-message">📦 Importez d'abord le fichier des lots vaccins</div>
+                    </div>
+                    <table class="vaccine-table" id="administeredVaccinesTable" style="display: none;">
+                        <thead><tr><th>Vaccin</th><th>N° de lot</th><th></th></tr></thead>
+                        <tbody id="administeredVaccinesBody"></tbody>
+                    </table>
+                    
+                    <h3 style="margin-top: 30px; margin-bottom: 15px;">Rappels à planifier</h3>
+                    <label>Sélectionner les vaccins nécessitant un rappel :</label>
+                    <div class="checkbox-multiselect" id="boosterCheckboxList">
+                        <div class="no-data-message">📅 Importez d'abord le calendrier vaccinal</div>
+                    </div>
+                    <table class="vaccine-table" id="boosterTable" style="display: none;">
+                        <thead><tr><th>Vaccin</th><th>1er rappel</th><th id="booster2ndHeader" style="display: none;">2ème rappel</th><th></th></tr></thead>
+                        <tbody id="boosterTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- PRESCRIPTION SECTION - ACCORDION -->
+        <div id="accordionPrescription" class="accordion-section">
+            <div class="accordion-header" onclick="toggleAccordion('accordionPrescription')">
+                <div class="accordion-title">
+                    <span class="accordion-icon">▶</span>
+                    <span>💊 Ordonnance</span>
+                </div>
+            </div>
+            <div class="accordion-content">
+                <div class="accordion-body">
+                    <label for="prescriptionDate">Date de l'ordonnance :</label>
+            <input type="date" id="prescriptionDate">
+            <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 12px; border-radius: 4px; margin: 15px 0;">
+                <label for="weight" style="margin-bottom: 5px; font-weight: 600;">Poids du patient (kg) :</label>
+                <input type="number" id="weight" class="weight-input" placeholder="Ex: 83" step="0.1" min="0" style="margin-top: 5px;">
+                <p style="font-size: 12px; color: #856404; margin-top: 5px; margin-bottom: 0;">⚠️ Dosages pédiatriques calculés auto pour Malarone, Mephaquin, Riamet si poids saisi.</p>
+            </div>
+            <label for="medicationSelect">Ajouter un médicament :</label>
+            <select id="medicationSelect">
+                <option value="">-- Sélectionner --</option>
+                <option value="malarone">MALARONE cpr pell 250/100 mg</option>
+                <option value="mephaquin">MEPHAQUIN cpr pell 250 mg</option>
+                <option value="doxy_prophylaxie">Doxycycline 100mg - Prophylaxie paludisme</option>
+                <option value="riamet">RIAMET cpr 20 mg/120 mg</option>
+                <option value="vivotif">Vivotif caps 1EO</option>
+                <option value="acetazolamide">ACETAZOLAMIDE 125mg cpr</option>
+                <option value="dexamethasone">DEXAMETHASONE 4 mg cpr</option>
+                <option value="motilium">MOTILIUM cpr mg 1 EO</option>
+                <option value="imodium">Imodium 4mg cpr 1 EO</option>
+                <option value="doxy_pep">Doxycycline 200mg - PEP</option>
+                <option value="custom">Médicament personnalisé...</option>
+            </select>
+            <button type="button" class="btn-primary" onclick="addMedication()" style="margin-top: 10px;">Ajouter</button>
+            <div class="custom-med-inputs" id="customMedInputs">
+                <input type="text" id="customMedName" placeholder="Nom du médicament">
+                <textarea id="customMedDosing" placeholder="Instructions de posologie" style="min-height: 80px;"></textarea>
+            </div>
+            <div id="medicationList" style="margin-top: 20px;"></div>
+            <div style="display: flex; gap: 20px; align-items: flex-end; margin-top: 15px;">
+                <div style="flex: 1;">
+                    <label for="pageFormat">Format de page :</label>
+                    <select id="pageFormat" style="max-width: 200px;">
+                        <option value="a5" selected>A5 (148 × 210 mm)</option>
+                        <option value="a4">A4 (210 × 297 mm)</option>
+                    </select>
+                </div>
+            </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DOSSIER STATUS AND BUTTONS (outside accordions) -->
+        <div class="dossier-status">
+            <h3>📁 Contenu du dossier patient</h3>
+            <ul class="dossier-files">
+                <li id="statusKobo" class="pending"><span class="file-icon">📕</span> Formulaire KoBoToolbox: <em>non uploadé</em></li>
+                <li id="statusVaccines" class="pending"><span class="file-icon">💉</span> Vaccins administrés: <em>aucun</em></li>
+                <li id="statusBoosters" class="pending"><span class="file-icon">📅</span> Rappels planifiés: <em>aucun</em></li>
+                <li id="statusNotes" class="pending"><span class="file-icon">📘</span> Notes de consultation: <em>vide</em></li>
+                <li id="statusRx" class="pending"><span class="file-icon">📄</span> Ordonnance: <em>aucun médicament</em></li>
+            </ul>
+        </div>
+
+        <div class="button-group">
+            <button type="button" class="btn-success" onclick="saveConsultationJson()">💾 Sauvegarder consultation (JSON)</button>
+            <button type="button" class="btn-primary" onclick="exportConsultationPdf()">📄 Exporter PDF consultation</button>
+            <button type="button" class="btn-teal" onclick="generatePrescriptionOnly()">💊 Générer ordonnance PDF</button>
+            <button type="button" class="btn-secondary" onclick="clearForm()">🔄 Nouvelle consultation</button>
+        </div>
+    </div> <!-- Close appContent -->
+    </div> <!-- Close container -->
+    <script>
+// Initialize PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ==================== DATA STORAGE ====================
+const medications = {
+    malarone: { name: "MALARONE cpr pell 250/100 mg", dosing: "1 cpr 1x/j à commencer 1 jour avant d'arriver dans la zone à risque, continuer 1x/j jusqu'à 7 jours après le retour." },
+    riamet: { name: "RIAMET cpr 20 mg/120 mg", dosing: "4 cpr de suite, 4 cpr 8h après puis 4 cpr 2x/j pendant 2 jours. À prendre en cas de fièvre et test rapide positif. Consulter dès que possible ensuite." },
+    vivotif: { name: "Vivotif caps 1EO", dosing: "1 capsule 1 jour sur deux. Ne pas prendre d'antibiotiques en même temps." },
+    mephaquin: { name: "MEPHAQUIN cpr pell 250 mg", dosing: "1 cpr 1x/semaine à commencer 1 semaine avant d'arriver dans la zone à risque, continuer 1x/semaine jusqu'à 4 semaines après le départ." },
+    acetazolamide: { name: "ACETAZOLAMIDE 125mg cpr", dosing: "Prendre un comprimé deux fois par jour, en commençant 1 à 2 jours avant l'ascension, pour prévenir le mal des montagnes." },
+    dexamethasone: { name: "DEXAMETHASONE 4 mg cpr", dosing: "En traitement des formes modérées à sévères, prendre 4 mg toutes les 6 heures, jusqu'à amélioration et descente possible." },
+    motilium: { name: "MOTILIUM cpr mg 1 EO", dosing: "1 cpr max 3x/j si nausées" },
+    imodium: { name: "Imodium 4mg cpr 1 EO", dosing: "2 cpr lors de la première prise puis 1 cpr à chaque diarrhée, maximum 16 mg/j" },
+    doxy_prophylaxie: { name: "Doxycycline 100mg - Prophylaxie paludisme", dosing: "100mg 1x/jour à commencer 1-2 jours avant le voyage, continuer quotidiennement pendant le séjour, poursuivre 4 semaines après avoir quitté la zone à risque" },
+    doxy_pep: { name: "Doxycycline 200mg - PEP", dosing: "200mg (2 x 100mg) dans les 24-72h après rapport sexuel non protégé" }
+};
+
+let selectedMedications = [];
+let uploadedPdfData = null;
+let uploadedPdfName = '';
+let extractedKoboData = null;
+let vaccineSchedule = [];
+let vaccineLots = [];
+let administeredVaccines = [];
+let plannedBoosters = [];
+let chronometerInterval = null;
+let chronometerStartTime = null;
+let chronometerElapsed = 0;
+let chronometerPaused = false;
+let chronometerFinalTime = null;
+
+// ==================== INITIALIZATION ====================
+document.addEventListener('DOMContentLoaded', function() {
+    loadStoredData();
+    updateDataStatusDisplay();
+    renderVaccineCheckboxList();
+    renderBoosterCheckboxList();
+    updateDossierStatus();
+    document.getElementById('prescriptionDate').valueAsDate = new Date();
+    document.getElementById('medicationSelect').addEventListener('change', function() {
+        document.getElementById('customMedInputs').classList.toggle('active', this.value === 'custom');
+    });
+    document.getElementById('consultationNotes').addEventListener('input', updateDossierStatus);
+    
+    // PDF upload handlers
+    const uploadZone = document.getElementById('uploadZone');
+    uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+    uploadZone.addEventListener('dragleave', () => { uploadZone.classList.remove('dragover'); });
+    uploadZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0 && e.dataTransfer.files[0].type === 'application/pdf') {
+            handlePdfUpload(e.dataTransfer.files[0]);
+        }
+    });
+    document.getElementById('pdfUpload').addEventListener('change', (e) => {
+        if (e.target.files.length > 0) handlePdfUpload(e.target.files[0]);
+    });
+    
+    renderMedicationList();
+    
+    // Auto-load integrated vaccine schedule
+    vaccineSchedule = Object.keys(VACCINE_SCHEDULES).map(name => ({
+        name: name,
+        booster1: VACCINE_SCHEDULES[name].boosters[0] ? VACCINE_SCHEDULES[name].boosters[0].interval : null,
+        booster2: VACCINE_SCHEDULES[name].boosters[1] ? VACCINE_SCHEDULES[name].boosters[1].interval : null
+    }));
+    renderBoosterCheckboxList();
+    updateDataStatusDisplay();
+});
+
+// ==================== NAVIGATION ====================
+let consultationMode = null; // 'new_patient', 'known_patient_new_voyage', 'known_patient_rappel'
+
+function startNewPatient() {
+    consultationMode = 'new_patient';
+    document.getElementById('homeScreen').classList.add('hidden');
+    document.getElementById('appContent').style.display = 'block';
+    document.getElementById('pdfUploadSection').style.display = 'block';
+}
+
+function startKnownPatient() {
+    document.getElementById('homeScreen').classList.add('hidden');
+    document.getElementById('knownPatientChoice').classList.remove('hidden');
+}
+
+function handleJsonImportHome(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            loadedPatientJSON = JSON.parse(e.target.result);
+            const patient = loadedPatientJSON.patient || {};
+            const consults = loadedPatientJSON.consultations || [];
+            
+            // Display status
+            document.getElementById('jsonPatientNameHome').textContent = patient.nom || 'Patient';
+            document.getElementById('jsonPatientDobHome').textContent = patient.dob ? formatDateSwiss(new Date(patient.dob)) : '';
+            document.getElementById('jsonConsultCountHome').textContent = consults.length + ' consultation(s) précédente(s)';
+            document.getElementById('jsonStatusHome').style.display = 'block';
+            
+            // Show consultation type choice
+            document.getElementById('consultTypeChoice').style.display = 'block';
+            
+            // Prefill patient data for later
+            if (patient.nom) document.getElementById('manualName').value = patient.nom;
+            if (patient.dob) {
+                document.getElementById('manualDob').value = patient.dob;
+                updateCalculatedAge();
+            }
+            if (patient.adresse) document.getElementById('manualAddress').value = patient.adresse;
+            if (patient.email) document.getElementById('manualEmail').value = patient.email;
+            if (patient.telephone) document.getElementById('manualPhone').value = patient.telephone;
+            if (patient.poids) document.getElementById('weight').value = patient.poids;
+            
+            // Update patient summary display
+            updatePatientSummary();
+            
+        } catch (error) {
+            alert('❌ Erreur lecture JSON : ' + error.message);
+            loadedPatientJSON = null;
+        }
+    };
+    reader.readAsText(file);
+}
+
+function startNewVoyage() {
+    consultationMode = 'known_patient_new_voyage';
+    document.getElementById('knownPatientChoice').classList.add('hidden');
+    document.getElementById('appContent').style.display = 'block';
+    document.getElementById('pdfUploadSection').style.display = 'block';
+    displayPatientHistoryInApp();
+    
+    // Start chronometer automatically
+    startChronometer();
+}
+
+function startRappelOnly() {
+    consultationMode = 'known_patient_rappel';
+    document.getElementById('knownPatientChoice').classList.add('hidden');
+    document.getElementById('appContent').style.display = 'block';
+    document.getElementById('pdfUploadSection').style.display = 'none';
+    displayPatientHistoryInApp();
+    
+    // Start chronometer automatically
+    startChronometer();
+}
+
+function displayPatientHistoryInApp() {
+    if (!loadedPatientJSON) return;
+    
+    const patient = loadedPatientJSON.patient || {};
+    const consults = loadedPatientJSON.consultations || [];
+    
+    // Show unified patient section
+    document.getElementById('accordionPatient').style.display = 'block';
+    
+    // Update patient summary
+    updatePatientSummary();
+    
+    // Show consultation count
+    if (consults.length > 0) {
+        document.getElementById('consultCountText').textContent = consults.length + ' consultation(s) précédente(s)';
+        document.getElementById('consultCountSection').style.display = 'block';
+        
+        // Prepare history (but keep it hidden)
+        displayPatientHistory(consults);
+    }
+}
+
+function toggleHistory() {
+    const historyDiv = document.getElementById('patientHistory');
+    const btn = document.getElementById('toggleHistoryBtn');
+    
+    if (historyDiv.style.display === 'none') {
+        historyDiv.style.display = 'block';
+        btn.textContent = '▲ Masquer historique';
+    } else {
+        historyDiv.style.display = 'none';
+        btn.textContent = '▼ Voir historique';
+    }
+}
+
+function returnToHome() {
+    if (!confirm('Retour à l\'accueil ? Données non sauvegardées seront perdues.')) return;
+    
+    // Reset everything
+    clearForm();
+    loadedPatientJSON = null;
+    consultationMode = null;
+    
+    // Hide all screens
+    document.getElementById('appContent').style.display = 'none';
+    document.getElementById('knownPatientChoice').classList.add('hidden');
+    
+    // Show home
+    document.getElementById('homeScreen').classList.remove('hidden');
+    
+    // Reset known patient screen
+    document.getElementById('consultTypeChoice').style.display = 'none';
+    document.getElementById('jsonStatusHome').style.display = 'none';
+    document.getElementById('jsonUploadHome').value = '';
+    
+    // IMPORTANT: Ensure patient section is visible for next time
+    document.getElementById('accordionPatient').style.display = 'block';
+}
+
+// ==================== ACCORDION SYSTEM ====================
+function toggleAccordion(accordionId) {
+    const clickedAccordion = document.getElementById(accordionId);
+    
+    // Simply toggle the clicked accordion without affecting others
+    clickedAccordion.classList.toggle('active');
+}
+
+// ==================== PATIENT DATA TOGGLE ====================
+function togglePatientEdit() {
+    const compactView = document.getElementById('patientCompactView');
+    const editMode = document.getElementById('patientEditMode');
+    
+    if (editMode.style.display === 'none') {
+        // Show edit mode
+        compactView.style.display = 'none';
+        editMode.style.display = 'block';
+    } else {
+        // Show compact view
+        editMode.style.display = 'none';
+        compactView.style.display = 'block';
+        updatePatientSummary();
+    }
+}
+
+// ==================== EXTRACTED DATA EDIT FUNCTIONS ====================
+function toggleEditVoyage() {
+    const displayDiv = document.getElementById('voyageDisplay');
+    const editDiv = document.getElementById('voyageEdit');
+    
+    if (editDiv.style.display === 'none') {
+        displayDiv.style.display = 'none';
+        editDiv.style.display = 'block';
+    } else {
+        displayDiv.style.display = 'block';
+        editDiv.style.display = 'none';
+    }
+}
+
+function saveVoyageEdit() {
+    if (!extractedKoboData) return;
+    
+    // Update extractedKoboData with edited values
+    extractedKoboData.voyage.dateDepart = document.getElementById('editVoyageDateDepart').value;
+    extractedKoboData.voyage.dateRetour = document.getElementById('editVoyageDateRetour').value;
+    
+    // Parse arrays (comma-separated input back to arrays)
+    extractedKoboData.voyage.nature = normalizeArray(document.getElementById('editVoyageNature').value);
+    extractedKoboData.voyage.hebergement = normalizeArray(document.getElementById('editVoyageHebergement').value);
+    extractedKoboData.voyage.activites = normalizeArray(document.getElementById('editVoyageActivites').value);
+    
+    // Parse boolean
+    var zonesValue = document.getElementById('editVoyageZonesRurales').value;
+    extractedKoboData.voyage.zonesRurales = zonesValue === 'true' ? true : (zonesValue === 'false' ? false : null);
+    
+    // Recalculate duration
+    if (extractedKoboData.voyage.dateDepart && extractedKoboData.voyage.dateRetour) {
+        const start = new Date(extractedKoboData.voyage.dateDepart);
+        const end = new Date(extractedKoboData.voyage.dateRetour);
+        const diffTime = Math.abs(end - start);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        extractedKoboData.voyage.duree = diffDays + ' jours';
+    }
+    
+    // Refresh display
+    displayExtractedData(extractedKoboData);
+    
+    alert('✅ Données voyage mises à jour !');
+}
+
+function toggleEditMedical() {
+    const displayDiv = document.getElementById('medicalDisplay');
+    const editDiv = document.getElementById('medicalEdit');
+    
+    if (editDiv.style.display === 'none') {
+        displayDiv.style.display = 'none';
+        editDiv.style.display = 'block';
+    } else {
+        displayDiv.style.display = 'block';
+        editDiv.style.display = 'none';
+    }
+}
+
+function saveMedicalEdit() {
+    if (!extractedKoboData || !extractedKoboData.medical) return;
+    
+    // Update extractedKoboData with edited values
+    extractedKoboData.medical.maladies = document.getElementById('editMedicalMaladies').value;
+    extractedKoboData.medical.allergieOeufs = document.getElementById('editMedicalAllergieOeufs').value;
+    extractedKoboData.medical.autresAllergies = document.getElementById('editMedicalAutresAllergies').value;
+    extractedKoboData.medical.allergiesDetails = document.getElementById('editMedicalAllergiesDetails').value;
+    extractedKoboData.medical.grossesse = document.getElementById('editMedicalGrossesse').value;
+    extractedKoboData.medical.contraception = document.getElementById('editMedicalContraception').value;
+    extractedKoboData.medical.allaitement = document.getElementById('editMedicalAllaitement').value;
+    extractedKoboData.medical.varicelleContractee = document.getElementById('editMedicalVaricelleContractee').value;
+    extractedKoboData.medical.varicelleVaccine = document.getElementById('editMedicalVaricelleVaccine').value;
+    extractedKoboData.medical.problemeVaccination = document.getElementById('editMedicalProblemeVaccination').value;
+    extractedKoboData.medical.medicaments = document.getElementById('editMedicalMedicaments').value;
+    extractedKoboData.medical.medicamentsDetails = document.getElementById('editMedicalMedicamentsDetails').value;
+    
+    // Refresh display
+    displayExtractedData(extractedKoboData);
+    
+    alert('✅ Données médicales mises à jour !');
+}
+
+// ==================== PATIENT DATA TOGGLE ====================
+function togglePatientEdit() {
+    const compactView = document.getElementById('patientCompactView');
+    const editMode = document.getElementById('patientEditMode');
+    
+    if (editMode.style.display === 'none') {
+        // Show edit mode
+        compactView.style.display = 'none';
+        editMode.style.display = 'block';
+    } else {
+        // Show compact view
+        editMode.style.display = 'none';
+        compactView.style.display = 'block';
+        updatePatientSummary();
+    }
+}
+
+function updatePatientSummary() {
+    const name = document.getElementById('manualName').value.trim() || '-';
+    const dob = document.getElementById('manualDob').value;
+    const phone = document.getElementById('manualPhone').value.trim();
+    const email = document.getElementById('manualEmail').value.trim();
+    
+    document.getElementById('displayPatientName').textContent = name;
+    
+    let info = '';
+    if (dob) {
+        info += formatDateSwiss(new Date(dob));
+    }
+    if (phone) {
+        info += (info ? ' • ' : '') + phone;
+    }
+    if (email) {
+        info += (info ? ' • ' : '') + email;
+    }
+    if (!info) {
+        info = '-';
+    }
+    
+    document.getElementById('displayPatientInfo').textContent = info;
+}
+
+// ==================== INTEGRATED VACCINE SCHEDULE ====================
+const VACCINE_SCHEDULES = {
+    "Adacel": { boosters: [] },
+    "Adacel Polio": { boosters: [] },
+    "Boostrix": { boosters: [] },
+    "Boostrix polio": { boosters: [] },
+    "Comirnaty": { boosters: [] },
+    "Efluelda": { boosters: [] },
+    "Encepur adultes": { boosters: [
+        { interval: "1 mois", days: 30, dose: 2 },
+        { interval: "10 mois", days: 300, dose: 3 }
+    ]},
+    "Encepur enfants": { boosters: [
+        { interval: "1 mois", days: 30, dose: 2 },
+        { interval: "10 mois", days: 300, dose: 3 }
+    ]},
+    "Engerix B-20": { boosters: [
+        { interval: "1 mois", days: 30, dose: 2 },
+        { interval: "6 mois", days: 180, dose: 3 }
+    ]},
+    "FSME-Immun CC": { boosters: [
+        { interval: "1 mois", days: 30, dose: 2 },
+        { interval: "6 mois", days: 180, dose: 3 }
+    ]},
+    "FSME-Immun Junior": { boosters: [
+        { interval: "1 mois", days: 30, dose: 2 },
+        { interval: "6 mois", days: 180, dose: 3 }
+    ]},
+    "Havrix 1440": { boosters: [
+        { interval: "1 mois", days: 30, dose: 2 },
+        { interval: "6 mois", days: 180, dose: 3 }
+    ]},
+    "Havrix 720": { boosters: [
+        { interval: "1 mois", days: 30, dose: 2 },
+        { interval: "6 mois", days: 180, dose: 3 }
+    ]},
+    "IPV Polio": { boosters: [] },
+    "Ixiaro": { boosters: [
+        { interval: "1 mois", days: 30, dose: 2 },
+        { interval: "12 mois", days: 360, dose: 3 }
+    ]},
+    "Menveo": { boosters: [
+        { interval: "5 ans", days: 1825, dose: 2 }
+    ]},
+    "Priorix": { boosters: [
+        { interval: "1 mois", days: 30, dose: 2 }
+    ]},
+    "Qdenga": { boosters: [
+        { interval: "3 mois", days: 90, dose: 2 }
+    ]},
+    "Rabipur": { boosters: [
+        { interval: "1 mois", days: 30, dose: 2 },
+        { interval: "12 mois", days: 360, dose: 3 }
+    ]},
+    "Revaxis": { boosters: [] },
+    "Shingrix": { boosters: [
+        { interval: "1 mois", days: 30, dose: 2 }
+    ]},
+    "Stamaril": { boosters: [] },
+    "Twinrix 720/20": { boosters: [
+        { interval: "1 mois", days: 30, dose: 2 },
+        { interval: "6 mois", days: 180, dose: 3 }
+    ]},
+    "Typhim": { boosters: [
+        { interval: "3 ans", days: 1095, dose: 2 }
+    ]},
+    "Varilrix": { boosters: [
+        { interval: "1 mois", days: 30, dose: 2 }
+    ]},
+    "VaxigripTetra": { boosters: [] },
+    "Vivotif": { boosters: [
+        { interval: "1 an", days: 365, dose: 2 }
+    ]}
+};
+
+// ==================== XLSX DATA MANAGEMENT ====================
+function handleScheduleUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            vaccineSchedule = [];
+            for (let i = 1; i < jsonData.length; i++) {
+                const row = jsonData[i];
+                if (row[0]) {
+                    vaccineSchedule.push({
+                        name: row[0].toString().trim(),
+                        booster1: row[1] ? row[1].toString().trim() : null,
+                        booster2: row[2] ? row[2].toString().trim() : null
+                    });
+                }
+            }
+            localStorage.setItem('vaccineSchedule', JSON.stringify(vaccineSchedule));
+            localStorage.setItem('scheduleLastUpdate', new Date().toISOString());
+            updateDataStatusDisplay();
+            renderBoosterCheckboxList();
+            alert('✅ Calendrier vaccinal importé: ' + vaccineSchedule.length + ' vaccins');
+        } catch (error) {
+            console.error('Error parsing schedule:', error);
+            alert('❌ Erreur lors de la lecture du fichier');
+        }
+    };
+    reader.readAsArrayBuffer(file);
+    event.target.value = '';
+}
+
+function handleLotsUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            const header = jsonData[0].map(h => h ? h.toString().toLowerCase().trim() : '');
+            const vaccineCol = header.findIndex(h => h.includes('vaccin'));
+            const lotCol = header.findIndex(h => h.includes('lot'));
+            const expCol = header.findIndex(h => h.includes('expir') || h.includes('exp'));
+            if (vaccineCol === -1 || lotCol === -1) {
+                alert('❌ Colonnes "vaccin" et "lot" requises');
+                return;
+            }
+            vaccineLots = [];
+            for (let i = 1; i < jsonData.length; i++) {
+                const row = jsonData[i];
+                if (row[vaccineCol] && row[lotCol]) {
+                    let expDate = null;
+                    if (expCol !== -1 && row[expCol]) {
+                        expDate = parseExcelDate(row[expCol]);
+                    }
+                    vaccineLots.push({
+                        vaccine: row[vaccineCol].toString().trim(),
+                        lot: row[lotCol].toString().trim(),
+                        expiration: expDate
+                    });
+                }
+            }
+            localStorage.setItem('vaccineLots', JSON.stringify(vaccineLots));
+            localStorage.setItem('lotsLastUpdate', new Date().toISOString());
+            updateDataStatusDisplay();
+            renderVaccineCheckboxList();
+            alert('✅ Lots importés: ' + vaccineLots.length + ' entrées');
+        } catch (error) {
+            console.error('Error parsing lots:', error);
+            alert('❌ Erreur lors de la lecture du fichier');
+        }
+    };
+    reader.readAsArrayBuffer(file);
+    event.target.value = '';
+}
+
+function parseExcelDate(value) {
+    if (typeof value === 'number') {
+        const date = new Date((value - 25569) * 86400 * 1000);
+        return date.toISOString().split('T')[0];
+    }
+    if (typeof value === 'string') {
+        const match = value.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+        if (match) return match[3] + '-' + match[2].padStart(2, '0') + '-' + match[1].padStart(2, '0');
+        const isoMatch = value.match(/(\d{4})-(\d{2})-(\d{2})/);
+        if (isoMatch) return value;
+    }
+    return null;
+}
+
+function loadStoredData() {
+    const storedSchedule = localStorage.getItem('vaccineSchedule');
+    const storedLots = localStorage.getItem('vaccineLots');
+    if (storedSchedule) { try { vaccineSchedule = JSON.parse(storedSchedule); } catch (e) {} }
+    if (storedLots) { try { vaccineLots = JSON.parse(storedLots); } catch (e) {} }
+}
+
+function clearStoredData() {
+    if (!confirm('Effacer les données de lots vaccins?')) return;
+    localStorage.removeItem('vaccineLots');
+    localStorage.removeItem('lotsLastUpdate');
+    vaccineLots = [];
+    updateDataStatusDisplay();
+    renderVaccineCheckboxList();
+}
+
+function updateDataStatusDisplay() {
+    const lotsStatus = document.getElementById('lotsStatus');
+    const lotsUpdate = localStorage.getItem('lotsLastUpdate');
+    if (vaccineLots.length > 0) {
+        const dateStr = lotsUpdate ? formatDateSwiss(new Date(lotsUpdate)) : '';
+        const uniqueVaccines = [...new Set(vaccineLots.map(l => l.vaccine))].length;
+        lotsStatus.textContent = '📦 Lots: ' + vaccineLots.length + ' lots (' + uniqueVaccines + ' vaccins) ' + (dateStr ? '(' + dateStr + ')' : '');
+        lotsStatus.className = 'data-status-item loaded';
+    } else {
+        lotsStatus.textContent = '📦 Lots: non importés';
+        lotsStatus.className = 'data-status-item missing';
+    }
+}
+
+// ==================== VACCINE CHECKBOX LIST ====================
+function renderVaccineCheckboxList() {
+    const container = document.getElementById('vaccineCheckboxList');
+    if (vaccineLots.length === 0) {
+        container.innerHTML = '<div class="no-data-message">📦 Importez d\'abord le fichier des lots vaccins</div>';
+        return;
+    }
+    const uniqueVaccines = [...new Set(vaccineLots.map(l => l.vaccine))].sort();
+    container.innerHTML = uniqueVaccines.map(vaccine => {
+        const lots = vaccineLots.filter(l => l.vaccine === vaccine);
+        const hasExpiredOnly = lots.every(l => isLotExpired(l.expiration));
+        const hasWarning = lots.some(l => isLotExpiringSoon(l.expiration));
+        const isChecked = administeredVaccines.some(v => v.vaccine === vaccine);
+        let warningText = '';
+        if (hasExpiredOnly) warningText = '<span class="lot-expired">⛔ Tous lots expirés</span>';
+        else if (hasWarning) warningText = '<span class="lot-warning">⚠️ Lot proche expiration</span>';
+        return '<div class="checkbox-item ' + (isChecked ? 'selected' : '') + ' ' + (hasExpiredOnly ? 'disabled' : '') + '" onclick="' + (hasExpiredOnly ? '' : "toggleVaccineSelection('" + escapeHtml(vaccine) + "')") + '"><input type="checkbox" ' + (isChecked ? 'checked' : '') + ' ' + (hasExpiredOnly ? 'disabled' : '') + '><label>' + escapeHtml(vaccine) + '</label>' + warningText + '</div>';
+    }).join('');
+}
+
+function toggleVaccineSelection(vaccine) {
+    const index = administeredVaccines.findIndex(v => v.vaccine === vaccine);
+    if (index === -1) {
+        const lots = vaccineLots.filter(l => l.vaccine === vaccine && !isLotExpired(l.expiration));
+        administeredVaccines.push({ vaccine: vaccine, lot: lots.length > 0 ? lots[0].lot : '', id: Date.now() });
+    } else {
+        administeredVaccines.splice(index, 1);
+    }
+    renderVaccineCheckboxList();
+    renderAdministeredVaccinesTable();
+    updateDossierStatus();
+}
+
+function renderAdministeredVaccinesTable() {
+    const table = document.getElementById('administeredVaccinesTable');
+    const tbody = document.getElementById('administeredVaccinesBody');
+    if (administeredVaccines.length === 0) { table.style.display = 'none'; return; }
+    table.style.display = 'table';
+    tbody.innerHTML = administeredVaccines.map(item => {
+        const lots = vaccineLots.filter(l => l.vaccine === item.vaccine);
+        const lotOptions = lots.map(lot => {
+            const isExpired = isLotExpired(lot.expiration);
+            const isExpiring = isLotExpiringSoon(lot.expiration);
+            const expStr = lot.expiration ? formatDateSwiss(new Date(lot.expiration)) : '';
+            let warning = isExpired ? ' [EXPIRÉ]' : (isExpiring ? ' [⚠️]' : '');
+            return '<option value="' + escapeHtml(lot.lot) + '" ' + (item.lot === lot.lot ? 'selected' : '') + ' ' + (isExpired ? 'disabled' : '') + '>' + escapeHtml(lot.lot) + (expStr ? ' (exp: ' + expStr + ')' : '') + warning + '</option>';
+        }).join('');
+        const selectedLot = lots.find(l => l.lot === item.lot);
+        let expiryWarning = '';
+        if (selectedLot && isLotExpiringSoon(selectedLot.expiration)) {
+            const daysLeft = getDaysUntilExpiry(selectedLot.expiration);
+            expiryWarning = '<span class="expiry-warning">⚠️ Expire dans ' + daysLeft + ' jours</span>';
+        }
+        return '<tr><td>' + escapeHtml(item.vaccine) + '</td><td><select onchange="updateAdministeredLot(' + item.id + ', this.value)">' + lotOptions + '</select>' + expiryWarning + '</td><td><button class="remove-row" onclick="removeAdministeredVaccine(' + item.id + ')">✕</button></td></tr>';
+    }).join('');
+}
+
+function updateAdministeredLot(id, lot) {
+    const item = administeredVaccines.find(v => v.id === id);
+    if (item) { item.lot = lot; renderAdministeredVaccinesTable(); }
+}
+
+function removeAdministeredVaccine(id) {
+    administeredVaccines = administeredVaccines.filter(v => v.id !== id);
+    renderVaccineCheckboxList();
+    renderAdministeredVaccinesTable();
+    updateDossierStatus();
+}
+
+// ==================== BOOSTER CHECKBOX LIST ====================
+function renderBoosterCheckboxList() {
+    const container = document.getElementById('boosterCheckboxList');
+    if (vaccineSchedule.length === 0) {
+        container.innerHTML = '<div class="no-data-message">📅 Importez d\'abord le calendrier vaccinal</div>';
+        return;
+    }
+    const vaccinesWithBoosters = vaccineSchedule.filter(v => v.booster1 || v.booster2);
+    container.innerHTML = vaccinesWithBoosters.map(vaccine => {
+        const isChecked = plannedBoosters.some(b => b.vaccine === vaccine.name);
+        let boosterInfo = '';
+        if (vaccine.booster1) {
+            boosterInfo = '<span style="color: #666; font-size: 12px; margin-left: 5px;">→ ' + vaccine.booster1;
+            if (vaccine.booster2) boosterInfo += ', ' + vaccine.booster2;
+            boosterInfo += '</span>';
+        }
+        return '<div class="checkbox-item ' + (isChecked ? 'selected' : '') + '" onclick="toggleBoosterSelection(\'' + escapeHtml(vaccine.name) + '\')"><input type="checkbox" ' + (isChecked ? 'checked' : '') + '><label>' + escapeHtml(vaccine.name) + '</label>' + boosterInfo + '</div>';
+    }).join('');
+}
+
+function toggleBoosterSelection(vaccineName) {
+    const index = plannedBoosters.findIndex(b => b.vaccine === vaccineName);
+    if (index === -1) {
+        const schedule = vaccineSchedule.find(v => v.name === vaccineName);
+        const today = new Date();
+        let booster1Date = null, booster2Date = null;
+        if (schedule && schedule.booster1) booster1Date = calculateBoosterDate(today, schedule.booster1);
+        if (schedule && schedule.booster2) booster2Date = calculateBoosterDate(today, schedule.booster2);
+        plannedBoosters.push({ vaccine: vaccineName, booster1Date: booster1Date, booster2Date: booster2Date, id: Date.now() });
+    } else {
+        plannedBoosters.splice(index, 1);
+    }
+    renderBoosterCheckboxList();
+    renderBoosterTable();
+    updateDossierStatus();
+}
+
+function calculateBoosterDate(fromDate, intervalStr) {
+    if (!intervalStr) return null;
+    const date = new Date(fromDate);
+    const lower = intervalStr.toLowerCase().trim();
+    const monthMatch = lower.match(/(\d+)\s*mois/);
+    const yearMatch = lower.match(/(\d+)\s*an/);
+    const dayMatch = lower.match(/(\d+)\s*jour/);
+    if (monthMatch) date.setMonth(date.getMonth() + parseInt(monthMatch[1]));
+    else if (yearMatch) date.setFullYear(date.getFullYear() + parseInt(yearMatch[1]));
+    else if (dayMatch) date.setDate(date.getDate() + parseInt(dayMatch[1]));
+    return date.toISOString().split('T')[0];
+}
+
+function renderBoosterTable() {
+    const table = document.getElementById('boosterTable');
+    const tbody = document.getElementById('boosterTableBody');
+    const header2nd = document.getElementById('booster2ndHeader');
+    if (plannedBoosters.length === 0) { table.style.display = 'none'; return; }
+    table.style.display = 'table';
+    const hasSecondBooster = plannedBoosters.some(b => b.booster2Date);
+    header2nd.style.display = hasSecondBooster ? 'table-cell' : 'none';
+    tbody.innerHTML = plannedBoosters.map(item => {
+        const booster1Input = item.booster1Date ? '<input type="date" value="' + item.booster1Date + '" onchange="updateBoosterDate(' + item.id + ', 1, this.value)">' : '<span style="color: #999;">—</span>';
+        let booster2Cell = '';
+        if (hasSecondBooster) {
+            booster2Cell = item.booster2Date ? '<td><input type="date" value="' + item.booster2Date + '" onchange="updateBoosterDate(' + item.id + ', 2, this.value)"></td>' : '<td><span style="color: #999;">—</span></td>';
+        }
+        return '<tr><td>' + escapeHtml(item.vaccine) + '</td><td>' + booster1Input + '</td>' + booster2Cell + '<td><button class="remove-row" onclick="removeBooster(' + item.id + ')">✕</button></td></tr>';
+    }).join('');
+}
+
+function updateBoosterDate(id, boosterNum, date) {
+    const item = plannedBoosters.find(b => b.id === id);
+    if (item) { if (boosterNum === 1) item.booster1Date = date; else item.booster2Date = date; }
+}
+
+function removeBooster(id) {
+    plannedBoosters = plannedBoosters.filter(b => b.id !== id);
+    renderBoosterCheckboxList();
+    renderBoosterTable();
+    updateDossierStatus();
+}
+
+// ==================== LOT EXPIRATION HELPERS ====================
+function isLotExpired(expirationDate) {
+    if (!expirationDate) return false;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return new Date(expirationDate) < today;
+}
+
+function isLotExpiringSoon(expirationDate, daysThreshold) {
+    if (!expirationDate) return false;
+    daysThreshold = daysThreshold || 30;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const diffDays = Math.ceil((new Date(expirationDate) - today) / (1000 * 60 * 60 * 24));
+    return diffDays > 0 && diffDays <= daysThreshold;
+}
+
+function getDaysUntilExpiry(expirationDate) {
+    if (!expirationDate) return null;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return Math.ceil((new Date(expirationDate) - today) / (1000 * 60 * 60 * 24));
+}
+
+// ==================== UTILITY FUNCTIONS ====================
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function formatDateSwiss(date) {
+    if (!date || isNaN(date.getTime())) return '';
+    return date.getDate().toString().padStart(2, '0') + '.' + (date.getMonth() + 1).toString().padStart(2, '0') + '.' + date.getFullYear();
+}
+
+function formatTime(ms) {
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    return hours.toString().padStart(2, '0') + ':' + minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0');
+}
+
+// ==================== CONSEILS FUNCTIONS ====================
+function toggleConseil(element) {
+    const checkbox = element.querySelector('input[type="checkbox"]');
+    checkbox.checked = !checkbox.checked;
+    element.classList.toggle('selected', checkbox.checked);
+}
+
+function getSelectedConseils() {
+    const conseils = [];
+    document.querySelectorAll('#conseilsCheckboxList input[type="checkbox"]:checked').forEach(function(cb) {
+        const label = cb.parentElement.querySelector('label').textContent;
+        conseils.push(label);
+    });
+    return conseils;
+}
+
+// ==================== CHRONOMETER FUNCTIONS ====================
+function startChronometer() {
+    if (chronometerInterval) return;
+    document.getElementById('chronometerFinal').style.display = 'none';
+    chronometerStartTime = Date.now() - chronometerElapsed;
+    chronometerPaused = false;
+    updateChronometerButton();
+    document.getElementById('chronometerStatus').textContent = 'En cours...';
+    chronometerInterval = setInterval(function() {
+        if (!chronometerPaused) {
+            chronometerElapsed = Date.now() - chronometerStartTime;
+            document.getElementById('chronometerDisplay').textContent = formatTime(chronometerElapsed);
+        }
+    }, 1000);
+}
+
+function toggleChronometer() {
+    chronometerPaused = !chronometerPaused;
+    if (chronometerPaused) {
+        document.getElementById('chronometerStatus').textContent = '⏸️ En pause';
+    } else {
+        chronometerStartTime = Date.now() - chronometerElapsed;
+        document.getElementById('chronometerStatus').textContent = 'En cours...';
+    }
+    updateChronometerButton();
+}
+
+function updateChronometerButton() {
+    const btn = document.getElementById('btnPauseResume');
+    if (chronometerPaused) { btn.textContent = '▶️ Reprendre'; btn.className = 'btn-resume'; }
+    else { btn.textContent = '⏸️ Pause'; btn.className = 'btn-pause'; }
+}
+
+function stopChronometer() {
+    if (chronometerInterval) { clearInterval(chronometerInterval); chronometerInterval = null; }
+    chronometerFinalTime = formatTime(chronometerElapsed);
+    document.getElementById('chronometerStatus').textContent = '✅ Terminé';
+    document.getElementById('finalTimeDisplay').textContent = chronometerFinalTime;
+    document.getElementById('chronometerFinal').style.display = 'block';
+    return chronometerFinalTime;
+}
+
+function resetChronometer() {
+    if (chronometerInterval) { clearInterval(chronometerInterval); chronometerInterval = null; }
+    chronometerElapsed = 0; chronometerPaused = false; chronometerFinalTime = null;
+    document.getElementById('chronometerDisplay').textContent = '00:00:00';
+    document.getElementById('chronometerFinal').style.display = 'none';
+    if (uploadedPdfData) {
+        chronometerStartTime = Date.now();
+        document.getElementById('chronometerStatus').textContent = 'En cours...';
+        updateChronometerButton();
+        chronometerInterval = setInterval(function() {
+            if (!chronometerPaused) {
+                chronometerElapsed = Date.now() - chronometerStartTime;
+                document.getElementById('chronometerDisplay').textContent = formatTime(chronometerElapsed);
+            }
+        }, 1000);
+    }
+}
+
+function hideChronometer() {
+    if (chronometerInterval) { clearInterval(chronometerInterval); chronometerInterval = null; }
+    chronometerElapsed = 0; chronometerPaused = false; chronometerFinalTime = null;
+    document.getElementById('chronometerDisplay').textContent = '00:00:00';
+    document.getElementById('chronometerSection').style.display = 'none';
+    document.getElementById('chronometerFinal').style.display = 'none';
+}
+
+// ==================== PDF UPLOAD & EXTRACTION ====================
+async function handlePdfUpload(file) {
+    const statusDiv = document.getElementById('uploadStatus');
+    statusDiv.className = 'upload-status loading';
+    statusDiv.innerHTML = '⏳ Extraction en cours...<span class="loading-spinner"></span>';
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        uploadedPdfData = new Blob([arrayBuffer], { type: 'application/pdf' });
+        uploadedPdfName = file.name;
+        startChronometer();
+        
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = '';
+        let attachmentLinks = [];
+        
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            
+            // Simple extraction - just join all text items
+            const pageText = textContent.items.map(item => item.str).join(' ');
+            fullText += pageText + '\n';
+            
+            // Extract annotations (links) from the page
+            const annotations = await page.getAnnotations();
+            console.log('DEBUG: Page', i, 'has', annotations.length, 'annotation(s)');
+            annotations.forEach((annotation, idx) => {
+                console.log('DEBUG: Annotation', idx, ':', {
+                    subtype: annotation.subtype,
+                    url: annotation.url,
+                    dest: annotation.dest,
+                    contents: annotation.contents
+                });
+                if (annotation.subtype === 'Link' && annotation.url) {
+                    // Check if it's a KoBoToolbox attachment link
+                    if (annotation.url.includes('kobotoolbox.org') && annotation.url.includes('attachments')) {
+                        attachmentLinks.push(annotation.url);
+                    }
+                }
+            });
+        }
+        
+        console.log('DEBUG: Found attachment links from annotations:', attachmentLinks);
+        
+        // Check if extraction yielded meaningful content
+        const meaningfulText = fullText.replace(/\s+/g, ' ').trim();
+        console.log('DEBUG: Extracted text length:', fullText.length);
+        console.log('DEBUG: Searching for kobotoolbox links in text...');
+        const linkMatch = fullText.match(/kobotoolbox\.org[^\s]*/gi);
+        console.log('DEBUG: Link matches found:', linkMatch);
+        
+        if (meaningfulText.length < 100 || !meaningfulText.includes('Prénom')) {
+            // Extraction failed - likely a "Print to PDF" file
+            statusDiv.className = 'upload-status error';
+            statusDiv.innerHTML = '⚠️ <strong>Ce PDF ne peut pas être lu automatiquement.</strong><br>' +
+                '<small>Cause probable : Le PDF a été créé avec "Microsoft Print to PDF".<br>' +
+                '<strong>Solution :</strong> Depuis KoBoToolbox, cliquez sur "Afficher" puis Ctrl+P → choisissez <strong>"Enregistrer au format PDF"</strong> (pas "Microsoft Print to PDF").<br>' +
+                'Vous pouvez continuer avec la saisie manuelle ci-dessous.</small>';
+            updateDossierStatus();
+            return;
+        }
+        
+        extractedKoboData = parseKoboText(fullText);
+        
+        // Add attachment links extracted from PDF annotations
+        if (attachmentLinks.length > 0) {
+            // Merge with any links found in text, then deduplicate
+            const allLinks = [...attachmentLinks, ...(extractedKoboData.medical.vaccination_card_links || [])];
+            // Use Set to remove duplicates
+            extractedKoboData.medical.vaccination_card_links = [...new Set(allLinks)];
+            console.log('DEBUG: Added', extractedKoboData.medical.vaccination_card_links.length, 'unique attachment links to medical data');
+        }
+        
+        populateFormFromKobo(extractedKoboData);
+        displayExtractedData(extractedKoboData);
+        statusDiv.className = 'upload-status success';
+        statusDiv.innerHTML = '✅ <strong>' + file.name + '</strong> - Données extraites avec succès!';
+        updateDossierStatus();
+        
+        // Start chronometer automatically
+        startChronometer();
+    } catch (error) {
+        console.error('Erreur extraction PDF:', error);
+        statusDiv.className = 'upload-status error';
+        statusDiv.innerHTML = '❌ Erreur: ' + error.message + '. Vous pouvez continuer avec la saisie manuelle.';
+    }
+}
+
+function parseKoboText(text) {
+    const data = {
+        patient: { nom: '', dob: '', dobISO: '', rue: '', codePostal: '', ville: '', pays: '', email: '', telephone: '', genre: '', poids: '' },
+        voyage: { nombrePays: '', destinations: [], dateDepart: '', dateRetour: '', duree: '', nature: '', natureAutre: '', hebergement: '', hebergementAutre: '', activites: '', activitesAutre: '', zonesRurales: '' },
+        medical: { grossesse: '', contraception: '', allaitement: '', dernieresRegles: '', allergieOeufs: '', autresAllergies: '', allergiesDetails: '', varicelleContractee: '', varicelleVaccine: '', problemeVaccination: '', problemeVaccinationDetails: '', maladies: '', cd4: '', chimio: '', psychologique: '', medicaments: '', medicamentsDetails: '', carnetVaccination: '', carnetFichier: '', vaccination_card_links: [] }
+    };
+    
+    // First, normalize the text to handle both PDF formats
+    // Replace newlines with spaces, then collapse multiple spaces
+    var normalizedText = text.replace(/\r\n/g, '\n').replace(/\n+/g, ' ').replace(/\s+/g, ' ');
+    text = normalizedText;
+    
+    var cleanValue = function(val) {
+        if (!val) return '';
+        // Remove bullet points (•) and list markers
+        val = val.replace(/[•●▪▫■□]/g, '');
+        // Remove entire KoboToolbox footer lines (starts with "KoboToolbox https://")
+        val = val.replace(/KoboToolbox\s+https:\/\/[^\n]*/gi, '');
+        // Remove Unicode special characters
+        val = val.replace(/[\u25A0-\u25FF\u2600-\u26FF\u2700-\u27BF\u2610-\u2612\uFFFD\uFEFF\u200B-\u200D\u2060\u00A0\uE000-\uF8FF]/g, '');
+        // Collapse multiple spaces and commas
+        val = val.replace(/\s*,\s*,\s*/g, ', ').replace(/,\s*$/g, '').replace(/\s+/g, ' ');
+        return val.trim();
+    };
+    
+    var extractBetween = function(startLabel, endLabel) {
+        // Make label matching flexible with whitespace
+        var flexLabel = function(label) {
+            return label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+        };
+        var startRegex = new RegExp(flexLabel(startLabel), 'i');
+        var endRegex = new RegExp(flexLabel(endLabel), 'i');
+        var startMatch = text.match(startRegex);
+        if (!startMatch) return '';
+        var startIndex = startMatch.index + startMatch[0].length;
+        var afterStart = text.substring(startIndex);
+        var endMatch = afterStart.match(endRegex);
+        if (!endMatch) return cleanValue(afterStart.substring(0, 150));
+        return cleanValue(afterStart.substring(0, endMatch.index));
+    };
+    
+    // Extract value right after a label (for simple fields)
+    var extractSimpleValue = function(label, maxLength) {
+        maxLength = maxLength || 100;
+        var regex = new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*([^\\n]+)', 'i');
+        var match = text.match(regex);
+        if (match && match[1]) {
+            return cleanValue(match[1].substring(0, maxLength));
+        }
+        return '';
+    };
+    
+    // ==================== DATA NORMALIZATION FUNCTIONS ====================
+    
+    // Convert "Oui"/"Non"/"-" to boolean
+    var normalizeBoolean = function(value) {
+        if (!value || value === '-' || value === '') return null;
+        var cleaned = value.trim().toLowerCase();
+        if (cleaned === 'oui' || cleaned === 'yes') return true;
+        if (cleaned === 'non' || cleaned === 'no') return false;
+        return null;
+    };
+    
+    // Convert string to number (integer or float)
+    var normalizeNumber = function(value, isInteger) {
+        if (!value || value === '-' || value === '') return null;
+        var cleaned = value.toString().replace(/[^\d.,-]/g, '').replace(',', '.');
+        var num = isInteger ? parseInt(cleaned) : parseFloat(cleaned);
+        return isNaN(num) ? null : num;
+    };
+    
+    // Convert comma-separated string to array
+    var normalizeArray = function(value) {
+        if (!value || value === '-' || value === '') return [];
+        // Split by comma, filter empty values, trim each item
+        return value.split(',')
+            .map(function(item) { return item.trim(); })
+            .filter(function(item) { return item.length > 0; });
+    };
+    
+    // Normalize date to ISO format (YYYY-MM-DD)
+    var normalizeDate = function(value) {
+        if (!value || value === '-' || value === '') return null;
+        // If already in ISO format
+        if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+        // Try to convert
+        var isoDate = convertFrenchDateToISO(value);
+        return isoDate || null;
+    };
+    
+    // ==================== END NORMALIZATION FUNCTIONS ====================
+    
+    // Patient data
+    data.patient.nom = extractBetween('Prénom Nom', 'Date de naissance');
+    data.patient.dob = extractBetween('Date de naissance', 'Rue');
+    data.patient.rue = extractBetween('Rue', 'Code postal');
+    data.patient.codePostal = extractBetween('Code postal', 'Ville');
+    data.patient.ville = extractBetween('Ville', 'Pays');
+    data.patient.pays = extractBetween('Pays', 'Téléphone');
+    data.patient.telephone = extractBetween('Téléphone', 'Courriel');
+    data.patient.email = extractBetween('Courriel', 'Quel est votre genre');
+    data.patient.genre = extractBetween('Quel est votre genre ?', 'Combien de pays');
+    // Normalize dates to ISO format
+    data.patient.dob = normalizeDate(data.patient.dob);
+    data.patient.dobISO = data.patient.dob; // dobISO is same as dob now
+    
+    // Number of countries - normalize to integer
+    var nombrePaysRaw = extractBetween('Combien de pays allez-vous visiter?', 'Quel est le pays de destination');
+    data.voyage.nombrePays = normalizeNumber(nombrePaysRaw, true); // true = integer
+    var numCountries = data.voyage.nombrePays || 1;
+    
+    // Multi-country extraction
+    var allDepartures = [];
+    var allReturns = [];
+    
+    if (numCountries === 1) {
+        // Single country case - try both formats
+        var dest = extractBetween('Quel est le pays de destination?', 'Quelle est la date de départ');
+        var depart = extractBetween('Quelle est la date de départ?', 'Quelle est la date de retour');
+        var retour = extractBetween('Quelle est la date de retour?', 'Quel est le pays de destination n°1');
+        
+        // If retour captured too much (empty country questions), clean it up
+        if (retour && retour.indexOf('Quel est le pays') > -1) {
+            retour = retour.split('Quel est le pays')[0].trim();
+        }
+        // Also try to extract just the date pattern
+        if (retour) {
+            var dateMatch = retour.match(/(\d{1,2}\s+[a-zéûô]+\.?\s*\d{4})/i);
+            if (!dateMatch) dateMatch = retour.match(/([A-Za-z]+\s+\d{1,2},?\s*\d{4})/i);
+            if (dateMatch) retour = dateMatch[1];
+        }
+        
+        if (dest) {
+            data.voyage.destinations.push({ 
+                pays: dest, 
+                depart: normalizeDate(depart), 
+                retour: normalizeDate(retour)
+            });
+            if (depart) allDepartures.push(convertFrenchDateToISO(depart));
+            if (retour) allReturns.push(convertFrenchDateToISO(retour));
+        }
+        
+        // If no single destination found, try n°1 format (some forms use this even for 1 country)
+        if (!dest) {
+            dest = extractBetween('Quel est le pays de destination n°1?', 'Quelle est la date de départ');
+            if (dest) {
+                // Use the multi-country extraction for country 1
+                numCountries = 1; // Will be handled below
+            }
+        }
+    }
+    
+    if (numCountries > 1 || (numCountries === 1 && data.voyage.destinations.length === 0)) {
+        // Multiple countries - extract each one
+        for (var i = 1; i <= Math.min(numCountries, 10); i++) {
+            var countryLabel = 'Quel est le pays de destination n°' + i + '?';
+            var nextCountryLabel = 'Quel est le pays de destination n°' + (i + 1) + '?';
+            var endLabel = i < numCountries ? nextCountryLabel : 'Quelle est la nature de votre voyage';
+            
+            // Find the country block
+            var countryRegex = new RegExp(countryLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+            var countryMatch = text.match(countryRegex);
+            
+            if (countryMatch) {
+                var blockStart = countryMatch.index;
+                var endRegex = new RegExp(endLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+                var afterCountry = text.substring(blockStart);
+                var endMatch = afterCountry.match(endRegex);
+                var blockEnd = endMatch ? endMatch.index : afterCountry.length;
+                var block = afterCountry.substring(0, blockEnd);
+                
+                // Extract country name
+                var countryName = '';
+                var countryNameMatch = block.match(/destination n°\d+\?\s*(.+?)(?:\s*Quelle est la date|$)/i);
+                if (countryNameMatch) countryName = cleanValue(countryNameMatch[1]);
+                
+                // Extract departure date - support both French and English formats
+                // French: "16 janv. 2026" | English: "Jan 23, 2026"
+                var departMatch = block.match(/date de départ\?\s*(\d{1,2}\s+[a-zéûô]+\.?\s*\d{4})/i);
+                if (!departMatch) {
+                    departMatch = block.match(/date de départ\?\s*([A-Za-z]+\s+\d{1,2},?\s*\d{4})/i);
+                }
+                var departDate = departMatch ? cleanValue(departMatch[1]) : '';
+                
+                // Extract return date
+                var retourMatch = block.match(/date de retour\?\s*(\d{1,2}\s+[a-zéûô]+\.?\s*\d{4})/i);
+                if (!retourMatch) {
+                    retourMatch = block.match(/date de retour\?\s*([A-Za-z]+\s+\d{1,2},?\s*\d{4})/i);
+                }
+                var retourDate = retourMatch ? cleanValue(retourMatch[1]) : '';
+                
+                if (countryName) {
+                    data.voyage.destinations.push({ 
+                        pays: countryName, 
+                        depart: normalizeDate(departDate), 
+                        retour: normalizeDate(retourDate)
+                    });
+                    if (departDate) allDepartures.push(convertFrenchDateToISO(departDate));
+                    if (retourDate) allReturns.push(convertFrenchDateToISO(retourDate));
+                }
+            }
+        }
+    }
+    
+    // Calculate overall trip dates (earliest departure to latest return)
+    if (allDepartures.length > 0) {
+        allDepartures.sort();
+        data.voyage.dateDepart = allDepartures[0]; // Earliest
+    }
+    if (allReturns.length > 0) {
+        allReturns.sort();
+        data.voyage.dateRetour = allReturns[allReturns.length - 1]; // Latest
+    }
+    
+    // Calculate total duration
+    if (data.voyage.dateDepart && data.voyage.dateRetour) {
+        var startDate = new Date(data.voyage.dateDepart);
+        var endDate = new Date(data.voyage.dateRetour);
+        if (!isNaN(startDate) && !isNaN(endDate)) {
+            var diffDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+            data.voyage.duree = diffDays > 0 ? diffDays + ' jours' : '';
+        }
+    }
+    
+    // Travel nature - capture all selected options between question and next section
+    var natureBlock = extractBetween('Quelle est la nature de votre voyage', "Quel type d'hébergement");
+    if (natureBlock) {
+        // Remove the "?" and "Autre, spécifiez" label, keep the options
+        var natureClean = natureBlock.replace(/^\s*\?\s*/, '').replace(/Autre,?\s*spécifiez\s*/gi, '');
+        // Known options to format with commas
+        var natureOptions = ['Tourisme en voyage organisé', 'Tourisme indépendant', 'Voyage d\'affaires', 'Aventure', 'Visite à des amis ou de la famille', 'Mission humanitaire', 'Pèlerinage', 'Pélérinage', 'Expatriation', 'Autre', 'Aucune des précédentes'];
+        natureOptions.forEach(function(opt) {
+            var regex = new RegExp('\\s+(' + opt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+            natureClean = natureClean.replace(regex, ', $1');
+        });
+        natureClean = natureClean.replace(/^,\s*/, '').replace(/,\s*,/g, ',').trim();
+        // Check for "Autre, spécifiez" value
+        var autreNatureMatch = text.match(/nature de votre voyage[\s\S]*?Autre,?\s*spécifiez\s+([^\n]+?)(?=\s*Quel type d'hébergement)/i);
+        if (autreNatureMatch && autreNatureMatch[1]) {
+            var autreVal = cleanValue(autreNatureMatch[1]);
+            if (autreVal && natureClean.indexOf(autreVal) === -1) {
+                natureClean = natureClean ? natureClean + ' (Autre: ' + autreVal + ')' : autreVal;
+            }
+        }
+        data.voyage.nature = natureClean || '-';
+    } else {
+        data.voyage.nature = '-';
+    }
+    // Normalize nature to array
+    data.voyage.nature = normalizeArray(data.voyage.nature);
+    
+    // Accommodation - capture all selected options
+    var hebergementBlock = extractBetween("Quel type d'hébergement avez-vous prévu?", 'Avez-vous prévu une ou plusieurs');
+    if (hebergementBlock) {
+        var hebergementClean = hebergementBlock.replace(/Autre,?\s*spécifiez\s*/gi, '');
+        var hebergementOptions = ['Pas encore décidé', 'Chez l\'habitant', 'Hôtel', 'Autre'];
+        hebergementOptions.forEach(function(opt) {
+            var regex = new RegExp('\\s+(' + opt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+            hebergementClean = hebergementClean.replace(regex, ', $1');
+        });
+        hebergementClean = hebergementClean.replace(/^,\s*/, '').replace(/,\s*,/g, ',').trim();
+        // Check for "Autre, spécifiez" value
+        var autreHebMatch = text.match(/hébergement avez-vous prévu\?[\s\S]*?Autre,?\s*spécifiez\s+([^\n]+?)(?=\s*Avez-vous prévu une ou plusieurs)/i);
+        if (autreHebMatch && autreHebMatch[1]) {
+            var autreHebVal = cleanValue(autreHebMatch[1]);
+            if (autreHebVal && hebergementClean.indexOf(autreHebVal) === -1) {
+                hebergementClean = hebergementClean ? hebergementClean + ' (Autre: ' + autreHebVal + ')' : autreHebVal;
+            }
+        }
+        data.voyage.hebergement = hebergementClean || '-';
+    } else {
+        data.voyage.hebergement = '-';
+    }
+    // Normalize hebergement to array
+    data.voyage.hebergement = normalizeArray(data.voyage.hebergement);
+    
+    // Activities - capture all selected options
+    var activitesBlock = extractBetween('Avez-vous prévu une ou plusieurs de ces activités spécifiques ?', 'Avez-vous prévu de séjourner');
+    if (activitesBlock) {
+        var activitesClean = activitesBlock.replace(/Autre,?\s*spécifiez\s*/gi, '');
+        var activitesOptions = ['Alpinisme', 'Randonnée', 'Plongée', 'Rafting', 'Vélo', 'Snorkeling', 'Autre', 'Aucune des précédentes'];
+        activitesOptions.forEach(function(opt) {
+            var regex = new RegExp('\\s+(' + opt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+            activitesClean = activitesClean.replace(regex, ', $1');
+        });
+        activitesClean = activitesClean.replace(/^,\s*/, '').replace(/,\s*,/g, ',').trim();
+        // Check for "Autre, spécifiez" value
+        var autreActMatch = text.match(/activités spécifiques[\s\S]*?Autre,?\s*spécifiez\s+([^\n]+?)(?=\s*Avez-vous prévu de séjourner)/i);
+        if (autreActMatch && autreActMatch[1]) {
+            var autreActVal = cleanValue(autreActMatch[1]);
+            if (autreActVal && activitesClean.indexOf(autreActVal) === -1) {
+                activitesClean = activitesClean ? activitesClean + ' (Autre: ' + autreActVal + ')' : autreActVal;
+            }
+        }
+        data.voyage.activites = activitesClean || '-';
+    } else {
+        data.voyage.activites = '-';
+    }
+    // Normalize activites to array
+    data.voyage.activites = normalizeArray(data.voyage.activites);
+    
+    // Rural areas - text is split across lines in PDF, look for "Oui" after the question
+    var zonesMatch = text.match(/zones rurales ou isolées\s*\??\s*(Oui|Non)/i);
+    if (!zonesMatch) {
+        // Try alternate pattern where answer is on next line
+        zonesMatch = text.match(/séjourner dans\s+(Oui|Non)/i);
+    }
+    var zonesRaw = zonesMatch ? zonesMatch[1] : '-';
+    data.voyage.zonesRurales = normalizeBoolean(zonesRaw);
+    
+    // Weight - extract and normalize to number
+    var poidsRaw = extractBetween('Quel est votre poids?', 'Est-t-il possible que vous soyez enceinte');
+    data.patient.poids = normalizeNumber(poidsRaw, false); // false = float
+    
+    // Medical history
+    var grossesseRaw = extractBetween('Est-t-il possible que vous soyez enceinte', 'Quelle contraception');
+    // Clean up pregnancy field
+    if (grossesseRaw.indexOf('envisagez') > -1) grossesseRaw = '';
+    data.medical.grossesse = normalizeBoolean(grossesseRaw);
+    
+    var contraceptionRaw = extractBetween('Quelle contraception utilisez-vous?', 'Allaitez-vous');
+    data.medical.contraception = normalizeBoolean(contraceptionRaw);
+    
+    var allaitementRaw = extractBetween('Allaitez-vous ?', 'Date des dernières règles');
+    data.medical.allaitement = normalizeBoolean(allaitementRaw);
+    
+    var dernieresReglesRaw = extractBetween('Date des dernières règles', 'Êtes-vous allergique aux oeufs');
+    data.medical.dernieresRegles = normalizeDate(dernieresReglesRaw);
+    // Egg allergy - extract and normalize to boolean
+    var allergieOeufsRaw = extractBetween('Êtes-vous allergique aux oeufs?', "Avez-vous d'autres allergies");
+    data.medical.allergieOeufs = normalizeBoolean(allergieOeufsRaw);
+    
+    // Other allergies - these are multi-select options
+    var allergiesRaw = extractBetween("Avez-vous d'autres allergies ?", 'Allergies : Pourriez-vous');
+    // Clean up and format as comma-separated list
+    if (allergiesRaw) {
+        var allergiesList = allergiesRaw.replace(/\s+(Médicamenteuses|Alimentaires|Environnementales|Autre|Aucune)/g, ', $1').replace(/^,\s*/, '');
+        data.medical.autresAllergies = allergiesList;
+    } else {
+        data.medical.autresAllergies = '-';
+    }
+    // Normalize to array
+    data.medical.autresAllergies = normalizeArray(data.medical.autresAllergies);
+    
+    // Allergy details
+    data.medical.allergiesDetails = extractBetween('Allergies : Pourriez-vous donner plus de détails?', 'Avez vous eu la varicelle');
+    
+    // Varicelle - extract and normalize to boolean
+    var varicelleRaw = extractBetween('Avez vous eu la varicelle (maladie) ?', 'Avez vous été vacciné pour la varicelle');
+    data.medical.varicelleContractee = normalizeBoolean(varicelleRaw);
+    
+    var varicelleVaccinRaw = extractBetween('Avez vous été vacciné pour la varicelle ?', 'Avez-vous eu un problème avec une vaccination');
+    data.medical.varicelleVaccine = normalizeBoolean(varicelleVaccinRaw);
+    
+    var problemeVaccRaw = extractBetween('Avez-vous eu un problème avec une vaccination antérieure ?', 'Problème avec vaccination');
+    data.medical.problemeVaccination = normalizeBoolean(problemeVaccRaw);
+    // Extract details text, stopping before the comorbidities list (which starts with "Problème du thymus")
+    data.medical.problemeVaccinationDetails = extractBetween('Problème avec vaccination : Pourriez-vous', 'Problème du thymus');
+    
+    // Comorbidities - extract the selected conditions
+    // Note: The form has 5 comorbidity options (thymus, VIH, Cancer, Diabète, Hypertension) that appear
+    // BEFORE the main "Souffrez vous ou avez vous souffert de" question, so we need to capture both sections
+    var maladiesRaw = extractBetween('Problème du thymus', 'Quel est votre dernier valeur de CD4');
+    if (!maladiesRaw) {
+        maladiesRaw = extractBetween('Problème du thymus', 'Si autre, pourriez-vous donner plus de détails');
+    }
+    if (!maladiesRaw) {
+        maladiesRaw = extractBetween('Problème du thymus', 'Avez-vous subi');
+    }
+    if (maladiesRaw) {
+        // Complete list of conditions from KoBoToolbox form
+        var conditionsList = [
+            'Asthme',
+            'Maladie cardiaque',
+            'Maladie inflammatoire digestive \\(Crohn, Recto-colite ulcéreuse\\)',
+            'Maladie digestive chronique \\(gastrite chronique ou reflux gastro-oesophagien\\)',
+            'Maladie rhumatologique \\(polyarthrite rhumatoïde, lupus\\)',
+            'Maladie hématologique \\(leucémie, lymphome\\)',
+            'Épilepsie',
+            'Opération chirurgicale importante ou immobilisation prolongée au cours des 6 dernières semaines',
+            'Absence de la rate',
+            'Maladie musculaire \\(myasthénie\\)',
+            'Maladie psychiatrique \\/ psychologique',
+            'Problème du thymus \\(thymome, ablation du thymus, syndrome de DiGeorge\\)',
+            'Vih',
+            'VIH\\/SIDA',
+            'Cancer',
+            'Diabète',
+            'Hypertension',
+            'Hypertension artérielle',
+            'BPCO',
+            'Maladie du foie',
+            'Maladie rénale',
+            'Maladie auto-immune',
+            'Trouble de la coagulation',
+            'Splénectomie',
+            'Transplantation',
+            'Grossesse',
+            'Autre',
+            'Aucune',
+            'Aucune de ces maladies'
+        ];
+        var regexPattern = '\\s+(' + conditionsList.join('|') + ')';
+        var conditions = maladiesRaw.replace(new RegExp(regexPattern, 'g'), ', $1').replace(/^,\s*/, '').replace(/\s+/g, ' ').trim();
+        data.medical.maladies = conditions || '-';
+    } else {
+        data.medical.maladies = '-';
+    }
+    
+    // Extract "autre" details for comorbidities
+    var maladiesAutreMatch = text.match(/Si autre, pourriez-vous donner plus de détails\?\s*([^\n]+?)(?=\s*Avez-vous subi)/i);
+    if (maladiesAutreMatch && maladiesAutreMatch[1].trim()) {
+        var autreDetails = cleanValue(maladiesAutreMatch[1]);
+        if (autreDetails && data.medical.maladies !== '-') {
+            data.medical.maladies = data.medical.maladies + ' (Autre: ' + autreDetails + ')';
+        } else if (autreDetails) {
+            data.medical.maladies = autreDetails;
+        }
+    }
+    // Normalize maladies to array
+    data.medical.maladies = normalizeArray(data.medical.maladies);
+    
+    // CD4 count - extract and normalize to number
+    var cd4Match = text.match(/dernier valeur de CD4[\s\S]*?remonte-t-il\s*\?\s*([^\n]+?)(?=\s*Si autre)/i);
+    var cd4Raw = cd4Match && cd4Match[1].trim() ? cleanValue(cd4Match[1]) : '';
+    data.medical.cd4 = normalizeNumber(cd4Raw, true); // true = integer
+    
+    // Chemotherapy - extract and normalize to boolean
+    var chimioRaw = extractBetween('Avez-vous subi une chimiothérapie, une radiothérapie ou un traitement immunomodulateur dans les 6 derniers mois?', 'Problème psychologique');
+    data.medical.chimio = normalizeBoolean(chimioRaw);
+    
+    // Psychological - extract the details
+    var psyMatch = text.match(/psychiatrique : Pourriez-vous[\s\S]*?détails\?\s*([^\n]+?)(?=\s*Prenez-vous des médicaments)/i);
+    data.medical.psychologique = psyMatch && psyMatch[1].trim() ? cleanValue(psyMatch[1]) : '';
+    
+    // Medications - extract and normalize to boolean
+    var drugsAnswer = extractBetween('Prenez-vous des médicaments régulièrement', 'Quels produits prenez-vous');
+    data.medical.medicaments = normalizeBoolean(drugsAnswer);
+    data.medical.medicamentsDetails = extractBetween('Quels produits prenez-vous ?', 'Est-ce que votre carnet');
+    
+    // Vaccination card - look for specific responses
+    var carnetRaw = extractBetween('carnet de vaccination est disponible', 'Téléversez votre carnet');
+    var carnetMatch = carnetRaw.match(/(Oui|Non)/i);
+    if (carnetMatch) {
+        data.medical.carnetVaccination = carnetMatch[1];
+    } else if (carnetRaw.indexOf("n'ai pas") > -1) {
+        data.medical.carnetVaccination = "Je n'ai pas de carnet de vaccination";
+    } else {
+        data.medical.carnetVaccination = '-';
+    }
+    
+    // Extract vaccination card attachment links
+    // Look for KoBoToolbox attachment URLs
+    var linkRegex = /https:\/\/[^\s]+kobotoolbox\.org[^\s]+attachments[^\s]+/gi;
+    var links = text.match(linkRegex) || [];
+    console.log('DEBUG: Extracted vaccination card links:', links);
+    data.medical.vaccination_card_links = links.map(function(link) {
+        // Clean up any trailing characters
+        return link.replace(/[)\]}\s]+$/, '');
+    });
+    
+    return data;
+}
+
+function convertFrenchDateToISO(dateStr) {
+    if (!dateStr) return '';
+    // French months
+    const months = { 'janv': '01', 'jan': '01', 'janvier': '01', 'févr': '02', 'fév': '02', 'février': '02', 'mars': '03', 'mar': '03', 'avr': '04', 'avril': '04', 'mai': '05', 'juin': '06', 'jun': '06', 'juil': '07', 'jul': '07', 'juillet': '07', 'août': '08', 'aou': '08', 'sept': '09', 'sep': '09', 'septembre': '09', 'oct': '10', 'octobre': '10', 'nov': '11', 'novembre': '11', 'déc': '12', 'dec': '12', 'décembre': '12' };
+    // English months
+    const monthsEn = { 'jan': '01', 'january': '01', 'feb': '02', 'february': '02', 'mar': '03', 'march': '03', 'apr': '04', 'april': '04', 'may': '05', 'jun': '06', 'june': '06', 'jul': '07', 'july': '07', 'aug': '08', 'august': '08', 'sep': '09', 'sept': '09', 'september': '09', 'oct': '10', 'october': '10', 'nov': '11', 'november': '11', 'dec': '12', 'december': '12' };
+    
+    // French format: "16 janv. 2026"
+    var match = dateStr.match(/(\d{1,2})\s*([a-zéûô]+)\.?\s*(\d{4})/i);
+    if (match) {
+        var day = match[1].padStart(2, '0');
+        var month = months[match[2].toLowerCase().replace('.', '')] || '01';
+        return match[3] + '-' + month + '-' + day;
+    }
+    
+    // English format: "Jan 23, 2026" or "Sep 6, 1995"
+    var matchEn = dateStr.match(/([a-z]+)\s*(\d{1,2}),?\s*(\d{4})/i);
+    if (matchEn) {
+        var day = matchEn[2].padStart(2, '0');
+        var month = monthsEn[matchEn[1].toLowerCase()] || '01';
+        return matchEn[3] + '-' + month + '-' + day;
+    }
+    
+    return '';
+}
+
+function populateFormFromKobo(data) {
+    if (data.patient.nom) document.getElementById('manualName').value = data.patient.nom;
+    if (data.patient.dobISO) document.getElementById('manualDob').value = data.patient.dobISO;
+    if (data.patient.email) document.getElementById('manualEmail').value = data.patient.email;
+    if (data.patient.telephone) document.getElementById('manualPhone').value = data.patient.telephone;
+    if (data.patient.poids) document.getElementById('weight').value = data.patient.poids;
+    let addressLines = [];
+    if (data.patient.rue) addressLines.push(data.patient.rue);
+    let cityLine = [data.patient.codePostal, data.patient.ville].filter(function(x) { return x; }).join(' ');
+    if (cityLine) addressLines.push(cityLine);
+    if (data.patient.pays && data.patient.pays.toLowerCase() !== 'suisse') addressLines.push(data.patient.pays);
+    if (addressLines.length > 0) document.getElementById('manualAddress').value = addressLines.join('\n');
+    updateCalculatedAge();
+    updatePatientSummary();
+    
+    // Show patient section for new patients
+    document.getElementById('accordionPatient').style.display = 'block';
+}
+
+// ==================== DISPLAY FORMATTING FUNCTIONS ====================
+
+// Format boolean for display
+function formatBoolean(value) {
+    if (value === true) return 'Oui';
+    if (value === false) return 'Non';
+    return '-';
+}
+
+// Format array for display
+function formatArray(value) {
+    if (!value || value.length === 0) return '-';
+    return value.join(', ');
+}
+
+// Format number for display
+function formatNumber(value) {
+    if (value === null || value === undefined) return '-';
+    return value.toString();
+}
+
+// Format date for display (ISO to French)
+function formatDateDisplay(isoDate) {
+    if (!isoDate) return '-';
+    // Convert YYYY-MM-DD to DD.MM.YYYY
+    var parts = isoDate.split('-');
+    if (parts.length === 3) {
+        return parts[2] + '.' + parts[1] + '.' + parts[0];
+    }
+    return isoDate;
+}
+
+// ==================== END DISPLAY FORMATTING ====================
+
+function displayExtractedData(data) {
+    const preview = document.getElementById('extractedPreview');
+    const content = document.getElementById('extractedContent');
+    
+    let html = '';
+    
+    // PATIENT INFO (read-only, can be edited via Dossier Patient section)
+    html += '<div class="history-section">';
+    html += '<strong>👤 Patient :</strong>';
+    html += '<ul class="history-list" style="font-size: 13px;">';
+    if (data.patient.nom) html += '<li>Nom : ' + data.patient.nom + '</li>';
+    if (data.patient.dob) html += '<li>Date de naissance : ' + formatDateDisplay(data.patient.dob) + '</li>';
+    if (data.patient.poids) html += '<li>Poids : ' + formatNumber(data.patient.poids) + ' kg</li>';
+    if (data.patient.genre) html += '<li>Genre : ' + data.patient.genre + '</li>';
+    
+    // Address
+    const addressParts = [data.patient.rue, data.patient.codePostal + ' ' + data.patient.ville, data.patient.pays].filter(x => x && x.trim());
+    if (addressParts.length > 0) html += '<li>Adresse : ' + addressParts.join(', ') + '</li>';
+    
+    if (data.patient.email) html += '<li>Email : ' + data.patient.email + '</li>';
+    if (data.patient.telephone) html += '<li>Téléphone : ' + data.patient.telephone + '</li>';
+    html += '</ul>';
+    html += '</div>';
+    
+    // VOYAGE INFO - EDITABLE
+    if (data.voyage && (data.voyage.destinations.length > 0 || data.voyage.dateDepart)) {
+        html += '<div class="history-section">';
+        html += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">';
+        html += '<strong>✈️ Voyage :</strong>';
+        html += '<button type="button" class="btn-secondary btn-small" onclick="toggleEditVoyage()">✏️ Modifier</button>';
+        html += '</div>';
+        
+        // Voyage display mode
+        html += '<div id="voyageDisplay">';
+        html += '<ul class="history-list" style="font-size: 13px;">';
+        
+        if (data.voyage.destinations && data.voyage.destinations.length > 0) {
+            const dests = data.voyage.destinations.map(d => typeof d === 'object' ? d.pays : d).filter(Boolean).join(', ');
+            html += '<li><strong>Destination(s) :</strong> ' + dests + '</li>';
+        }
+        
+        if (data.voyage.dateDepart && data.voyage.dateRetour) {
+            html += '<li><strong>Dates :</strong> ' + formatDateDisplay(data.voyage.dateDepart) + ' → ' + formatDateDisplay(data.voyage.dateRetour);
+            if (data.voyage.duree) html += ' (' + data.voyage.duree + ')';
+            html += '</li>';
+        }
+        
+        if (data.voyage.nature) html += '<li><strong>Nature :</strong> ' + formatArray(data.voyage.nature) + '</li>';
+        if (data.voyage.hebergement) html += '<li><strong>Hébergement :</strong> ' + formatArray(data.voyage.hebergement) + '</li>';
+        if (data.voyage.activites) html += '<li><strong>Activités :</strong> ' + formatArray(data.voyage.activites) + '</li>';
+        if (data.voyage.zonesRurales !== null) html += '<li><strong>Zones rurales :</strong> ' + formatBoolean(data.voyage.zonesRurales) + '</li>';
+        
+        html += '</ul></div>';
+        
+        // Voyage edit mode (hidden by default)
+        html += '<div id="voyageEdit" style="display: none;">';
+        html += '<div style="margin-bottom: 10px;">';
+        html += '<label style="font-size: 12px; font-weight: 600;">Date de départ :</label>';
+        html += '<input type="date" id="editVoyageDateDepart" value="' + (data.voyage.dateDepart || '') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        html += '</div>';
+        html += '<div style="margin-bottom: 10px;">';
+        html += '<label style="font-size: 12px; font-weight: 600;">Date de retour :</label>';
+        html += '<input type="date" id="editVoyageDateRetour" value="' + (data.voyage.dateRetour || '') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        html += '</div>';
+        html += '<div style="margin-bottom: 10px;">';
+        html += '<label style="font-size: 12px; font-weight: 600;">Nature du voyage :</label>';
+        html += '<input type="text" id="editVoyageNature" value="' + formatArray(data.voyage.nature) + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        html += '</div>';
+        html += '<div style="margin-bottom: 10px;">';
+        html += '<label style="font-size: 12px; font-weight: 600;">Hébergement :</label>';
+        html += '<input type="text" id="editVoyageHebergement" value="' + formatArray(data.voyage.hebergement) + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        html += '</div>';
+        html += '<div style="margin-bottom: 10px;">';
+        html += '<label style="font-size: 12px; font-weight: 600;">Activités :</label>';
+        html += '<input type="text" id="editVoyageActivites" value="' + formatArray(data.voyage.activites) + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        html += '</div>';
+        html += '<div style="margin-bottom: 10px;">';
+        html += '<label style="font-size: 12px; font-weight: 600;">Zones rurales :</label>';
+        html += '<select id="editVoyageZonesRurales" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        html += '<option value="">-</option>';
+        html += '<option value="true"' + (data.voyage.zonesRurales === true ? ' selected' : '') + '>Oui</option>';
+        html += '<option value="false"' + (data.voyage.zonesRurales === false ? ' selected' : '') + '>Non</option>';
+        html += '</select>';
+        html += '</div>';
+        html += '<button type="button" class="btn-primary btn-small" onclick="saveVoyageEdit()" style="margin-right: 10px;">✓ Enregistrer</button>';
+        html += '<button type="button" class="btn-secondary btn-small" onclick="toggleEditVoyage()">✕ Annuler</button>';
+        html += '</div>';
+        
+        html += '</div>';
+    }
+    
+    // MEDICAL INFO - EDITABLE
+    if (data.medical) {
+        const m = data.medical;
+        html += '<div class="history-section">';
+        html += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">';
+        html += '<strong>🏥 Antécédents médicaux :</strong>';
+        html += '<button type="button" class="btn-secondary btn-small" onclick="toggleEditMedical()">✏️ Modifier</button>';
+        html += '</div>';
+        
+        // Medical display mode
+        html += '<div id="medicalDisplay">';
+        html += '<ul class="history-list" style="font-size: 13px;">';
+        
+        // Comorbidités
+        if (m.maladies) html += '<li><strong>Comorbidités :</strong> ' + formatArray(m.maladies) + '</li>';
+        
+        // Allergies
+        if (m.allergieOeufs !== null) html += '<li>Allergie œufs : ' + formatBoolean(m.allergieOeufs) + '</li>';
+        if (m.autresAllergies) html += '<li>Autres allergies : ' + formatArray(m.autresAllergies) + '</li>';
+        if (m.allergiesDetails) html += '<li style="margin-left: 15px; font-style: italic;">→ ' + m.allergiesDetails + '</li>';
+        
+        // Grossesse / Contraception / Allaitement
+        if (m.grossesse !== null) html += '<li>Grossesse possible : ' + formatBoolean(m.grossesse) + '</li>';
+        if (m.contraception !== null) html += '<li>Contraception : ' + formatBoolean(m.contraception) + '</li>';
+        if (m.allaitement !== null) html += '<li>Allaitement : ' + formatBoolean(m.allaitement) + '</li>';
+        if (m.dernieresRegles) html += '<li>Dernières règles : ' + formatDateDisplay(m.dernieresRegles) + '</li>';
+        
+        // Varicelle
+        if (m.varicelleContractee !== null) html += '<li>Varicelle (maladie contractée) : ' + formatBoolean(m.varicelleContractee) + '</li>';
+        if (m.varicelleVaccine !== null) html += '<li>Varicelle (vacciné) : ' + formatBoolean(m.varicelleVaccine) + '</li>';
+        
+        // Vaccination
+        if (m.problemeVaccination !== null) {
+            html += '<li>Problème vaccination antérieure : ' + formatBoolean(m.problemeVaccination) + '</li>';
+            if (m.problemeVaccinationDetails) {
+                html += '<li style="margin-left: 15px; font-style: italic;">→ ' + m.problemeVaccinationDetails + '</li>';
+            }
+        }
+        
+        // Médicaments
+        if (m.medicaments !== null) {
+            html += '<li>Médicaments réguliers : ' + formatBoolean(m.medicaments) + '</li>';
+            if (m.medicamentsDetails) {
+                html += '<li style="margin-left: 15px; font-style: italic;">→ ' + m.medicamentsDetails + '</li>';
+            }
+        }
+        
+        // Autres conditions
+        if (m.cd4) html += '<li>CD4 : ' + formatNumber(m.cd4) + '</li>';
+        if (m.chimio !== null) html += '<li>Chimiothérapie/radiothérapie (6 derniers mois) : ' + formatBoolean(m.chimio) + '</li>';
+        if (m.psychologique) html += '<li>Problème psychologique : ' + m.psychologique + '</li>';
+        if (m.carnetVaccination) html += '<li>Carnet de vaccination : ' + m.carnetVaccination + '</li>';
+        
+        // Vaccination card links - same style as history
+        if (data.medical.vaccination_card_links && data.medical.vaccination_card_links.length > 0) {
+            html += '<li>📎 Carnet(s) de vaccination :';
+            html += '<ul style="margin: 5px 0 0 15px; padding: 0;">';
+            data.medical.vaccination_card_links.forEach(function(link, idx) {
+                html += '<li style="margin-bottom: 5px;">🔗 <a href="' + link + '" target="_blank" style="color: #2196F3; text-decoration: none; font-weight: 600;">Carnet #' + (idx + 1) + '</a></li>';
+            });
+            html += '</ul></li>';
+        }
+        
+        html += '</ul></div>';
+        
+        // Medical edit mode (hidden by default)
+        html += '<div id="medicalEdit" style="display: none;">';
+        html += '<div style="margin-bottom: 10px;">';
+        html += '<label style="font-size: 12px; font-weight: 600;">Comorbidités :</label>';
+        html += '<input type="text" id="editMedicalMaladies" value="' + (m.maladies || '') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        html += '</div>';
+        html += '<div style="margin-bottom: 10px;">';
+        html += '<label style="font-size: 12px; font-weight: 600;">Allergie œufs :</label>';
+        html += '<input type="text" id="editMedicalAllergieOeufs" value="' + (m.allergieOeufs || '') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        html += '</div>';
+        html += '<div style="margin-bottom: 10px;">';
+        html += '<label style="font-size: 12px; font-weight: 600;">Autres allergies :</label>';
+        html += '<input type="text" id="editMedicalAutresAllergies" value="' + (m.autresAllergies || '') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        html += '</div>';
+        html += '<div style="margin-bottom: 10px;">';
+        html += '<label style="font-size: 12px; font-weight: 600;">Détails allergies :</label>';
+        html += '<textarea id="editMedicalAllergiesDetails" style="width: 100%; padding: 8px; margin-top: 5px; min-height: 60px;">' + (m.allergiesDetails || '') + '</textarea>';
+        html += '</div>';
+        html += '<div style="margin-bottom: 10px;">';
+        html += '<label style="font-size: 12px; font-weight: 600;">Grossesse possible :</label>';
+        html += '<input type="text" id="editMedicalGrossesse" value="' + (m.grossesse || '') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        html += '</div>';
+        html += '<div style="margin-bottom: 10px;">';
+        html += '<label style="font-size: 12px; font-weight: 600;">Contraception :</label>';
+        html += '<input type="text" id="editMedicalContraception" value="' + (m.contraception || '') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        html += '</div>';
+        html += '<div style="margin-bottom: 10px;">';
+        html += '<label style="font-size: 12px; font-weight: 600;">Allaitement :</label>';
+        html += '<input type="text" id="editMedicalAllaitement" value="' + (m.allaitement || '') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        html += '</div>';
+        html += '<div style="margin-bottom: 10px;">';
+        html += '<label style="font-size: 12px; font-weight: 600;">Varicelle (maladie) :</label>';
+        html += '<input type="text" id="editMedicalVaricelleContractee" value="' + (m.varicelleContractee || '') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        html += '</div>';
+        html += '<div style="margin-bottom: 10px;">';
+        html += '<label style="font-size: 12px; font-weight: 600;">Varicelle (vaccin) :</label>';
+        html += '<input type="text" id="editMedicalVaricelleVaccine" value="' + (m.varicelleVaccine || '') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        html += '</div>';
+        html += '<div style="margin-bottom: 10px;">';
+        html += '<label style="font-size: 12px; font-weight: 600;">Problème vaccination :</label>';
+        html += '<input type="text" id="editMedicalProblemeVaccination" value="' + (m.problemeVaccination || '') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        html += '</div>';
+        html += '<div style="margin-bottom: 10px;">';
+        html += '<label style="font-size: 12px; font-weight: 600;">Médicaments réguliers :</label>';
+        html += '<input type="text" id="editMedicalMedicaments" value="' + (m.medicaments || '') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        html += '</div>';
+        html += '<div style="margin-bottom: 10px;">';
+        html += '<label style="font-size: 12px; font-weight: 600;">Détails médicaments :</label>';
+        html += '<textarea id="editMedicalMedicamentsDetails" style="width: 100%; padding: 8px; margin-top: 5px; min-height: 60px;">' + (m.medicamentsDetails || '') + '</textarea>';
+        html += '</div>';
+        html += '<button type="button" class="btn-primary btn-small" onclick="saveMedicalEdit()" style="margin-right: 10px;">✓ Enregistrer</button>';
+        html += '<button type="button" class="btn-secondary btn-small" onclick="toggleEditMedical()">✕ Annuler</button>';
+        html += '</div>';
+        
+        html += '</div>';
+    }
+    
+    content.innerHTML = html;
+    preview.style.display = 'block';
+}
+
+// ==================== FORM HELPERS ====================
+function updateCalculatedAge() {
+    const dobInput = document.getElementById('manualDob').value;
+    const ageDisplay = document.getElementById('calculatedAge');
+    if (!dobInput) { ageDisplay.textContent = ''; return; }
+    const dob = new Date(dobInput);
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+    if (age < 8) ageDisplay.innerHTML = '→ Âge: ' + age + ' ans <span style="color: #dc3545;">⚠️ Doxycycline contre-indiquée</span>';
+    else if (age < 18) ageDisplay.innerHTML = '→ Âge: ' + age + ' ans <span style="color: #856404;">(Pédiatrie)</span>';
+    else ageDisplay.textContent = '→ Âge: ' + age + ' ans';
+    updateDossierStatus();
+}
+
+function updateDossierStatus() {
+    const koboStatus = document.getElementById('statusKobo');
+    const vaccineStatus = document.getElementById('statusVaccines');
+    const boosterStatus = document.getElementById('statusBoosters');
+    const notesStatus = document.getElementById('statusNotes');
+    const rxStatus = document.getElementById('statusRx');
+    if (uploadedPdfData) {
+        koboStatus.innerHTML = '<span class="file-icon">📕</span> Formulaire KoBoToolbox: <strong>' + uploadedPdfName + '</strong>';
+        koboStatus.className = 'ready';
+    } else {
+        koboStatus.innerHTML = '<span class="file-icon">📕</span> Formulaire KoBoToolbox: <em>non uploadé</em>';
+        koboStatus.className = 'pending';
+    }
+    if (administeredVaccines.length > 0) {
+        vaccineStatus.innerHTML = '<span class="file-icon">💉</span> Vaccins administrés: <strong>' + administeredVaccines.length + ' vaccin(s)</strong>';
+        vaccineStatus.className = 'ready';
+    } else {
+        vaccineStatus.innerHTML = '<span class="file-icon">💉</span> Vaccins administrés: <em>aucun</em>';
+        vaccineStatus.className = 'pending';
+    }
+    if (plannedBoosters.length > 0) {
+        boosterStatus.innerHTML = '<span class="file-icon">📅</span> Rappels planifiés: <strong>' + plannedBoosters.length + ' rappel(s)</strong>';
+        boosterStatus.className = 'ready';
+    } else {
+        boosterStatus.innerHTML = '<span class="file-icon">📅</span> Rappels planifiés: <em>aucun</em>';
+        boosterStatus.className = 'pending';
+    }
+    const notes = document.getElementById('consultationNotes').value.trim();
+    if (notes) {
+        notesStatus.innerHTML = '<span class="file-icon">📘</span> Notes de consultation: <strong>' + notes.length + ' caractères</strong>';
+        notesStatus.className = 'ready';
+    } else {
+        notesStatus.innerHTML = '<span class="file-icon">📘</span> Notes de consultation: <em>vide</em>';
+        notesStatus.className = 'pending';
+    }
+    if (selectedMedications.length > 0) {
+        rxStatus.innerHTML = '<span class="file-icon">📄</span> Ordonnance: <strong>' + selectedMedications.length + ' médicament(s)</strong>';
+        rxStatus.className = 'ready';
+    } else {
+        rxStatus.innerHTML = '<span class="file-icon">📄</span> Ordonnance: <em>aucun médicament</em>';
+        rxStatus.className = 'pending';
+    }
+}
+
+// ==================== MEDICATIONS ====================
+function calculatePediatricDosing(medicationType, weight) {
+    if (!weight || weight <= 0) return null;
+    const w = parseFloat(weight);
+    switch(medicationType) {
+        case 'malarone':
+            if (w >= 11 && w <= 20) return "1 comprimé Malarone® junior/jour à commencer 1-2 jours avant d'arriver dans la zone à risque, continuer 1x/j jusqu'à 7 jours après le retour.";
+            if (w >= 21 && w <= 30) return "2 comprimés Malarone® junior/jour (en dose unique) à commencer 1-2 jours avant d'arriver dans la zone à risque, continuer 1x/j jusqu'à 7 jours après le retour.";
+            if (w >= 31 && w <= 40) return "3 comprimés Malarone® junior/jour (en dose unique) à commencer 1-2 jours avant d'arriver dans la zone à risque, continuer 1x/j jusqu'à 7 jours après le retour.";
+            if (w > 40) return "1 comprimé Malarone® (adulte)/jour à commencer 1 jour avant d'arriver dans la zone à risque, continuer 1x/j jusqu'à 7 jours après le retour.";
+            break;
+        case 'mephaquin':
+            if (w >= 10 && w <= 19) return "¼ comprimé/semaine (≈62,5mg) à commencer 1-2 semaines avant d'arriver dans la zone à risque, continuer 1x/semaine jusqu'à 4 semaines après le retour.";
+            if (w >= 20 && w <= 30) return "½ comprimé/semaine (≈125mg) à commencer 1-2 semaines avant d'arriver dans la zone à risque, continuer 1x/semaine jusqu'à 4 semaines après le retour.";
+            if (w >= 31 && w <= 45) return "¾ comprimé/semaine (≈187,5mg) à commencer 1-2 semaines avant d'arriver dans la zone à risque, continuer 1x/semaine jusqu'à 4 semaines après le retour.";
+            if (w > 45) return "1 comprimé/semaine (250mg) à commencer 1-2 semaines avant d'arriver dans la zone à risque, continuer 1x/semaine jusqu'à 4 semaines après le retour.";
+            break;
+        case 'riamet':
+            if (w >= 5 && w <= 14) return "Traitement sur 3 jours (total 6 comprimés):\nJour 1: 1 comprimé immédiatement, puis 1 comprimé après 8h\nJours 2-3: 1 comprimé matin et soir";
+            if (w >= 15 && w <= 24) return "Traitement sur 3 jours (total 12 comprimés):\nJour 1: 2 comprimés immédiatement, puis 2 comprimés après 8h\nJours 2-3: 2 comprimés matin et soir";
+            if (w >= 25 && w <= 34) return "Traitement sur 3 jours (total 18 comprimés):\nJour 1: 3 comprimés immédiatement, puis 3 comprimés après 8h\nJours 2-3: 3 comprimés matin et soir";
+            if (w >= 35) return "Traitement sur 3 jours (total 24 comprimés):\nJour 1: 4 comprimés immédiatement, puis 4 comprimés après 8h\nJours 2-3: 4 comprimés matin et soir";
+            break;
+    }
+    return null;
+}
+
+function addMedication() {
+    const select = document.getElementById('medicationSelect');
+    const selectedValue = select.value;
+    if (!selectedValue) { alert('Veuillez sélectionner un médicament'); return; }
+    const dobInput = document.getElementById('manualDob').value;
+    if (dobInput && (selectedValue === 'doxy_prophylaxie' || selectedValue === 'doxy_pep')) {
+        const dob = new Date(dobInput);
+        const today = new Date();
+        let age = today.getFullYear() - dob.getFullYear();
+        const m = today.getMonth() - dob.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+        if (age < 8 && !confirm('⚠️ Le patient a ' + age + ' ans.\n\nLa Doxycycline est CONTRE-INDIQUÉE chez les enfants < 8 ans.\n\nVoulez-vous vraiment ajouter ce médicament ?')) {
+            select.value = '';
+            return;
+        }
+    }
+    let medData;
+    if (selectedValue === 'custom') {
+        const customName = document.getElementById('customMedName').value.trim();
+        const customDosing = document.getElementById('customMedDosing').value.trim();
+        if (!customName || !customDosing) { alert('Veuillez remplir le nom et la posologie'); return; }
+        medData = { name: customName, dosing: customDosing };
+        document.getElementById('customMedName').value = '';
+        document.getElementById('customMedDosing').value = '';
+        document.getElementById('customMedInputs').classList.remove('active');
+    } else {
+        medData = Object.assign({}, medications[selectedValue]);
+        const weight = document.getElementById('weight').value.trim();
+        if (weight) {
+            const pediatricDosing = calculatePediatricDosing(selectedValue, weight);
+            if (pediatricDosing) {
+                medData.dosing = pediatricDosing;
+                medData.name = medData.name + ' [Poids: ' + weight + 'kg]';
+            }
+        }
+    }
+    selectedMedications.push(Object.assign({}, medData, { id: Date.now() }));
+    renderMedicationList();
+    select.value = '';
+    updateDossierStatus();
+}
+
+function removeMedication(id) {
+    selectedMedications = selectedMedications.filter(function(med) { return med.id !== id; });
+    renderMedicationList();
+    updateDossierStatus();
+}
+
+function updateDosing(id, newDosing) {
+    const med = selectedMedications.find(function(m) { return m.id === id; });
+    if (med) med.dosing = newDosing;
+}
+
+function renderMedicationList() {
+    const container = document.getElementById('medicationList');
+    if (selectedMedications.length === 0) {
+        container.innerHTML = '<p style="color: #999; font-style: italic;">Aucun médicament ajouté</p>';
+        return;
+    }
+    container.innerHTML = selectedMedications.map(function(med) {
+        return '<div class="medication-item"><div class="medication-header"><div class="medication-name">' + med.name + '</div><button class="remove-btn" onclick="removeMedication(' + med.id + ')">Supprimer</button></div><textarea class="dosing-textarea" onchange="updateDosing(' + med.id + ', this.value)">' + med.dosing + '</textarea></div>';
+    }).join('');
+}
+
+// ==================== PDF GENERATION ====================
+function generatePrescriptionPdf() {
+    const manualName = document.getElementById('manualName').value.trim();
+    const manualDob = document.getElementById('manualDob').value.trim();
+    const manualAddress = document.getElementById('manualAddress').value.trim();
+    const date = document.getElementById('prescriptionDate').value;
+    const pageFormat = document.getElementById('pageFormat').value;
+    if (!manualName) { alert('Veuillez saisir le nom du patient'); return null; }
+    if (selectedMedications.length === 0) { alert('Veuillez ajouter au moins un médicament'); return null; }
+    let displayDob = manualDob;
+    if (manualDob && manualDob.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const d = new Date(manualDob);
+        const months = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+        displayDob = d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+    }
+    const formattedDate = formatDateDisplay(date);
+    const jsPDF = window.jspdf.jsPDF;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: pageFormat });
+    const isA5 = pageFormat === 'a5';
+    const leftMargin = isA5 ? 10 : 20;
+    const maxWidth = isA5 ? 128 : 170;
+    const maxHeight = isA5 ? 190 : 270;
+    const headerFontSize = isA5 ? 10 : 12;
+    const normalFontSize = isA5 ? 8 : 10;
+    const smallFontSize = isA5 ? 7 : 9;
+    const lineSpacing = isA5 ? 3.5 : 4;
+    const sectionSpacing = isA5 ? 4 : 5;
+    let y = isA5 ? 12 : 20;
+    doc.setFontSize(headerFontSize);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Dr. méd. Ludovico Cobuccio', leftMargin, y);
+    y += sectionSpacing;
+    doc.setFontSize(smallFontSize);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Spécialiste en Médecine Interne et Infectiologie, FMH', leftMargin, y); y += lineSpacing;
+    doc.text('Diplôme en Médecine Tropicale et Hygiène', leftMargin, y); y += lineSpacing;
+    doc.text('Certificat en Médecine des Voyages', leftMargin, y); y += lineSpacing;
+    doc.text("Route de l'Intyamon 113, 1635 La Tour-de-Trême", leftMargin, y); y += lineSpacing;
+    doc.text('Rue du Valentin 32, 1004 Lausanne', leftMargin, y); y += lineSpacing;
+    doc.text('ludovico.cobuccio@hin.ch', leftMargin, y); y += lineSpacing;
+    doc.text('www.traveldoctor.ch', leftMargin, y); y += lineSpacing;
+    doc.text('RCC: Q256210 | A208033 – GLN: 7601003432244', leftMargin, y);
+    y += sectionSpacing * 2;
+    doc.setFontSize(normalFontSize);
+    doc.setFont('helvetica', 'bold');
+    doc.text(displayDob ? manualName + ', ' + displayDob : manualName, leftMargin, y);
+    y += sectionSpacing;
+    doc.setFont('helvetica', 'normal');
+    if (manualAddress) {
+        manualAddress.split('\n').forEach(function(line) { doc.text(line, leftMargin, y); y += lineSpacing; });
+    }
+    y += sectionSpacing;
+    doc.text(formattedDate, leftMargin, y);
+    y += sectionSpacing * 2;
+    doc.setFont('helvetica', 'bolditalic');
+    doc.text('Rp.', leftMargin, y);
+    y += sectionSpacing + 2;
+    doc.setFont('helvetica', 'normal');
+    selectedMedications.forEach(function(med) {
+        if (y > maxHeight - 20) { doc.addPage(); y = isA5 ? 12 : 20; }
+        doc.setFontSize(normalFontSize);
+        doc.setFont('helvetica', 'bold');
+        doc.text(med.name, leftMargin, y);
+        y += sectionSpacing;
+        doc.setFontSize(smallFontSize);
+        doc.setFont('helvetica', 'normal');
+        doc.splitTextToSize(med.dosing, maxWidth).forEach(function(line) {
+            if (y > maxHeight) { doc.addPage(); y = isA5 ? 12 : 20; }
+            doc.text(line, leftMargin, y);
+            y += lineSpacing;
+        });
+        y += sectionSpacing;
+    });
+    return doc;
+}
+
+function generatePrescriptionOnly() {
+    const doc = generatePrescriptionPdf();
+    if (!doc) return;
+    const manualName = document.getElementById('manualName').value.trim();
+    const date = document.getElementById('prescriptionDate').value;
+    const nameParts = manualName.split(' ');
+    const lastName = nameParts[0] || 'Patient';
+    const firstName = nameParts.slice(1).join('') || '';
+    doc.save('RX_' + lastName + firstName + '_' + date.replace(/-/g, '') + '.pdf');
+}
+
+function formatDateDisplay(dateString) {
+    const d = new Date(dateString);
+    return d.getDate().toString().padStart(2, '0') + '.' + (d.getMonth() + 1).toString().padStart(2, '0') + '.' + d.getFullYear();
+}
+
+// ==================== DOCX GENERATION ====================
+async function generateConsultationDocx(consultationDuration) {
+    const notes = document.getElementById('consultationNotes').value.trim();
+    const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType } = docx;
+    const paragraphs = [];
+
+    // Patient info
+    if (extractedKoboData) {
+        const data = extractedKoboData;
+        // Patient section
+        paragraphs.push(new Paragraph({ children: [new TextRun({ text: '=== DONNÉES PATIENT ===', bold: true })] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Nom: ' + (data.patient.nom || '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Date de naissance: ' + (data.patient.dob || '-'))] }));
+        const addressParts = [data.patient.rue, data.patient.codePostal + ' ' + data.patient.ville, data.patient.pays].filter(function(x) { return x && x.trim(); });
+        paragraphs.push(new Paragraph({ children: [new TextRun('Adresse: ' + (addressParts.join(', ') || '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Email: ' + (data.patient.email || '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Téléphone: ' + (data.patient.telephone || '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Poids: ' + (data.patient.poids ? data.patient.poids + ' kg' : '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Genre: ' + (data.patient.genre || '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('')] }));
+        
+        // Voyage section
+        paragraphs.push(new Paragraph({ children: [new TextRun({ text: '=== VOYAGE ===', bold: true })] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Nombre de pays: ' + (data.voyage.nombrePays || '-'))] }));
+        
+        // Multi-country destinations
+        if (data.voyage.destinations && data.voyage.destinations.length > 0) {
+            data.voyage.destinations.forEach(function(dest, idx) {
+                if (typeof dest === 'object') {
+                    var destLine = 'Pays ' + (idx + 1) + ': ' + (dest.pays || '-');
+                    if (dest.depart || dest.retour) {
+                        destLine += ' (' + (dest.depart || '?') + ' → ' + (dest.retour || '?') + ')';
+                    }
+                    paragraphs.push(new Paragraph({ children: [new TextRun(destLine)] }));
+                } else {
+                    paragraphs.push(new Paragraph({ children: [new TextRun('Destination: ' + dest)] }));
+                }
+            });
+        }
+        
+        paragraphs.push(new Paragraph({ children: [new TextRun('--- Voyage total ---')] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Départ: ' + (data.voyage.dateDepart || '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Retour: ' + (data.voyage.dateRetour || '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Durée: ' + (data.voyage.duree || '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Nature du voyage: ' + (data.voyage.nature || '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun("Type d'hébergement: " + (data.voyage.hebergement || '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Activités spécifiques: ' + (data.voyage.activites || '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Zones rurales ou isolées: ' + (data.voyage.zonesRurales || '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('')] }));
+        
+        // Medical section
+        paragraphs.push(new Paragraph({ children: [new TextRun({ text: '=== ANTÉCÉDENTS MÉDICAUX ===', bold: true })] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Grossesse possible: ' + (data.medical.grossesse || '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Contraception: ' + (data.medical.contraception || '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Allaitement: ' + (data.medical.allaitement || '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Date des dernières règles: ' + (data.medical.dernieresRegles || '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Allergie aux oeufs: ' + (data.medical.allergieOeufs || '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Autres allergies: ' + (data.medical.autresAllergies || '-'))] }));
+        if (data.medical.allergiesDetails) paragraphs.push(new Paragraph({ children: [new TextRun('Détails allergies: ' + data.medical.allergiesDetails)] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Varicelle (maladie): ' + (data.medical.varicelleMaladie || '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Varicelle (vaccin): ' + (data.medical.varicelleVaccin || '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Problème vaccination: ' + (data.medical.problemeVaccination || '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Maladies chroniques: ' + (data.medical.maladies || '-'))] }));
+        if (data.medical.cd4) paragraphs.push(new Paragraph({ children: [new TextRun('CD4: ' + data.medical.cd4)] }));
+        if (data.medical.chimio) paragraphs.push(new Paragraph({ children: [new TextRun('Chimio/Radiothérapie: ' + data.medical.chimio)] }));
+        if (data.medical.psychologique) paragraphs.push(new Paragraph({ children: [new TextRun('Problème psy: ' + data.medical.psychologique)] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Médicaments: ' + (data.medical.medicaments || '-'))] }));
+        if (data.medical.medicamentsDetails) paragraphs.push(new Paragraph({ children: [new TextRun('Détails médicaments: ' + data.medical.medicamentsDetails)] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Carnet de vaccination: ' + (data.medical.carnetVaccination || '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('')] }));
+    } else {
+        const manualName = document.getElementById('manualName').value.trim();
+        const manualDob = document.getElementById('manualDob').value.trim();
+        const manualAddress = document.getElementById('manualAddress').value.trim();
+        const manualEmail = document.getElementById('manualEmail').value.trim();
+        const manualPhone = document.getElementById('manualPhone').value.trim();
+        paragraphs.push(new Paragraph({ children: [new TextRun({ text: '=== DONNÉES PATIENT ===', bold: true })] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Nom: ' + (manualName || '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Date de naissance: ' + (manualDob || '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Adresse: ' + (manualAddress.replace(/\n/g, ', ') || '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Email: ' + (manualEmail || '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('Téléphone: ' + (manualPhone || '-'))] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('')] }));
+    }
+
+    // Notes and Conseils
+    paragraphs.push(new Paragraph({ children: [new TextRun({ text: '=== NOTES DE CONSULTATION ===', bold: true })] }));
+    
+    // Conseils donnés
+    const conseils = getSelectedConseils();
+    if (conseils.length > 0) {
+        paragraphs.push(new Paragraph({ children: [new TextRun({ text: 'Conseils donnés:', bold: true })] }));
+        conseils.forEach(function(conseil) {
+            paragraphs.push(new Paragraph({ children: [new TextRun('• ' + conseil)] }));
+        });
+        paragraphs.push(new Paragraph({ children: [new TextRun('')] }));
+    }
+    
+    // Notes additionnelles
+    if (notes.trim()) {
+        paragraphs.push(new Paragraph({ children: [new TextRun({ text: 'Notes:', bold: true })] }));
+        notes.split('\n').forEach(function(line) {
+            paragraphs.push(new Paragraph({ children: [new TextRun(line)] }));
+        });
+    }
+    paragraphs.push(new Paragraph({ children: [new TextRun('')] }));
+
+    // Vaccines administered table
+    if (administeredVaccines.length > 0) {
+        paragraphs.push(new Paragraph({ children: [new TextRun({ text: '=== VACCINATIONS ADMINISTRÉES ===', bold: true })] }));
+        const vaccineRows = [
+            new TableRow({
+                children: [
+                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Vaccin', bold: true })] })] }),
+                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'N° de lot', bold: true })] })] })
+                ]
+            })
+        ];
+        administeredVaccines.forEach(function(v) {
+            vaccineRows.push(new TableRow({
+                children: [
+                    new TableCell({ children: [new Paragraph({ children: [new TextRun(v.vaccine)] })] }),
+                    new TableCell({ children: [new Paragraph({ children: [new TextRun(v.lot || '-')] })] })
+                ]
+            }));
+        });
+        paragraphs.push(new Table({ rows: vaccineRows, width: { size: 100, type: WidthType.PERCENTAGE } }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('')] }));
+    }
+
+    // Boosters table
+    if (plannedBoosters.length > 0) {
+        paragraphs.push(new Paragraph({ children: [new TextRun({ text: '=== RAPPELS VACCINAUX ===', bold: true })] }));
+        const hasSecondBooster = plannedBoosters.some(function(b) { return b.booster2Date; });
+        const headerCells = [
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Vaccin', bold: true })] })] }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '1er rappel', bold: true })] })] })
+        ];
+        if (hasSecondBooster) {
+            headerCells.push(new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '2ème rappel', bold: true })] })] }));
+        }
+        const boosterRows = [new TableRow({ children: headerCells })];
+        plannedBoosters.forEach(function(b) {
+            const cells = [
+                new TableCell({ children: [new Paragraph({ children: [new TextRun(b.vaccine)] })] }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun(b.booster1Date ? formatDateSwiss(new Date(b.booster1Date)) : '—')] })] })
+            ];
+            if (hasSecondBooster) {
+                cells.push(new TableCell({ children: [new Paragraph({ children: [new TextRun(b.booster2Date ? formatDateSwiss(new Date(b.booster2Date)) : '—')] })] }));
+            }
+            boosterRows.push(new TableRow({ children: cells }));
+        });
+        paragraphs.push(new Table({ rows: boosterRows, width: { size: 100, type: WidthType.PERCENTAGE } }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('')] }));
+    }
+
+    // Ordonnance (medications)
+    if (selectedMedications.length > 0) {
+        paragraphs.push(new Paragraph({ children: [new TextRun({ text: '=== ORDONNANCE ===', bold: true })] }));
+        selectedMedications.forEach(function(med) {
+            paragraphs.push(new Paragraph({ children: [new TextRun('• ' + med.name)] }));
+        });
+        paragraphs.push(new Paragraph({ children: [new TextRun({ text: '📄 Voir ordonnance PDF jointe', italics: true })] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun('')] }));
+    }
+
+    // Duration
+    if (consultationDuration) {
+        paragraphs.push(new Paragraph({ children: [new TextRun('---')] }));
+        paragraphs.push(new Paragraph({ children: [new TextRun({ text: 'Durée de consultation: ' + consultationDuration, italics: true })] }));
+    }
+
+    const doc = new Document({ sections: [{ children: paragraphs }] });
+    return await Packer.toBlob(doc);
+}
+
+// ==================== ZIP GENERATION ====================
+async function generatePatientFolder() {
+    const notes = document.getElementById('consultationNotes').value.trim();
+    const conseils = getSelectedConseils();
+    
+    const manualName = document.getElementById('manualName').value.trim();
+    const manualDob = document.getElementById('manualDob').value.trim();
+    if (!manualName) { alert('⚠️ Veuillez saisir le nom du patient.'); return; }
+
+    const finalTime = stopChronometer();
+    const nameParts = manualName.split(' ');
+    const lastName = nameParts[0] || 'Patient';
+    const firstName = nameParts.slice(1).join('') || '';
+    const dobForFolder = manualDob ? manualDob.replace(/-/g, '') : 'XXXXXXXX';
+    const folderName = lastName + firstName + '_' + dobForFolder;
+    const consultDate = document.getElementById('prescriptionDate').value.replace(/-/g, '');
+
+    const zip = new JSZip();
+    const folder = zip.folder(folderName);
+
+    if (uploadedPdfData) {
+        folder.file(uploadedPdfName, uploadedPdfData);
+    }
+
+    const docxBlob = await generateConsultationDocx(finalTime);
+    folder.file('Consultation_' + lastName + firstName + '_' + consultDate + '.docx', docxBlob);
+
+    if (selectedMedications.length > 0) {
+        const prescriptionDoc = generatePrescriptionPdf();
+        if (prescriptionDoc) {
+            const pdfBlob = prescriptionDoc.output('blob');
+            folder.file('RX_' + lastName + firstName + '_' + consultDate + '.pdf', pdfBlob);
+        }
+    }
+
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(zipBlob);
+    link.download = folderName + '.zip';
+    link.click();
+    URL.revokeObjectURL(link.href);
+}
+
+// ==================== JSON PATIENT MANAGEMENT ====================
+let loadedPatientJSON = null;
+
+function handleJsonImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            loadedPatientJSON = JSON.parse(e.target.result);
+            const patient = loadedPatientJSON.patient || {};
+            const consults = loadedPatientJSON.consultations || [];
+            
+            // Display status
+            document.getElementById('jsonPatientName').textContent = patient.nom || 'Patient';
+            document.getElementById('jsonPatientDob').textContent = patient.dob ? formatDateSwiss(new Date(patient.dob)) : '';
+            document.getElementById('jsonConsultCount').textContent = consults.length + ' consultation(s) précédente(s)';
+            document.getElementById('jsonStatus').style.display = 'block';
+            
+            // Prefill form
+            if (patient.nom) document.getElementById('manualName').value = patient.nom;
+            if (patient.dob) {
+                document.getElementById('manualDob').value = patient.dob;
+                updateCalculatedAge();
+            }
+            if (patient.adresse) document.getElementById('manualAddress').value = patient.adresse;
+            if (patient.email) document.getElementById('manualEmail').value = patient.email;
+            if (patient.telephone) document.getElementById('manualPhone').value = patient.telephone;
+            if (patient.poids) document.getElementById('weight').value = patient.poids;
+            
+            // Display patient history
+            displayPatientHistory(consults);
+            
+            alert('✅ Dossier chargé !\n\n' + consults.length + ' consultation(s) dans l\'historique.');
+        } catch (error) {
+            alert('❌ Erreur lecture JSON : ' + error.message);
+            loadedPatientJSON = null;
+            document.getElementById('jsonStatus').style.display = 'none';
+            document.getElementById('patientHistory').style.display = 'none';
+        }
+    };
+    reader.readAsText(file);
+}
+
+function displayPatientHistory(consultations) {
+    const historyDiv = document.getElementById('patientHistory');
+    
+    if (!consultations || consultations.length === 0) {
+        historyDiv.style.display = 'none';
+        return;
+    }
+    
+    let html = '<h4 style="color: #1565C0; margin-bottom: 10px;">📋 Historique consultations</h4>';
+    html += '<div style="background: white; padding: 15px; border-radius: 8px;">';
+    
+    // Sort consultations by date (most recent first)
+    const sortedConsults = [...consultations].sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    sortedConsults.forEach((consult, index) => {
+        const consultDate = consult.date ? formatDateSwiss(new Date(consult.date)) : 'Date inconnue';
+        const consultType = consult.type === 'consultation_voyage' ? 'Voyage' : 'Rappel';
+        const duration = consult.duration_minutes ? consult.duration_minutes + ' min' : '';
+        
+        html += '<div class="history-consultation">';
+        html += '<h5>Consultation #' + consult.id + ' - ' + consultDate + ' (' + consultType + ')' + (duration ? ' - ' + duration : '') + '</h5>';
+        
+        // Voyage info (FIRST)
+        if (consult.voyage) {
+            const v = consult.voyage;
+            html += '<div class="history-section"><strong>Voyage :</strong>';
+            html += '<ul class="history-list" style="font-size: 12px;">';
+            
+            if (v.destinations && v.destinations.length > 0) {
+                const dests = v.destinations.map(d => typeof d === 'object' ? d.pays : d).filter(Boolean).join(', ');
+                html += '<li><strong>Destination(s) :</strong> ' + dests + '</li>';
+            }
+            if (v.dateDepart && v.dateRetour) {
+                html += '<li><strong>Dates :</strong> ' + v.dateDepart + ' → ' + v.dateRetour;
+                if (v.duree) html += ' (' + v.duree + ')';
+                html += '</li>';
+            }
+            if (v.nature && v.nature !== '-') html += '<li><strong>Nature :</strong> ' + v.nature + '</li>';
+            if (v.hebergement && v.hebergement !== '-') html += '<li><strong>Hébergement :</strong> ' + v.hebergement + '</li>';
+            if (v.activites && v.activites !== '-') html += '<li><strong>Activités :</strong> ' + v.activites + '</li>';
+            if (v.zonesRurales && v.zonesRurales !== '-') html += '<li><strong>Zones rurales :</strong> ' + v.zonesRurales + '</li>';
+            
+            html += '</ul></div>';
+        }
+        
+        // Medical info (SECOND)
+        if (consult.medical) {
+            const m = consult.medical;
+            html += '<div class="history-section"><strong>Antécédents médicaux :</strong>';
+            html += '<ul class="history-list" style="font-size: 12px;">';
+            
+            // Poids from patient data if available
+            const consultPatient = loadedPatientJSON ? loadedPatientJSON.patient : null;
+            if (consultPatient && consultPatient.poids) {
+                html += '<li>Poids : ' + consultPatient.poids + ' kg</li>';
+            }
+            
+            // Comorbidités
+            if (m.maladies && m.maladies !== '-') html += '<li><strong>Comorbidités :</strong> ' + m.maladies + '</li>';
+            
+            // Allergies
+            if (m.allergieOeufs && m.allergieOeufs !== '-') html += '<li>Allergie œufs : ' + m.allergieOeufs + '</li>';
+            if (m.autresAllergies && m.autresAllergies !== '-') html += '<li>Autres allergies : ' + m.autresAllergies + '</li>';
+            if (m.allergiesDetails) html += '<li style="margin-left: 15px; font-style: italic;">→ ' + m.allergiesDetails + '</li>';
+            
+            // Grossesse / Contraception / Allaitement
+            if (m.grossesse && m.grossesse !== '-') html += '<li>Grossesse possible : ' + m.grossesse + '</li>';
+            if (m.contraception && m.contraception !== '-') html += '<li>Contraception : ' + m.contraception + '</li>';
+            if (m.allaitement && m.allaitement !== '-') html += '<li>Allaitement : ' + m.allaitement + '</li>';
+            if (m.dernieresRegles) html += '<li>Dernières règles : ' + m.dernieresRegles + '</li>';
+            
+            // Varicelle
+            if (m.varicelleContractee && m.varicelleContractee !== '-') html += '<li>Varicelle (maladie contractée) : ' + m.varicelleContractee + '</li>';
+            if (m.varicelleVaccine && m.varicelleVaccine !== '-') html += '<li>Varicelle (vacciné) : ' + m.varicelleVaccine + '</li>';
+            
+            // Vaccination
+            if (m.problemeVaccination && m.problemeVaccination !== '-') {
+                html += '<li>Problème vaccination antérieure : ' + m.problemeVaccination + '</li>';
+                if (m.problemeVaccinationDetails) {
+                    html += '<li style="margin-left: 15px; font-style: italic;">→ ' + m.problemeVaccinationDetails + '</li>';
+                }
+            }
+            
+            // Médicaments
+            if (m.medicaments && m.medicaments !== '-') {
+                html += '<li>Médicaments réguliers : ' + m.medicaments + '</li>';
+                if (m.medicamentsDetails) {
+                    html += '<li style="margin-left: 15px; font-style: italic;">→ ' + m.medicamentsDetails + '</li>';
+                }
+            }
+            
+            // Autres conditions
+            if (m.cd4) html += '<li>CD4 : ' + m.cd4 + '</li>';
+            if (m.chimio) html += '<li>Chimiothérapie/radiothérapie (6 derniers mois) : ' + m.chimio + '</li>';
+            if (m.psychologique) html += '<li>Problème psychologique : ' + m.psychologique + '</li>';
+            if (m.carnetVaccination) html += '<li>Carnet de vaccination : ' + m.carnetVaccination + '</li>';
+            
+            // Vaccination card links
+            if (m.vaccination_card_links && m.vaccination_card_links.length > 0) {
+                html += '<li><strong>📎 Carnet(s) de vaccination :</strong>';
+                html += '<ul style="margin: 5px 0 0 15px; padding: 0;">';
+                m.vaccination_card_links.forEach(function(link, idx) {
+                    html += '<li style="margin-bottom: 5px;"><a href="' + link + '" target="_blank" style="color: #2196F3; text-decoration: none; font-weight: 600;">🔗 Carnet #' + (idx + 1) + '</a></li>';
+                });
+                html += '</ul></li>';
+            }
+            
+            html += '</ul></div>';
+        } else if (consult.type === 'consultation_voyage') {
+            // Only show missing message for voyage consultations (not rappels)
+            html += '<div class="history-section" style="color: #999; font-style: italic;"><strong>Antécédents médicaux :</strong> Non disponibles (consultation créée avant ajout de cette fonctionnalité)</div>';
+        }
+        
+        // Notes (THIRD)
+        if (consult.notes) {
+            html += '<div class="history-section"><strong>Notes :</strong> ' + consult.notes.substring(0, 150);
+            if (consult.notes.length > 150) html += '...';
+            html += '</div>';
+        }
+        
+        // Vaccines administered (FOURTH)
+        if (consult.vaccines_administered && consult.vaccines_administered.length > 0) {
+            html += '<div class="history-section"><strong>Vaccins administrés :</strong>';
+            html += '<ul class="history-list">';
+            consult.vaccines_administered.forEach(v => {
+                html += '<li>' + v.name + (v.lot ? ' (Lot: ' + v.lot + ')' : '') + '</li>';
+            });
+            html += '</ul></div>';
+        }
+        
+        // Boosters scheduled (FIFTH)
+        if (consult.boosters_scheduled && consult.boosters_scheduled.length > 0) {
+            html += '<div class="history-section"><strong>Rappels planifiés :</strong>';
+            html += '<ul class="history-list">';
+            consult.boosters_scheduled.forEach(b => {
+                let text = b.vaccine;
+                if (b.due_date_1) text += ' - 1er rappel: ' + formatDateSwiss(new Date(b.due_date_1));
+                if (b.due_date_2) text += ', 2ème rappel: ' + formatDateSwiss(new Date(b.due_date_2));
+                html += '<li>' + text + '</li>';
+            });
+            html += '</ul></div>';
+        }
+        
+        // Prescription (SIXTH)
+        if (consult.prescription && consult.prescription.medications && consult.prescription.medications.length > 0) {
+            html += '<div class="history-section"><strong>Ordonnance :</strong>';
+            html += '<ul class="history-list">';
+            consult.prescription.medications.forEach(m => {
+                html += '<li>' + m.name + '</li>';
+            });
+            html += '</ul></div>';
+        }
+        
+        html += '</div>';
+    });
+    
+    html += '</div>';
+    historyDiv.innerHTML = html;
+    historyDiv.style.display = 'block';
+}
+
+function generatePatientJson() {
+    const consultDate = new Date().toISOString();
+    const patientName = document.getElementById('manualName').value.trim() || 'Patient';
+    const patientDob = document.getElementById('manualDob').value;
+    
+    const newConsultation = {
+        id: loadedPatientJSON ? (loadedPatientJSON.consultations || []).length + 1 : 1,
+        date: consultDate.split('T')[0],
+        type: 'consultation_voyage',
+        duration_minutes: Math.floor(chronometerElapsed / 60000),
+        
+        vaccines_administered: administeredVaccines.map(v => ({
+            name: v.vaccine,
+            lot: v.lot,
+            date: consultDate.split('T')[0]
+        })),
+        
+        boosters_scheduled: plannedBoosters.map(b => ({
+            vaccine: b.vaccine,
+            due_date_1: b.booster1Date,
+            due_date_2: b.booster2Date || null
+        })),
+        
+        prescription: selectedMedications.length > 0 ? {
+            date: document.getElementById('prescriptionDate').value,
+            medications: selectedMedications.map(m => ({
+                name: m.name,
+                dosing: m.dosing
+            }))
+        } : null,
+        
+        notes: document.getElementById('consultationNotes').value.trim()
+    };
+    
+    if (extractedKoboData && extractedKoboData.voyage) {
+        newConsultation.voyage = extractedKoboData.voyage;
+    }
+    
+    if (extractedKoboData && extractedKoboData.medical) {
+        newConsultation.medical = extractedKoboData.medical;
+    }
+    
+    const patientJson = {
+        version: "1.0",
+        revision: loadedPatientJSON ? (loadedPatientJSON.revision || 0) + 1 : 1,
+        created_at: loadedPatientJSON ? loadedPatientJSON.created_at : consultDate,
+        last_modified: consultDate,
+        
+        patient: {
+            nom: patientName,
+            dob: patientDob,
+            email: document.getElementById('manualEmail').value.trim(),
+            telephone: document.getElementById('manualPhone').value.trim(),
+            adresse: document.getElementById('manualAddress').value.trim(),
+            poids: document.getElementById('weight').value.trim()
+        },
+        
+        consultations: loadedPatientJSON ? 
+            [...(loadedPatientJSON.consultations || []), newConsultation] : 
+            [newConsultation],
+        
+        metadata: {
+            total_consultations: loadedPatientJSON ? 
+                (loadedPatientJSON.consultations || []).length + 1 : 1,
+            total_vaccines: administeredVaccines.length,
+            total_boosters: plannedBoosters.length
+        }
+    };
+    
+    return patientJson;
+}
+
+function saveConsultationJson() {
+    const manualName = document.getElementById('manualName').value.trim();
+    const manualDob = document.getElementById('manualDob').value.trim();
+    
+    if (!manualName) {
+        alert('⚠️ Veuillez saisir le nom du patient.');
+        return;
+    }
+    
+    stopChronometer();
+    
+    const patientJson = generatePatientJson();
+    
+    const nameParts = manualName.split(' ');
+    const lastName = nameParts[0] || 'Patient';
+    const firstName = nameParts.slice(1).join('') || '';
+    const dobForJson = manualDob ? manualDob.split('-').reverse().join('-') : 'XX-XX-XXXX';
+    const jsonFilename = lastName.toLowerCase() + '_' + firstName.toLowerCase() + '_' + dobForJson + '.json';
+    
+    const jsonBlob = new Blob([JSON.stringify(patientJson, null, 2)], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(jsonBlob);
+    link.download = jsonFilename;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    
+    const revisionInfo = patientJson.revision > 1 ? ' (Révision #' + patientJson.revision + ')' : '';
+    const overwriteMsg = patientJson.revision > 1 ? '\n⚠️ ÉCRASEZ l\'ancien fichier pour éviter les doublons !' : '';
+    
+    alert('✅ Consultation sauvegardée !' + revisionInfo + '\n\n💡 Uploadez ' + jsonFilename + ' sur kDrive/Patients_JSON/' + overwriteMsg);
+}
+
+function exportConsultationPdf() {
+    const manualName = document.getElementById('manualName').value.trim();
+    const manualDob = document.getElementById('manualDob').value.trim();
+    
+    if (!manualName) {
+        alert('⚠️ Veuillez saisir le nom du patient.');
+        return;
+    }
+    
+    const jsPDF = window.jspdf.jsPDF;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    
+    const margin = 20;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const maxWidth = pageWidth - 2 * margin;
+    let y = margin;
+    
+    function checkPageBreak(neededSpace) {
+        if (y + neededSpace > 280) {
+            doc.addPage();
+            y = margin;
+        }
+    }
+    
+    // Header
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('CONSULTATION MÉDECINE DES VOYAGES', pageWidth / 2, y, { align: 'center' });
+    y += 10;
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Dr. méd. Ludovico Cobuccio', pageWidth / 2, y, { align: 'center' });
+    y += 15;
+    
+    // Date and Duration
+    const consultDate = document.getElementById('prescriptionDate').value;
+    const formattedDate = consultDate ? formatDateSwiss(new Date(consultDate)) : formatDateSwiss(new Date());
+    doc.setFontSize(10);
+    doc.text('Date : ' + formattedDate, margin, y);
+    y += 6;
+    
+    if (chronometerFinalTime) {
+        doc.text('Durée : ' + chronometerFinalTime, margin, y);
+        y += 10;
+    } else {
+        y += 10;
+    }
+    
+    // ===== PATIENT =====
+    checkPageBreak(30);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PATIENT', margin, y);
+    y += 7;
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Nom : ' + manualName, margin, y);
+    y += 5;
+    
+    if (manualDob) {
+        const dobDate = new Date(manualDob);
+        const age = calculateAge(dobDate);
+        doc.text('Date de naissance : ' + formatDateSwiss(dobDate) + ' (' + age + ' ans)', margin, y);
+        y += 5;
+    }
+    
+    const email = document.getElementById('manualEmail').value.trim();
+    if (email) {
+        doc.text('Email : ' + email, margin, y);
+        y += 5;
+    }
+    
+    const phone = document.getElementById('manualPhone').value.trim();
+    if (phone) {
+        doc.text('Téléphone : ' + phone, margin, y);
+        y += 5;
+    }
+    
+    const address = document.getElementById('manualAddress').value.trim();
+    if (address) {
+        doc.text('Adresse : ' + address.replace(/\n/g, ', '), margin, y);
+        y += 5;
+    }
+    
+    y += 5;
+    
+    // ===== VOYAGE =====
+    if (extractedKoboData && extractedKoboData.voyage) {
+        checkPageBreak(50);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('VOYAGE', margin, y);
+        y += 7;
+        
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        
+        const voyage = extractedKoboData.voyage;
+        
+        if (voyage.destinations && voyage.destinations.length > 0) {
+            const destinations = voyage.destinations.map(d => typeof d === 'object' ? d.pays : d).filter(Boolean).join(', ');
+            if (destinations) {
+                doc.text('Destination(s) : ' + destinations, margin, y);
+                y += 5;
+            }
+        }
+        
+        if (voyage.dateDepart) {
+            doc.text('Date départ : ' + voyage.dateDepart, margin, y);
+            y += 5;
+        }
+        
+        if (voyage.dateRetour) {
+            doc.text('Date retour : ' + voyage.dateRetour, margin, y);
+            y += 5;
+        }
+        
+        if (voyage.duree) {
+            doc.text('Durée : ' + voyage.duree, margin, y);
+            y += 5;
+        }
+        
+        if (voyage.nature) {
+            const lines = doc.splitTextToSize('Nature : ' + voyage.nature, maxWidth);
+            lines.forEach(line => {
+                checkPageBreak(5);
+                doc.text(line, margin, y);
+                y += 5;
+            });
+        }
+        
+        if (voyage.hebergement) {
+            const lines = doc.splitTextToSize('Hébergement : ' + voyage.hebergement, maxWidth);
+            lines.forEach(line => {
+                checkPageBreak(5);
+                doc.text(line, margin, y);
+                y += 5;
+            });
+        }
+        
+        if (voyage.activites) {
+            const lines = doc.splitTextToSize('Activités : ' + voyage.activites, maxWidth);
+            lines.forEach(line => {
+                checkPageBreak(5);
+                doc.text(line, margin, y);
+                y += 5;
+            });
+        }
+        
+        if (voyage.zonesRurales) {
+            doc.text('Zones rurales : ' + voyage.zonesRurales, margin, y);
+            y += 5;
+        }
+        
+        y += 5;
+    }
+    
+    // ===== ANTÉCÉDENTS MÉDICAUX =====
+    if (extractedKoboData && extractedKoboData.medical) {
+        checkPageBreak(50);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('ANTÉCÉDENTS MÉDICAUX', margin, y);
+        y += 7;
+        
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        
+        const med = extractedKoboData.medical;
+        
+        if (med.poids) {
+            doc.text('Poids : ' + med.poids, margin, y);
+            y += 5;
+        }
+        
+        if (med.grossesse) {
+            doc.text('Grossesse possible : ' + med.grossesse, margin, y);
+            y += 5;
+        }
+        
+        if (med.contraception) {
+            doc.text('Contraception : ' + med.contraception, margin, y);
+            y += 5;
+        }
+        
+        if (med.allaitement) {
+            doc.text('Allaitement : ' + med.allaitement, margin, y);
+            y += 5;
+        }
+        
+        if (med.allergieOeufs) {
+            doc.text('Allergie œufs : ' + med.allergieOeufs, margin, y);
+            y += 5;
+        }
+        
+        if (med.autresAllergies) {
+            doc.text('Autres allergies : ' + med.autresAllergies, margin, y);
+            y += 5;
+        }
+        
+        if (med.allergiesDetails) {
+            const lines = doc.splitTextToSize('Détails allergies : ' + med.allergiesDetails, maxWidth);
+            lines.forEach(line => {
+                checkPageBreak(5);
+                doc.text(line, margin, y);
+                y += 5;
+            });
+        }
+        
+        if (med.varicelleContractee) {
+            doc.text('Varicelle (maladie) : ' + med.varicelleContractee, margin, y);
+            y += 5;
+        }
+        
+        if (med.varicelleVaccine) {
+            doc.text('Varicelle (vaccin) : ' + med.varicelleVaccine, margin, y);
+            y += 5;
+        }
+        
+        if (med.problemeVaccination) {
+            doc.text('Problème vaccination : ' + med.problemeVaccination, margin, y);
+            y += 5;
+        }
+        
+        if (med.problemeVaccinationDetails) {
+            const lines = doc.splitTextToSize('Détails : ' + med.problemeVaccinationDetails, maxWidth);
+            lines.forEach(line => {
+                checkPageBreak(5);
+                doc.text(line, margin, y);
+                y += 5;
+            });
+        }
+        
+        if (med.maladies && med.maladies !== '-') {
+            const lines = doc.splitTextToSize('Comorbidités : ' + med.maladies, maxWidth);
+            lines.forEach(line => {
+                checkPageBreak(5);
+                doc.text(line, margin, y);
+                y += 5;
+            });
+        }
+        
+        if (med.cd4) {
+            doc.text('CD4 : ' + med.cd4, margin, y);
+            y += 5;
+        }
+        
+        if (med.chimio) {
+            doc.text('Chimiothérapie/radiothérapie (6 derniers mois) : ' + med.chimio, margin, y);
+            y += 5;
+        }
+        
+        if (med.psychologique) {
+            const lines = doc.splitTextToSize('Problème psychologique : ' + med.psychologique, maxWidth);
+            lines.forEach(line => {
+                checkPageBreak(5);
+                doc.text(line, margin, y);
+                y += 5;
+            });
+        }
+        
+        if (med.medicaments) {
+            doc.text('Médicaments : ' + med.medicaments, margin, y);
+            y += 5;
+        }
+        
+        if (med.medicamentsDetails) {
+            const lines = doc.splitTextToSize('Détails médicaments : ' + med.medicamentsDetails, maxWidth);
+            lines.forEach(line => {
+                checkPageBreak(5);
+                doc.text(line, margin, y);
+                y += 5;
+            });
+        }
+        
+        // Vaccination card links
+        if (med.vaccination_card_links && med.vaccination_card_links.length > 0) {
+            checkPageBreak(10 + med.vaccination_card_links.length * 5);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Carnet(s) de vaccination :', margin, y);
+            y += 5;
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(33, 150, 243); // Blue color for links
+            med.vaccination_card_links.forEach((link, idx) => {
+                doc.textWithLink('Carnet #' + (idx + 1), margin + 5, y, { url: link });
+                y += 5;
+            });
+            doc.setTextColor(0, 0, 0); // Reset to black
+        }
+        
+        y += 5;
+    }
+    
+    // ===== VACCINS ADMINISTRÉS =====
+    if (administeredVaccines.length > 0) {
+        checkPageBreak(30);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('VACCINS ADMINISTRÉS', margin, y);
+        y += 7;
+        
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        administeredVaccines.forEach(v => {
+            checkPageBreak(5);
+            doc.text('• ' + v.vaccine + ' - Lot: ' + v.lot, margin + 5, y);
+            y += 5;
+        });
+        y += 5;
+    }
+    
+    // ===== RAPPELS PLANIFIÉS =====
+    if (plannedBoosters.length > 0) {
+        checkPageBreak(30);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('RAPPELS PLANIFIÉS', margin, y);
+        y += 7;
+        
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        plannedBoosters.forEach(b => {
+            checkPageBreak(5);
+            let text = '• ' + b.vaccine;
+            if (b.booster1Date) text += ' - 1er rappel: ' + formatDateSwiss(new Date(b.booster1Date));
+            if (b.booster2Date) text += ' - 2ème rappel: ' + formatDateSwiss(new Date(b.booster2Date));
+            doc.text(text, margin + 5, y);
+            y += 5;
+        });
+        y += 5;
+    }
+    
+    // ===== ORDONNANCE =====
+    if (selectedMedications.length > 0) {
+        checkPageBreak(30);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('ORDONNANCE', margin, y);
+        y += 7;
+        
+        doc.setFontSize(10);
+        selectedMedications.forEach(med => {
+            checkPageBreak(15);
+            doc.setFont('helvetica', 'bold');
+            doc.text(med.name, margin + 5, y);
+            y += 5;
+            
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+            const lines = doc.splitTextToSize(med.dosing, maxWidth - 10);
+            lines.forEach(line => {
+                checkPageBreak(4);
+                doc.text(line, margin + 10, y);
+                y += 4;
+            });
+            y += 5;
+            doc.setFontSize(10);
+        });
+        y += 5;
+    }
+    
+    // ===== CONSEILS DONNÉS =====
+    const selectedConseils = [];
+    document.querySelectorAll('#conseilsCheckboxList input[type="checkbox"]:checked').forEach(cb => {
+        const label = cb.parentElement.querySelector('label').textContent;
+        selectedConseils.push(label);
+    });
+    
+    if (selectedConseils.length > 0) {
+        checkPageBreak(30);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('CONSEILS DONNÉS', margin, y);
+        y += 7;
+        
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        selectedConseils.forEach(c => {
+            checkPageBreak(5);
+            doc.text('• ' + c, margin + 5, y);
+            y += 5;
+        });
+        y += 5;
+    }
+    
+    // ===== NOTES =====
+    const notes = document.getElementById('consultationNotes').value.trim();
+    if (notes) {
+        checkPageBreak(30);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('NOTES', margin, y);
+        y += 7;
+        
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        const noteLines = doc.splitTextToSize(notes, maxWidth);
+        noteLines.forEach(line => {
+            checkPageBreak(5);
+            doc.text(line, margin, y);
+            y += 5;
+        });
+    }
+    
+    // Save PDF
+    const nameParts = manualName.split(' ');
+    const lastName = nameParts[0] || 'Patient';
+    const firstName = nameParts.slice(1).join('') || '';
+    const date = document.getElementById('prescriptionDate').value.replace(/-/g, '');
+    
+    doc.save('Consultation_' + lastName + firstName + '_' + date + '.pdf');
+}
+
+function calculateAge(dob) {
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+        age--;
+    }
+    return age;
+}
+
+// ==================== CLEAR FORM ====================
+function clearForm() {
+    if (!confirm('Nouvelle consultation ? Cela effacera les données actuelles.')) return;
+    
+    // Reset all data
+    document.getElementById('pdfUpload').value = '';
+    document.getElementById('uploadStatus').className = 'upload-status';
+    document.getElementById('uploadStatus').innerHTML = '';
+    document.getElementById('extractedPreview').style.display = 'none';
+    document.getElementById('manualName').value = '';
+    document.getElementById('manualDob').value = '';
+    document.getElementById('manualAddress').value = '';
+    document.getElementById('manualEmail').value = '';
+    document.getElementById('manualPhone').value = '';
+    document.getElementById('calculatedAge').textContent = '';
+    document.getElementById('consultationNotes').value = '';
+    document.getElementById('prescriptionDate').valueAsDate = new Date();
+    document.getElementById('weight').value = '';
+    document.getElementById('medicationSelect').value = '';
+    document.getElementById('customMedName').value = '';
+    document.getElementById('customMedDosing').value = '';
+    document.getElementById('customMedInputs').classList.remove('active');
+    
+    // Reset conseils checkboxes
+    document.querySelectorAll('#conseilsCheckboxList input[type="checkbox"]').forEach(function(checkbox) {
+        checkbox.checked = false;
+        checkbox.parentElement.classList.remove('selected');
+    });
+    
+    // Reset patient section content (but keep it visible)
+    document.getElementById('displayPatientName').textContent = '-';
+    document.getElementById('displayPatientInfo').textContent = '-';
+    document.getElementById('patientHistory').style.display = 'none';
+    document.getElementById('consultCountSection').style.display = 'none';
+    document.getElementById('patientEditMode').style.display = 'none';
+    document.getElementById('patientCompactView').style.display = 'block';
+    document.getElementById('toggleHistoryBtn').textContent = '▼ Voir historique';
+    
+    selectedMedications = [];
+    uploadedPdfData = null;
+    uploadedPdfName = '';
+    extractedKoboData = null;
+    administeredVaccines = [];
+    plannedBoosters = [];
+    loadedPatientJSON = null;
+    consultationMode = null;
+    
+    renderVaccineCheckboxList();
+    renderBoosterCheckboxList();
+    renderAdministeredVaccinesTable();
+    renderBoosterTable();
+    hideChronometer();
+    renderMedicationList();
+    updateDossierStatus();
+    
+    // Return to home screen
+    document.getElementById('appContent').style.display = 'none';
+    document.getElementById('knownPatientChoice').classList.add('hidden');
+    document.getElementById('homeScreen').classList.remove('hidden');
+    
+    // Reset known patient screen
+    document.getElementById('consultTypeChoice').style.display = 'none';
+    document.getElementById('jsonStatusHome').style.display = 'none';
+    document.getElementById('jsonUploadHome').value = '';
+}
+
+function renderAdministeredVaccinesTable() {
+    const table = document.getElementById('administeredVaccinesTable');
+    const tbody = document.getElementById('administeredVaccinesBody');
+    if (administeredVaccines.length === 0) { table.style.display = 'none'; return; }
+    table.style.display = 'table';
+    tbody.innerHTML = administeredVaccines.map(function(item) {
+        const lots = vaccineLots.filter(function(l) { return l.vaccine === item.vaccine; });
+        const lotOptions = lots.map(function(lot) {
+            const isExpired = isLotExpired(lot.expiration);
+            const isExpiring = isLotExpiringSoon(lot.expiration);
+            const expStr = lot.expiration ? formatDateSwiss(new Date(lot.expiration)) : '';
+            let warning = isExpired ? ' [EXPIRÉ]' : (isExpiring ? ' [⚠️]' : '');
+            return '<option value="' + escapeHtml(lot.lot) + '" ' + (item.lot === lot.lot ? 'selected' : '') + ' ' + (isExpired ? 'disabled' : '') + '>' + escapeHtml(lot.lot) + (expStr ? ' (exp: ' + expStr + ')' : '') + warning + '</option>';
+        }).join('');
+        const selectedLot = lots.find(function(l) { return l.lot === item.lot; });
+        let expiryWarning = '';
+        if (selectedLot && isLotExpiringSoon(selectedLot.expiration)) {
+            const daysLeft = getDaysUntilExpiry(selectedLot.expiration);
+            expiryWarning = '<span class="expiry-warning">⚠️ Expire dans ' + daysLeft + ' jours</span>';
+        }
+        return '<tr><td>' + escapeHtml(item.vaccine) + '</td><td><select onchange="updateAdministeredLot(' + item.id + ', this.value)">' + lotOptions + '</select>' + expiryWarning + '</td><td><button class="remove-row" onclick="removeAdministeredVaccine(' + item.id + ')">✕</button></td></tr>';
+    }).join('');
+}
+
+function renderBoosterTable() {
+    const table = document.getElementById('boosterTable');
+    const tbody = document.getElementById('boosterTableBody');
+    const header2nd = document.getElementById('booster2ndHeader');
+    if (plannedBoosters.length === 0) { table.style.display = 'none'; return; }
+    table.style.display = 'table';
+    const hasSecondBooster = plannedBoosters.some(function(b) { return b.booster2Date; });
+    header2nd.style.display = hasSecondBooster ? 'table-cell' : 'none';
+    tbody.innerHTML = plannedBoosters.map(function(item) {
+        const booster1Input = item.booster1Date ? '<input type="date" value="' + item.booster1Date + '" onchange="updateBoosterDate(' + item.id + ', 1, this.value)">' : '<span style="color: #999;">—</span>';
+        let booster2Cell = '';
+        if (hasSecondBooster) {
+            booster2Cell = item.booster2Date ? '<td><input type="date" value="' + item.booster2Date + '" onchange="updateBoosterDate(' + item.id + ', 2, this.value)"></td>' : '<td><span style="color: #999;">—</span></td>';
+        }
+        return '<tr><td>' + escapeHtml(item.vaccine) + '</td><td>' + booster1Input + '</td>' + booster2Cell + '<td><button class="remove-row" onclick="removeBooster(' + item.id + ')">✕</button></td></tr>';
+    }).join('');
+}
+
+</script>
+</body>
+</html>

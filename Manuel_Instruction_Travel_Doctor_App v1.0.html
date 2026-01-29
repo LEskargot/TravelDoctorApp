@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manuel d'Instruction - Travel Doctor App v1.0 BUILD 28</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 40px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        
+        h1 {
+            color: #2196F3;
+            border-bottom: 3px solid #2196F3;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        h2 {
+            color: #1976D2;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            font-size: 2em;
+            border-left: 5px solid #2196F3;
+            padding-left: 15px;
+        }
+        
+        h3 {
+            color: #0D47A1;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        
+        h4 {
+            color: #1565C0;
+            margin-top: 25px;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        
+        p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+        
+        ul, ol {
+            margin-left: 30px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #c7254e;
+        }
+        
+        pre {
+            background-color: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196F3;
+        }
+        
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            color: #333;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        th {
+            background-color: #2196F3;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        tr:hover {
+            background-color: #f0f0f0;
+        }
+        
+        blockquote {
+            border-left: 4px solid #FFC107;
+            padding-left: 20px;
+            margin: 20px 0;
+            font-style: italic;
+            color: #666;
+            background-color: #fffbf0;
+            padding: 15px 20px;
+            border-radius: 0 5px 5px 0;
+        }
+        
+        hr {
+            border: none;
+            border-top: 2px solid #e0e0e0;
+            margin: 30px 0;
+        }
+        
+        .warning {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .info {
+            background-color: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .toc {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+        }
+        
+        .toc h2 {
+            margin-top: 0;
+            border: none;
+            padding: 0;
+        }
+        
+        .toc ul {
+            list-style: none;
+            margin-left: 0;
+        }
+        
+        .toc ul li {
+            margin-bottom: 10px;
+        }
+        
+        .toc a {
+            color: #2196F3;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .toc a:hover {
+            text-decoration: underline;
+        }
+        
+        a {
+            color: #2196F3;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #2196F3;
+            color: white;
+            border-radius: 5px;
+            text-decoration: none;
+            margin: 5px;
+            font-weight: 500;
+        }
+        
+        .btn:hover {
+            background-color: #1976D2;
+        }
+        
+        @media print {
+            body {
+                background-color: white;
+                padding: 0;
+            }
+            
+            .container {
+                box-shadow: none;
+                padding: 20px;
+            }
+            
+            .no-print {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            h2 {
+                font-size: 1.5em;
+            }
+            
+            table {
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 id="manuel-dinstruction-travel-doctor-app">📘 Manuel d'Instruction - Travel Doctor App</h1>
+<h2 id="version-10-build-28">Version 1.0 BUILD 28</h2>
+<hr />
+<h2 id="table-des-matieres">📋 Table des matières</h2>
+<ol>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#démarrage-rapide">Démarrage rapide</a></li>
+<li><a href="#configuration-initiale">Configuration initiale</a></li>
+<li><a href="#nouveau-patient">Nouveau patient - Première consultation</a></li>
+<li><a href="#patient-connu">Patient connu - Nouvelle consultation</a></li>
+<li><a href="#sections-application">Sections de l'application</a></li>
+<li><a href="#génération-documents">Génération des documents</a></li>
+<li><a href="#résolution-problèmes">Résolution de problèmes</a></li>
+<li><a href="#conseils-pratiques">Conseils et bonnes pratiques</a></li>
+</ol>
+<hr />
+<h2 id="introduction-introduction">🎯 Introduction {#introduction}</h2>
+<h3 id="quest-ce-que-travel-doctor-app">Qu'est-ce que Travel Doctor App ?</h3>
+<p>Travel Doctor App est une application web pour la gestion complète des consultations de médecine de voyage. Elle permet de :</p>
+<p>✅ <strong>Extraire automatiquement</strong> les données des formulaires KoBoToolbox (PDF)<br />
+✅ <strong>Gérer les dossiers patients</strong> avec historique complet<br />
+✅ <strong>Administrer les vaccins</strong> avec suivi des lots et rappels<br />
+✅ <strong>Générer des ordonnances</strong> avec dosages pédiatriques automatiques<br />
+✅ <strong>Créer des documents PDF</strong> de consultation professionnels<br />
+✅ <strong>Sauvegarder en JSON</strong> pour une réutilisation ultérieure  </p>
+<h3 id="prerequis">Prérequis</h3>
+<ul>
+<li>✅ Navigateur web moderne (Chrome, Firefox, Safari, Edge)</li>
+<li>✅ Connexion internet (pour la première ouverture)</li>
+<li>✅ Formulaires KoBoToolbox exportés en PDF</li>
+<li>✅ Fichier Excel des lots de vaccins (optionnel mais recommandé)</li>
+</ul>
+<hr />
+<h2 id="demarrage-rapide-demarrage-rapide">⚡ Démarrage rapide {#démarrage-rapide}</h2>
+<h3 id="1-ouvrir-lapplication">1. Ouvrir l'application</h3>
+<p>Double-cliquez sur le fichier <code>Travel_Doctor_App_v1_0_BUILD_28_NORMALIZED.html</code></p>
+<p>L'application s'ouvre dans votre navigateur par défaut.</p>
+<h3 id="2-ecran-daccueil">2. Écran d'accueil</h3>
+<p>Vous verrez deux options :</p>
+<pre><code>┌─────────────────────────────────────┐
+│   🏥 Travel Doctor App              │
+├─────────────────────────────────────┤
+│                                     │
+│   ┌─────────────┐  ┌─────────────┐ │
+│   │      ✈️     │  │      📂     │ │
+│   │   NOUVEAU   │  │   PATIENT   │ │
+│   │  VOYAGEUR   │  │    CONNU    │ │
+│   │             │  │             │ │
+│   │ Première    │  │ Nouveau     │ │
+│   │consultation │  │voyage/rappel│ │
+│   └─────────────┘  └─────────────┘ │
+└─────────────────────────────────────┘
+</code></pre>
+<p><strong>Choisissez selon votre cas :</strong>
+- <strong>NOUVEAU VOYAGEUR</strong> : Patient jamais vu auparavant
+- <strong>PATIENT CONNU</strong> : Patient déjà consulté avec dossier JSON existant</p>
+<hr />
+<h2 id="configuration-initiale-configuration-initiale">⚙️ Configuration initiale {#configuration-initiale}</h2>
+<h3 id="import-du-fichier-des-lots-de-vaccins">Import du fichier des lots de vaccins</h3>
+<p><strong>📦 Avant la première consultation de la journée :</strong></p>
+<ol>
+<li>Cliquez sur <strong>"📦 Importer lots vaccins"</strong> (en haut de l'écran)</li>
+<li>Sélectionnez votre fichier Excel des lots (<code>.xlsx</code> ou <code>.xls</code>)</li>
+<li>Attendez la confirmation : ✅ "Lots importés avec succès"</li>
+</ol>
+<p><strong>Structure du fichier Excel attendu :</strong></p>
+<table>
+<thead>
+<tr>
+<th>Vaccin</th>
+<th>N° de lot</th>
+<th>Date de péremption</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Havrix 1440</td>
+<td>AB123456</td>
+<td>31.12.2025</td>
+</tr>
+<tr>
+<td>Encepur adultes</td>
+<td>CD789012</td>
+<td>30.06.2026</td>
+</tr>
+<tr>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+</tr>
+</tbody>
+</table>
+<p><strong>💡 Bon à savoir :</strong>
+- Les lots restent en mémoire pendant toute la session
+- Vous devez réimporter à chaque nouvelle ouverture de l'application
+- Un indicateur vous montre : "📦 Lots: non importés" ou "📦 Lots: X vaccins disponibles"</p>
+<hr />
+<h2 id="nouveau-patient-premiere-consultation-nouveau-patient">👤 Nouveau patient - Première consultation {#nouveau-patient}</h2>
+<h3 id="etape-1-selectionner-nouveau-voyageur">Étape 1 : Sélectionner "NOUVEAU VOYAGEUR"</h3>
+<p>Cliquez sur la carte <strong>✈️ NOUVEAU VOYAGEUR</strong></p>
+<h3 id="etape-2-chronometre-de-consultation">Étape 2 : Chronomètre de consultation</h3>
+<p>Un chronomètre démarre automatiquement en haut à droite :</p>
+<pre><code>┌─────────────────────────┐
+│ ⏱️ Consultation         │
+│    00:05:23            │
+│ [⏸️] [🔄]              │
+└─────────────────────────┘
+</code></pre>
+<ul>
+<li><strong>⏸️ Pause</strong> : Mettre en pause le chronomètre</li>
+<li><strong>🔄 Reset</strong> : Remettre à zéro</li>
+</ul>
+<p><strong>💡 Conseil :</strong> Le chronomètre reste visible même en scrollant (position fixe).</p>
+<h3 id="etape-3-dossier-patient-section-1">Étape 3 : Dossier Patient (Section 1)</h3>
+<h4 id="a-upload-du-pdf-kobotoolbox">A. Upload du PDF KoBoToolbox</h4>
+<pre><code>📤 Upload du formulaire KoBoToolbox
+┌─────────────────────────────────────┐
+│         📄                          │
+│  Cliquez ou glissez-déposez         │
+│  le PDF KoBoToolbox                 │
+│                                     │
+│  Les données patient seront         │
+│  extraites automatiquement          │
+└─────────────────────────────────────┘
+</code></pre>
+<p><strong>Actions :</strong>
+1. Cliquez sur la zone d'upload OU glissez-déposez votre PDF
+2. Attendez l'extraction (quelques secondes)
+3. Vérifiez le message : ✅ "PDF analysé avec succès"</p>
+<p><strong>⚠️ IMPORTANT - Problèmes d'extraction :</strong></p>
+<p>Si vous voyez : ❌ "Erreur : impossible d'extraire le texte du PDF"</p>
+<p><strong>Cause :</strong> Le PDF a été créé avec "Microsoft Print to PDF" (ne fonctionne pas)</p>
+<p><strong>Solution :</strong>
+1. Ouvrez le PDF dans votre navigateur (Chrome, Firefox, Edge)
+2. Clic droit → <strong>"Imprimer"</strong> (ou Ctrl+P)
+3. Destination : <strong>"Enregistrer au format PDF"</strong> (pas Microsoft Print to PDF !)
+4. Enregistrez le nouveau PDF
+5. Uploadez ce nouveau fichier</p>
+<h4 id="b-verification-des-donnees-extraites">B. Vérification des données extraites</h4>
+<p>Après extraction, vous verrez :</p>
+<pre><code>📋 Données extraites du PDF
+
+👤 Patient :
+  • Nom : Martin Dupont
+  • Date de naissance : 15.03.1985
+  • Poids : 75 kg
+  • Genre : Homme
+  • Adresse : Rue de la Paix 12, 1000 Lausanne
+  • Email : martin.dupont@example.com
+  • Téléphone : 076 123 45 67
+
+✈️ Voyage :                     [✏️ Modifier]
+  • Destination(s) : Tanzanie
+  • Dates : 2026-02-15 → 2026-03-01 (14 jours)
+  • Nature : Tourisme indépendant, Aventure
+  • Hébergement : Hôtel
+  • Activités : Randonnée
+  • Zones rurales : Oui
+
+🏥 Antécédents médicaux :        [✏️ Modifier]
+  • Comorbidités : Asthme
+  • Allergie œufs : Non
+  • Autres allergies : -
+  • Varicelle (maladie contractée) : Oui
+  • Problème vaccination antérieure : Non
+  • Médicaments réguliers : Non
+</code></pre>
+<p><strong>Actions possibles :</strong>
+- ✏️ <strong>Modifier</strong> : Cliquez sur le bouton pour éditer voyage ou antécédents médicaux
+- Les données patient (nom, date de naissance, etc.) se modifient via le bouton <strong>"✏️ Modifier"</strong> dans la section info patient</p>
+<h3 id="etape-4-notes-de-consultation-section-2">Étape 4 : Notes de consultation (Section 2)</h3>
+<pre><code>📝 Notes de consultation
+
+Conseils donnés :
+☐ Protection moustiques
+☐ Prévention diarrhée voyageurs  
+☐ Fièvre de retour de voyage
+☐ Mal de l'altitude
+☐ Contraception d'urgence
+☐ WhatsApp disponible
+
+Notes libres :
+┌─────────────────────────────────────┐
+│ [Saisir vos notes ici...]           │
+│                                     │
+│                                     │
+└─────────────────────────────────────┘
+</code></pre>
+<p><strong>Actions :</strong>
+1. Cochez les conseils donnés (multi-sélection possible)
+2. Ajoutez des notes libres dans le champ texte</p>
+<p><strong>💡 Conseil :</strong> Les notes libres sont optionnelles mais recommandées pour traçabilité.</p>
+<h3 id="etape-5-vaccins-rappels-section-3">Étape 5 : Vaccins &amp; Rappels (Section 3)</h3>
+<h4 id="a-vaccins-administres-aujourdhui">A. Vaccins administrés aujourd'hui</h4>
+<pre><code>💉 Vaccins administrés aujourd'hui
+
+Sélectionner les vaccins :
+┌─────────────────────────────────────┐
+│ ☐ Havrix 1440 (Lot: AB123)         │
+│    ⚠️ Expire: 31.12.2025            │
+│ ☐ Encepur adultes (Lot: CD789)     │
+│    ✅ OK jusqu'au 30.06.2026         │
+│ ☐ Ixiaro (Lot: EF012)              │
+│    ⚠️ Stock bas: 2 doses restantes  │
+└─────────────────────────────────────┘
+</code></pre>
+<p><strong>Actions :</strong>
+1. Cochez les vaccins administrés
+2. Les numéros de lot sont automatiquement assignés
+3. Vérifiez les avertissements (péremption, stock)</p>
+<p><strong>Résultat :</strong></p>
+<pre><code>Vaccin                 N° de lot    [Action]
+─────────────────────────────────────────────
+Havrix 1440           AB123         [🗑️]
+Encepur adultes       CD789         [🗑️]
+</code></pre>
+<h4 id="b-rappels-a-planifier">B. Rappels à planifier</h4>
+<pre><code>📅 Rappels à planifier
+
+Sélectionner les vaccins nécessitant un rappel :
+┌─────────────────────────────────────┐
+│ ☐ Havrix 1440                       │
+│ ☐ Encepur adultes                   │
+│ ☐ Engerix B-20                      │
+└─────────────────────────────────────┘
+</code></pre>
+<p><strong>Actions :</strong>
+1. Cochez les vaccins qui nécessitent un rappel
+2. Les dates sont calculées automatiquement selon le calendrier vaccinal</p>
+<p><strong>Résultat :</strong></p>
+<pre><code>Vaccin            1er rappel      2ème rappel     [Action]
+──────────────────────────────────────────────────────────
+Encepur adultes   15.03.2026     15.12.2026      [🗑️]
+Engerix B-20      15.03.2026     15.08.2026      [🗑️]
+</code></pre>
+<p><strong>💡 Bon à savoir :</strong>
+- Le 1er rappel est calculé depuis aujourd'hui
+- Le 2ème rappel est calculé depuis le 1er rappel
+- Les dates sont basées sur le calendrier vaccinal intégré (27 vaccins)</p>
+<h3 id="etape-6-ordonnance-section-4">Étape 6 : Ordonnance (Section 4)</h3>
+<pre><code>💊 Ordonnance
+
+Date de l'ordonnance : [08.01.2026]
+
+⚠️ Poids du patient (kg) : [75]
+   Dosages pédiatriques calculés automatiquement
+   pour Malarone, Mephaquin, Riamet si poids saisi.
+
+Ajouter un médicament : [-- Sélectionner --] [Ajouter]
+</code></pre>
+<p><strong>Actions :</strong></p>
+<ol>
+<li><strong>Vérifier/modifier la date</strong> de l'ordonnance</li>
+<li><strong>Saisir le poids</strong> du patient (si différent du PDF ou pour pédiatrie)</li>
+<li><strong>Sélectionner un médicament</strong> dans la liste</li>
+<li>Cliquer <strong>"Ajouter"</strong></li>
+</ol>
+<p><strong>Liste des médicaments disponibles :</strong>
+- MALARONE cpr pell 250/100 mg (dosage automatique)
+- MEPHAQUIN cpr pell 250 mg (dosage automatique)
+- Doxycycline 100mg - Prophylaxie paludisme
+- RIAMET cpr 20 mg/120 mg (dosage automatique)
+- Vivotif caps 1EO
+- ACETAZOLAMIDE 125mg cpr
+- DEXAMETHASONE 4 mg cpr
+- MOTILIUM cpr mg 1 EO
+- Imodium 4mg cpr 1 EO
+- Doxycycline 200mg - PEP
+- Médicament personnalisé...</p>
+<p><strong>Exemple de résultat :</strong></p>
+<pre><code>┌─────────────────────────────────────┐
+│ MALARONE cpr pell 250/100 mg [🗑️]  │
+│                                     │
+│ Dosage (éditable) :                 │
+│ 1 cpr 1x/j à commencer 1 jour      │
+│ avant d'arriver dans la zone à     │
+│ risque, continuer 1x/j jusqu'à     │
+│ 7 jours après le retour.           │
+│                                     │
+│ [Poids: 75kg]                      │
+└─────────────────────────────────────┘
+</code></pre>
+<p><strong>💡 Dosages pédiatriques automatiques :</strong></p>
+<p>Pour <strong>Malarone, Mephaquin, Riamet</strong> :
+- Si poids &lt; 40 kg → Dosage pédiatrique calculé automatiquement
+- Posologie adaptée à l'âge/poids selon les recommandations</p>
+<p><strong>Médicament personnalisé :</strong></p>
+<ol>
+<li>Sélectionnez <strong>"Médicament personnalisé..."</strong></li>
+<li>Saisissez le nom : <code>[Nom du médicament]</code></li>
+<li>Saisissez la posologie : <code>[Instructions complètes]</code></li>
+<li>Cliquez <strong>"Ajouter"</strong></li>
+</ol>
+<p><strong>Format de page :</strong>
+- <strong>A5 (148 × 210 mm)</strong> : Format standard pour ordonnances (recommandé)
+- <strong>A4 (210 × 297 mm)</strong> : Format pour impression sur papier A4</p>
+<h3 id="etape-7-verification-du-dossier">Étape 7 : Vérification du dossier</h3>
+<p>Avant de finaliser, vérifiez le récapitulatif :</p>
+<pre><code>📁 Contenu du dossier patient
+
+✅ Formulaire KoBoToolbox: KoboToolbox2.pdf
+✅ Vaccins administrés: 2 vaccins
+✅ Rappels planifiés: 2 vaccins
+✅ Notes de consultation: 45 mots
+✅ Ordonnance: 1 médicament
+</code></pre>
+<p><strong>Légende :</strong>
+- ✅ Vert = Données présentes
+- 📋 Gris = Données vides (optionnel)</p>
+<h3 id="etape-8-generation-des-documents">Étape 8 : Génération des documents</h3>
+<p>En bas de page, vous avez 4 boutons :</p>
+<pre><code>[💾 Sauvegarder consultation (JSON)]  
+[📄 Exporter PDF consultation]
+[💊 Générer ordonnance PDF]
+[🔄 Nouvelle consultation]
+</code></pre>
+<h4 id="option-a-sauvegarder-en-json-recommande">Option A : Sauvegarder en JSON (RECOMMANDÉ)</h4>
+<p><strong>Cliquez sur "💾 Sauvegarder consultation (JSON)"</strong></p>
+<p><strong>Résultat :</strong>
+- Fichier téléchargé : <code>martin_dupont_15-03-1985.json</code>
+- Contient TOUTES les données de la consultation
+- Permet de recharger le dossier ultérieurement</p>
+<p><strong>⚠️ IMPORTANT :</strong>
+- Le nom du fichier est formaté : <code>nom_prenom_jj-mm-aaaa.json</code>
+- <strong>Conservez ce fichier</strong> pour les prochaines consultations du patient</p>
+<h4 id="option-b-exporter-pdf-consultation">Option B : Exporter PDF consultation</h4>
+<p><strong>Cliquez sur "📄 Exporter PDF consultation"</strong></p>
+<p><strong>Contenu du PDF :</strong>
+- Informations patient complètes
+- Détails du voyage
+- Antécédents médicaux
+- Vaccins administrés (avec lots)
+- Rappels planifiés (avec dates)
+- Notes de consultation
+- Durée de consultation</p>
+<p><strong>Format :</strong> Document A4 professionnel avec en-tête</p>
+<h4 id="option-c-generer-ordonnance-pdf">Option C : Générer ordonnance PDF</h4>
+<p><strong>Cliquez sur "💊 Générer ordonnance PDF"</strong></p>
+<p><strong>Contenu de l'ordonnance :</strong>
+- En-tête : Dr. Ludovico Cobuccio
+- Date de l'ordonnance
+- Informations patient (nom, date naissance, adresse)
+- Liste des médicaments avec posologies complètes
+- Signature et cachet</p>
+<p><strong>Format :</strong> A5 ou A4 selon votre choix</p>
+<h4 id="option-d-nouvelle-consultation">Option D : Nouvelle consultation</h4>
+<p><strong>Cliquez sur "🔄 Nouvelle consultation"</strong></p>
+<ul>
+<li>Réinitialise tous les champs</li>
+<li>Retour à l'écran d'accueil</li>
+<li>Le chronomètre est remis à zéro</li>
+</ul>
+<p><strong>⚠️ Attention :</strong> Sauvegardez avant de cliquer !</p>
+<hr />
+<h2 id="patient-connu-nouvelle-consultation-patient-connu">📂 Patient connu - Nouvelle consultation {#patient-connu}</h2>
+<h3 id="etape-1-selectionner-patient-connu">Étape 1 : Sélectionner "PATIENT CONNU"</h3>
+<p>Cliquez sur la carte <strong>📂 PATIENT CONNU</strong></p>
+<h3 id="etape-2-charger-le-dossier-json">Étape 2 : Charger le dossier JSON</h3>
+<pre><code>📂 Charger le dossier patient (JSON)
+
+[Choisir un fichier...]  Aucun fichier sélectionné
+</code></pre>
+<p><strong>Actions :</strong>
+1. Cliquez sur <strong>"Choisir un fichier..."</strong>
+2. Sélectionnez le fichier JSON du patient (ex: <code>martin_dupont_15-03-1985.json</code>)
+3. Attendez le chargement</p>
+<p><strong>Résultat :</strong></p>
+<pre><code>✅ martin_dupont_15-03-1985.json chargé
+   Martin Dupont • 15.03.1985 • 2 consultation(s)
+</code></pre>
+<h3 id="etape-3-choisir-le-type-de-consultation">Étape 3 : Choisir le type de consultation</h3>
+<p>Deux options s'affichent :</p>
+<pre><code>┌─────────────┐  ┌─────────────┐
+│      ✈️     │  │      💉     │
+│   NOUVEAU   │  │   RAPPEL    │
+│   VOYAGE    │  │   VACCIN    │
+│             │  │             │
+│ Upload PDF  │  │ Pas de      │
+│ KoBoToolbox │  │nouveau      │
+│             │  │ voyage      │
+└─────────────┘  └─────────────┘
+</code></pre>
+<h4 id="option-a-nouveau-voyage">Option A : NOUVEAU VOYAGE</h4>
+<p><strong>Quand l'utiliser :</strong>
+- Le patient part en voyage
+- Nouveau formulaire KoBoToolbox rempli
+- Peut nécessiter nouveaux vaccins</p>
+<p><strong>Processus :</strong>
+1. Upload du nouveau PDF KoBoToolbox
+2. Les nouvelles données voyage s'ajoutent à l'historique
+3. Continuez comme pour un nouveau patient (Étapes 4-8)</p>
+<h4 id="option-b-rappel-vaccin">Option B : RAPPEL VACCIN</h4>
+<p><strong>Quand l'utiliser :</strong>
+- Patient vient uniquement pour rappel
+- Pas de nouveau voyage
+- Pas de nouveau formulaire KoBoToolbox</p>
+<p><strong>Processus :</strong>
+1. Pas d'upload PDF
+2. Accès direct aux sections Vaccins &amp; Ordonnance
+3. L'historique patient est affiché</p>
+<h3 id="etape-4-historique-du-patient">Étape 4 : Historique du patient</h3>
+<p>Une fois le JSON chargé, vous voyez :</p>
+<pre><code>📚 Historique : 2 consultation(s)  [▼ Voir historique]
+</code></pre>
+<p><strong>Cliquez sur "▼ Voir historique"</strong> pour afficher :</p>
+<pre><code>─────────────────────────────────────────────────────
+Consultation #1 - 15.01.2025 (Voyage) - 23 min
+
+Voyage :
+  • Destination(s) : Kenya
+  • Dates : 2025-02-10 → 2025-02-24 (14 jours)
+
+Antécédents médicaux :
+  • Comorbidités : Asthme
+  • Allergie œufs : Non
+
+Notes : Patient en bonne santé générale
+
+Vaccins administrés :
+  • Havrix 1440 (Lot: AB123)
+  • Encepur adultes (Lot: CD789)
+
+Rappels planifiés :
+  • Encepur adultes - 1er rappel: 15.02.2025
+
+Ordonnance :
+  • MALARONE cpr pell 250/100 mg
+
+─────────────────────────────────────────────────────
+Consultation #2 - 08.01.2026 (Rappel) - 5 min
+
+Vaccins administrés :
+  • Encepur adultes (Lot: EF012)
+
+─────────────────────────────────────────────────────
+</code></pre>
+<p><strong>💡 Bon à savoir :</strong>
+- L'historique complet est toujours accessible
+- Vous voyez tous les vaccins déjà administrés
+- Les rappels planifiés sont affichés</p>
+<h3 id="etape-5-nouvelle-consultation">Étape 5 : Nouvelle consultation</h3>
+<p>Procédez normalement selon le type de consultation :
+- <strong>Nouveau voyage</strong> : Upload PDF + toutes les sections
+- <strong>Rappel vaccin</strong> : Seulement Vaccins + Ordonnance</p>
+<h3 id="etape-6-sauvegarde-avec-mise-a-jour">Étape 6 : Sauvegarde avec mise à jour</h3>
+<p><strong>Important :</strong> Lorsque vous cliquez sur <strong>"💾 Sauvegarder consultation (JSON)"</strong> :</p>
+<ul>
+<li>Le fichier JSON est <strong>mis à jour</strong> avec la nouvelle consultation</li>
+<li>Le nom du fichier reste le même : <code>martin_dupont_15-03-1985.json</code></li>
+<li>L'historique s'enrichit automatiquement</li>
+</ul>
+<p><strong>⚠️ Conseil :</strong> Remplacez l'ancien fichier par le nouveau dans votre dossier patient.</p>
+<hr />
+<h2 id="sections-de-lapplication-sections-application">📚 Sections de l'application {#sections-application}</h2>
+<h3 id="vue-densemble">Vue d'ensemble</h3>
+<p>L'application est organisée en sections accordéon (dépliables) :</p>
+<pre><code>▼ 📂 Dossier Patient          [Section toujours ouverte]
+▶ 📝 Notes de consultation    [Cliquer pour ouvrir/fermer]
+▶ 💉 Vaccins &amp; Rappels        [Cliquer pour ouvrir/fermer]
+▶ 💊 Ordonnance               [Cliquer pour ouvrir/fermer]
+</code></pre>
+<p><strong>Fonctionnement :</strong>
+- Cliquez sur une section pour l'ouvrir/fermer
+- <strong>Plusieurs sections peuvent être ouvertes simultanément</strong>
+- Le chronomètre reste toujours visible en haut à droite</p>
+<h3 id="section-1-dossier-patient">Section 1 : 📂 Dossier Patient</h3>
+<p><strong>Contenu :</strong>
+- Zone d'upload PDF
+- Données extraites du PDF
+- Informations patient éditables
+- Historique des consultations (si patient connu)</p>
+<p><strong>Actions possibles :</strong>
+- ✏️ Modifier les données patient
+- 🔍 Consulter l'historique
+- 📄 Voir les données extraites</p>
+<h3 id="section-2-notes-de-consultation">Section 2 : 📝 Notes de consultation</h3>
+<p><strong>Contenu :</strong>
+- Chronomètre (durée de consultation)
+- Conseils donnés (checkboxes)
+- Notes libres (textarea)</p>
+<p><strong>💡 Conseils disponibles :</strong>
+1. Protection moustiques
+2. Prévention diarrhée voyageurs
+3. Fièvre de retour de voyage
+4. Mal de l'altitude
+5. Contraception d'urgence
+6. WhatsApp disponible pour contact</p>
+<h3 id="section-3-vaccins-rappels">Section 3 : 💉 Vaccins &amp; Rappels</h3>
+<p><strong>Sous-sections :</strong></p>
+<h4 id="a-vaccins-administres-aujourdhui_1">A. Vaccins administrés aujourd'hui</h4>
+<ul>
+<li>Liste des vaccins disponibles (depuis fichier Excel importé)</li>
+<li>Sélection multiple</li>
+<li>Attribution automatique des numéros de lot</li>
+<li>Avertissements (péremption, stock)</li>
+</ul>
+<h4 id="b-rappels-a-planifier_1">B. Rappels à planifier</h4>
+<ul>
+<li>Liste des vaccins du calendrier</li>
+<li>Calcul automatique des dates de rappel</li>
+<li>Support pour 1er et 2ème rappel</li>
+</ul>
+<h3 id="section-4-ordonnance">Section 4 : 💊 Ordonnance</h3>
+<p><strong>Champs :</strong>
+- Date de l'ordonnance
+- Poids du patient (pour dosages pédiatriques)
+- Liste de médicaments prédéfinis
+- Option médicament personnalisé
+- Format de page (A5 / A4)</p>
+<hr />
+<h2 id="generation-des-documents-generation-documents">📄 Génération des documents {#génération-documents}</h2>
+<h3 id="document-1-fichier-json">Document 1 : Fichier JSON</h3>
+<p><strong>Nom du fichier :</strong> <code>nom_prenom_jj-mm-aaaa.json</code></p>
+<p><strong>Contenu :</strong></p>
+<pre><code class="language-json">{
+  &quot;patient&quot;: {
+    &quot;nom&quot;: &quot;Martin Dupont&quot;,
+    &quot;dob&quot;: &quot;1985-03-15&quot;,
+    &quot;poids&quot;: 75,
+    ...
+  },
+  &quot;consultations&quot;: [
+    {
+      &quot;id&quot;: 1,
+      &quot;date&quot;: &quot;2026-01-08&quot;,
+      &quot;type&quot;: &quot;consultation_voyage&quot;,
+      &quot;duration_minutes&quot;: 23,
+      &quot;voyage&quot;: {...},
+      &quot;medical&quot;: {...},
+      &quot;vaccines_administered&quot;: [...],
+      &quot;boosters_scheduled&quot;: [...],
+      &quot;prescription&quot;: {...},
+      &quot;notes&quot;: &quot;...&quot;
+    }
+  ]
+}
+</code></pre>
+<p><strong>Utilisation :</strong>
+- Fichier source unique de vérité
+- Rechargeable pour consultations ultérieures
+- Contient l'historique complet
+- Format standard JSON (lisible par d'autres outils)</p>
+<h3 id="document-2-pdf-de-consultation">Document 2 : PDF de consultation</h3>
+<p><strong>Format :</strong> A4 professionnel</p>
+<p><strong>Structure :</strong></p>
+<pre><code>┌─────────────────────────────────────┐
+│  CONSULTATION MÉDECINE DE VOYAGE   │
+│  Dr. Ludovico Cobuccio             │
+├─────────────────────────────────────┤
+│                                     │
+│  PATIENT                            │
+│  Nom : Martin Dupont                │
+│  Date naissance : 15.03.1985        │
+│  ...                                │
+│                                     │
+│  VOYAGE                             │
+│  Destination : Tanzanie             │
+│  Dates : 15.02.2026 → 01.03.2026   │
+│  ...                                │
+│                                     │
+│  ANTÉCÉDENTS MÉDICAUX               │
+│  Comorbidités : Asthme              │
+│  ...                                │
+│                                     │
+│  VACCINS ADMINISTRÉS                │
+│  • Havrix 1440 (Lot: AB123)        │
+│  • Encepur adultes (Lot: CD789)    │
+│                                     │
+│  RAPPELS PLANIFIÉS                  │
+│  • Encepur - 15.03.2026            │
+│                                     │
+│  NOTES DE CONSULTATION              │
+│  [Vos notes...]                     │
+│                                     │
+│  Durée : 23 minutes                │
+└─────────────────────────────────────┘
+</code></pre>
+<p><strong>Utilisation :</strong>
+- Dossier médical
+- Archivage papier
+- Envoi au patient</p>
+<h3 id="document-3-pdf-dordonnance">Document 3 : PDF d'ordonnance</h3>
+<p><strong>Format :</strong> A5 ou A4</p>
+<p><strong>Structure :</strong></p>
+<pre><code>┌─────────────────────────────────────┐
+│  Dr. Ludovico COBUCCIO             │
+│  Spécialiste FMH en médecine       │
+│  interne générale                  │
+│  Via Roma 12, 6900 Lugano          │
+│  Tel: 091 123 45 67                │
+│  GLN: 7601234567890                │
+├─────────────────────────────────────┤
+│                                     │
+│  Lugano, le 08.01.2026             │
+│                                     │
+│  ORDONNANCE                         │
+│                                     │
+│  Pour : Martin Dupont               │
+│  Né(e) le : 15.03.1985             │
+│  Adresse : Rue de la Paix 12       │
+│            1000 Lausanne            │
+│                                     │
+│  Rp/                                │
+│                                     │
+│  MALARONE cpr pell 250/100 mg      │
+│                                     │
+│  1 cpr 1x/j à commencer 1 jour     │
+│  avant d'arriver dans la zone à    │
+│  risque, continuer 1x/j jusqu'à    │
+│  7 jours après le retour.          │
+│                                     │
+│  Poids : 75 kg                     │
+│                                     │
+│  ─────────────────────────────     │
+│                                     │
+│             [Signature]             │
+│                                     │
+└─────────────────────────────────────┘
+</code></pre>
+<p><strong>Utilisation :</strong>
+- Remise au patient
+- Pharmacie
+- Assurance maladie</p>
+<hr />
+<h2 id="resolution-de-problemes-resolution-problemes">🔧 Résolution de problèmes {#résolution-problèmes}</h2>
+<h3 id="probleme-1-erreur-impossible-dextraire-le-texte-du-pdf">Problème 1 : ❌ "Erreur : impossible d'extraire le texte du PDF"</h3>
+<p><strong>Cause :</strong> PDF créé avec "Microsoft Print to PDF"</p>
+<p><strong>Solution :</strong>
+1. Ouvrez le PDF dans un navigateur (Chrome, Firefox, Edge)
+2. Clic droit → "Imprimer" (ou Ctrl+P)
+3. Destination : "Enregistrer au format PDF" (<strong>pas</strong> Microsoft Print to PDF)
+4. Enregistrez
+5. Uploadez le nouveau fichier</p>
+<p><strong>Alternative :</strong>
+- Utilisez directement l'option "Download" depuis KoBoToolbox (format natif)</p>
+<h3 id="probleme-2-lots-non-importes">Problème 2 : 📦 "Lots: non importés"</h3>
+<p><strong>Cause :</strong> Fichier Excel des lots non chargé</p>
+<p><strong>Solution :</strong>
+1. Cliquez sur "📦 Importer lots vaccins"
+2. Sélectionnez votre fichier Excel
+3. Vérifiez la structure du fichier (colonnes: Vaccin, N° de lot, Date de péremption)</p>
+<p><strong>💡 Note :</strong> Les lots doivent être réimportés à chaque ouverture de l'application.</p>
+<h3 id="probleme-3-dates-de-rappel-incorrectes">Problème 3 : Dates de rappel incorrectes</h3>
+<p><strong>Cause :</strong> Calendrier vaccinal non chargé (rare, il est intégré)</p>
+<p><strong>Solution :</strong>
+- Vérifiez que le vaccin est bien dans la liste
+- Si vaccin non reconnu, contactez le support</p>
+<h3 id="probleme-4-dosage-pediatrique-non-calcule">Problème 4 : Dosage pédiatrique non calculé</h3>
+<p><strong>Cause :</strong> Poids non renseigné</p>
+<p><strong>Solution :</strong>
+1. Dans la section Ordonnance
+2. Saisissez le poids dans le champ "Poids du patient (kg)"
+3. Le dosage se mettra à jour automatiquement pour Malarone, Mephaquin, Riamet</p>
+<h3 id="probleme-5-fichier-json-ne-se-charge-pas">Problème 5 : Fichier JSON ne se charge pas</h3>
+<p><strong>Causes possibles :</strong>
+- Fichier corrompu
+- Mauvais format
+- Version incompatible</p>
+<p><strong>Solutions :</strong>
+1. Vérifiez l'extension : doit être <code>.json</code>
+2. Ouvrez le fichier dans un éditeur de texte pour vérifier qu'il n'est pas vide
+3. Si problème persiste, recommencez la consultation</p>
+<h3 id="probleme-6-chronometre-non-visible">Problème 6 : Chronomètre non visible</h3>
+<p><strong>Cause :</strong> Résolution d'écran trop petite</p>
+<p><strong>Solution :</strong>
+- Zoomez/dézoomez la page (Ctrl + molette souris)
+- Le chronomètre est en position fixe en haut à droite</p>
+<h3 id="probleme-7-pdf-ne-se-genere-pas">Problème 7 : PDF ne se génère pas</h3>
+<p><strong>Cause :</strong> Popup bloquée par le navigateur</p>
+<p><strong>Solution :</strong>
+1. Autorisez les popups pour cette page
+2. Dans Chrome : icône à droite de la barre d'adresse
+3. Cliquez sur "Toujours autoriser les fenêtres contextuelles"</p>
+<h3 id="probleme-8-donnees-extraites-incompletes">Problème 8 : Données extraites incomplètes</h3>
+<p><strong>Causes possibles :</strong>
+- Formulaire KoBoToolbox incomplet
+- Version du formulaire différente
+- Problème d'encodage dans le PDF</p>
+<p><strong>Solutions :</strong>
+1. Vérifiez que le formulaire KoBoToolbox est bien rempli
+2. Utilisez le bouton "✏️ Modifier" pour compléter manuellement
+3. Les données peuvent être éditées avant sauvegarde</p>
+<hr />
+<h2 id="conseils-et-bonnes-pratiques-conseils-pratiques">💡 Conseils et bonnes pratiques {#conseils-pratiques}</h2>
+<h3 id="workflow-recommande">🎯 Workflow recommandé</h3>
+<h4 id="debut-de-journee">Début de journée</h4>
+<ol>
+<li>✅ Ouvrir l'application</li>
+<li>✅ Importer le fichier des lots de vaccins</li>
+<li>✅ Vérifier : "📦 Lots: X vaccins disponibles"</li>
+</ol>
+<h4 id="pour-chaque-consultation">Pour chaque consultation</h4>
+<ol>
+<li>✅ Choisir le type (Nouveau / Connu)</li>
+<li>✅ Charger JSON si patient connu</li>
+<li>✅ Upload PDF KoBoToolbox</li>
+<li>✅ Vérifier les données extraites</li>
+<li>✅ Compléter les sections</li>
+<li>✅ <strong>Sauvegarder en JSON d'abord</strong> (important!)</li>
+<li>✅ Générer les PDF nécessaires</li>
+<li>✅ Archiver le JSON dans le dossier patient</li>
+</ol>
+<h4 id="fin-de-journee">Fin de journée</h4>
+<ul>
+<li>Pas d'action spécifique nécessaire</li>
+<li>Les données ne sont pas sauvegardées automatiquement</li>
+<li>Chaque consultation doit être exportée</li>
+</ul>
+<h3 id="organisation-des-fichiers">📁 Organisation des fichiers</h3>
+<p><strong>Structure recommandée :</strong></p>
+<pre><code>Dossiers_Patients/
+├── DUPONT_Martin/
+│   ├── martin_dupont_15-03-1985.json          ← JSON (source)
+│   ├── 2026-01-08_consultation.pdf             ← PDF consultation
+│   ├── 2026-01-08_ordonnance.pdf               ← Ordonnance
+│   └── KoboToolbox_DUPONT_Martin_2026-01.pdf   ← PDF original
+├── MARTIN_Sophie/
+│   ├── sophie_martin_22-07-1990.json
+│   └── ...
+└── ...
+</code></pre>
+<p><strong>💡 Conseil :</strong> Créez un dossier par patient avec tous ses documents.</p>
+<h3 id="gestion-du-temps">⏱️ Gestion du temps</h3>
+<p><strong>Chronomètre :</strong>
+- Lance automatiquement au début de consultation
+- Utilisez ⏸️ si interruption (téléphone, urgence)
+- Le temps final est enregistré dans le JSON et le PDF</p>
+<p><strong>Temps moyens observés :</strong>
+- Nouveau patient avec voyage : 20-30 minutes
+- Patient connu - nouveau voyage : 15-20 minutes
+- Rappel seul : 5-10 minutes</p>
+<h3 id="confidentialite-et-securite">🔐 Confidentialité et sécurité</h3>
+<p><strong>Données sensibles :</strong>
+- ✅ L'application fonctionne <strong>entièrement en local</strong>
+- ✅ Aucune donnée n'est envoyée sur internet
+- ✅ Les fichiers JSON restent sur votre ordinateur
+- ⚠️ Protégez vos fichiers JSON (données patients sensibles)</p>
+<p><strong>Recommandations :</strong>
+- Stockez les JSON dans un dossier sécurisé
+- Sauvegardez régulièrement (USB, cloud chiffré, serveur)
+- Ne partagez pas les JSON par email non sécurisé</p>
+<h3 id="check-list-avant-finalisation">✅ Check-list avant finalisation</h3>
+<p><strong>Avant de cliquer "Sauvegarder" :</strong></p>
+<ul>
+<li>[ ] Données patient vérifiées</li>
+<li>[ ] Voyage/destination correcte</li>
+<li>[ ] Antécédents médicaux complets</li>
+<li>[ ] Vaccins administrés cochés</li>
+<li>[ ] Numéros de lots assignés</li>
+<li>[ ] Rappels planifiés si nécessaire</li>
+<li>[ ] Ordonnance complétée</li>
+<li>[ ] Notes de consultation rédigées</li>
+<li>[ ] Conseils donnés cochés</li>
+<li>[ ] Durée de consultation raisonnable</li>
+</ul>
+<h3 id="raccourcis-et-astuces">🚀 Raccourcis et astuces</h3>
+<p><strong>Clavier :</strong>
+- <code>Ctrl + P</code> : Imprimer (pour réenregistrer PDF)
+- <code>Ctrl + F</code> : Rechercher dans la page
+- <code>Ctrl + +/-</code> : Zoom in/out</p>
+<p><strong>Interface :</strong>
+- Double-clic sur le nom du patient → Copie dans le presse-papier
+- Glisser-déposer PDF directement sur la zone d'upload
+- Les accordéons restent ouverts (navigation facilitée)</p>
+<p><strong>Productivité :</strong>
+- Préparez le fichier des lots en début de journée
+- Gardez un template de notes fréquentes
+- Utilisez les médicaments prédéfinis quand possible</p>
+<h3 id="support">📞 Support</h3>
+<p><strong>En cas de problème :</strong>
+1. Consultez d'abord la section "Résolution de problèmes"
+2. Vérifiez que vous utilisez la dernière version (BUILD 28)
+3. Testez dans un autre navigateur (Chrome recommandé)</p>
+<p><strong>Feedback et suggestions :</strong>
+- Vos retours sont précieux pour améliorer l'application
+- Notez les bugs ou comportements inattendus
+- Suggérez des améliorations</p>
+<hr />
+<h2 id="resume-des-formats-de-fichiers">📋 Résumé des formats de fichiers</h2>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Extension</th>
+<th>Usage</th>
+<th>Sauvegarde</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Dossier patient</strong></td>
+<td><code>.json</code></td>
+<td>Source unique de vérité</td>
+<td>✅ Obligatoire</td>
+</tr>
+<tr>
+<td><strong>PDF consultation</strong></td>
+<td><code>.pdf</code></td>
+<td>Document professionnel</td>
+<td>⭕ Optionnel</td>
+</tr>
+<tr>
+<td><strong>Ordonnance</strong></td>
+<td><code>.pdf</code></td>
+<td>Prescription médicale</td>
+<td>⭕ Selon besoin</td>
+</tr>
+<tr>
+<td><strong>PDF KoBoToolbox</strong></td>
+<td><code>.pdf</code></td>
+<td>Formulaire original</td>
+<td>ℹ️ Conservation</td>
+</tr>
+<tr>
+<td><strong>Lots vaccins</strong></td>
+<td><code>.xlsx/.xls</code></td>
+<td>Base de données lots</td>
+<td>ℹ️ Réimport quotidien</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="points-cles-a-retenir">✅ Points clés à retenir</h2>
+<ol>
+<li>🔴 <strong>TOUJOURS sauvegarder en JSON</strong> avant de générer les PDF</li>
+<li>🔴 Le <strong>JSON est le fichier maître</strong> - conservez-le précieusement</li>
+<li>🟡 <strong>Importer les lots</strong> au début de chaque session</li>
+<li>🟡 <strong>Vérifier les données extraites</strong> du PDF avant de continuer</li>
+<li>🟢 Le <strong>chronomètre reste visible</strong> en permanence</li>
+<li>🟢 Les <strong>accordéons restent ouverts</strong> - pas besoin de tout refermer</li>
+<li>🟢 <strong>Plusieurs consultations</strong> peuvent être dans un seul JSON (historique)</li>
+</ol>
+<hr />
+<h2 id="glossaire">📚 Glossaire</h2>
+<p><strong>Accordéon</strong> : Section dépliable de l'interface (cliquer pour ouvrir/fermer)</p>
+<p><strong>JSON</strong> : Format de fichier texte structuré contenant toutes les données patient</p>
+<p><strong>KoBoToolbox</strong> : Plateforme de formulaires en ligne utilisée pour la collecte de données</p>
+<p><strong>Lot</strong> : Numéro unique identifiant un batch de vaccins</p>
+<p><strong>Rappel</strong> : Dose de vaccin supplémentaire administrée après la dose initiale</p>
+<p><strong>Build</strong> : Version de l'application (actuel: BUILD 28)</p>
+<hr />
+<p><strong>🎉 Vous êtes maintenant prêt à utiliser Travel Doctor App !</strong></p>
+<p><em>Version du manuel : 1.0 - Janvier 2026</em>
+<em>Application : Travel Doctor App v1.0 BUILD 28</em></p>
+        
+        <hr>
+        <footer style="text-align: center; color: #666; padding: 20px 0;">
+            <p><strong>🎉 Vous êtes maintenant prêt à utiliser Travel Doctor App !</strong></p>
+            <p><em>Version du manuel : 1.0 - Janvier 2026</em><br>
+            <em>Application : Travel Doctor App v1.0 BUILD 28</em></p>
+        </footer>
+    </div>
+</body>
+</html>
