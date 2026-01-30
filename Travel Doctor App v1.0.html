@@ -135,9 +135,25 @@
         .history-consultation h5 { margin: 0 0 8px 0; color: #1976D2; font-size: 14px; }
         .history-section { margin-bottom: 8px; font-size: 13px; }
         .history-section strong { color: #555; }
+        .notes-expandable { cursor: pointer; }
+        .notes-expandable:hover { background: #e3f2fd; border-radius: 4px; }
+        .notes-expand-hint { color: #1976D2; font-size: 11px; margin-left: 5px; }
         .history-list { margin: 5px 0 5px 15px; padding: 0; }
         .history-list li { margin-bottom: 3px; color: #666; }
         
+        /* USER SELECTION SCREEN */
+        .user-select-screen { text-align: center; padding: 60px 20px; }
+        .user-select-screen h1 { font-size: 32px; margin-bottom: 30px; color: #2c3e50; }
+        .user-select-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; max-width: 800px; margin: 0 auto 20px auto; }
+        .user-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px 20px; border-radius: 10px; cursor: pointer; transition: all 0.3s; box-shadow: 0 3px 10px rgba(0,0,0,0.2); }
+        .user-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+        .user-card.invited { background: linear-gradient(135deg, #a8a8a8 0%, #888888 100%); }
+        .user-card .user-icon { font-size: 36px; margin-bottom: 10px; }
+        .user-card .user-name { font-size: 16px; font-weight: bold; }
+        .invited-input { margin-top: 15px; padding: 12px; font-size: 16px; border: 2px solid #667eea; border-radius: 8px; width: 300px; max-width: 90%; }
+        .invited-confirm { margin-top: 10px; padding: 12px 30px; font-size: 16px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        .invited-confirm:hover { background: #5a6fd6; }
+
         /* HOME SCREEN */
         .home-screen { text-align: center; padding: 60px 20px; position: relative; }
         .home-screen h1 { font-size: 32px; margin-bottom: 10px; color: #2c3e50; }
@@ -167,8 +183,53 @@
 </head>
 <body>
     <div class="container">
+        <!-- USER SELECTION SCREEN -->
+        <div id="userSelectScreen" class="user-select-screen">
+            <h1>🏥 Travel Doctor App</h1>
+            <h2 style="color: #555; font-size: 18px; margin-bottom: 30px;">Qui effectue la consultation ?</h2>
+
+            <div class="user-select-grid">
+                <div class="user-card" onclick="selectUser('Ludovico Cobuccio')">
+                    <div class="user-icon">👨‍⚕️</div>
+                    <div class="user-name">Ludovico Cobuccio</div>
+                </div>
+                <div class="user-card" onclick="selectUser('Aicha Yusuf')">
+                    <div class="user-icon">👩‍⚕️</div>
+                    <div class="user-name">Aicha Yusuf</div>
+                </div>
+                <div class="user-card" onclick="selectUser('Marie-Jo Barbalat')">
+                    <div class="user-icon">👩‍⚕️</div>
+                    <div class="user-name">Marie-Jo Barbalat</div>
+                </div>
+                <div class="user-card" onclick="selectUser('Annie Hérard')">
+                    <div class="user-icon">👩‍⚕️</div>
+                    <div class="user-name">Annie Hérard</div>
+                </div>
+                <div class="user-card invited" onclick="showInvitedInput()">
+                    <div class="user-icon">👤</div>
+                    <div class="user-name">Invité(e)</div>
+                </div>
+            </div>
+
+            <div id="invitedInputSection" style="display: none;">
+                <input type="text" id="invitedName" class="invited-input" placeholder="Entrez votre nom...">
+                <br>
+                <button class="invited-confirm" onclick="confirmInvitedUser()">Confirmer</button>
+            </div>
+
+            <div id="lotsSetupSection" style="display: none; margin-top: 40px; padding: 30px; background: #f5f5f5; border-radius: 12px; max-width: 500px; margin-left: auto; margin-right: auto;">
+                <h3 style="color: #1565C0; margin-bottom: 20px;">📦 Lots de vaccins</h3>
+                <div id="lotsStatusStartup" style="margin-bottom: 20px; padding: 15px; background: white; border-radius: 8px; color: #666;"></div>
+                <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                    <button type="button" class="btn-primary" onclick="document.getElementById('lotsUploadStartup').click()">📦 Importer lots vaccins</button>
+                    <input type="file" id="lotsUploadStartup" accept=".xlsx,.xls" style="display:none" onchange="handleLotsUploadStartup(event)">
+                    <button type="button" class="btn-success" onclick="proceedToHome()">Continuer ➔</button>
+                </div>
+            </div>
+        </div>
+
         <!-- HOME SCREEN -->
-        <div id="homeScreen" class="home-screen">
+        <div id="homeScreen" class="home-screen hidden">
             <h1>🏥 Travel Doctor App</h1>
             
             <h2 style="color: #555; font-size: 18px; margin: 40px 0 30px 0;">Choisissez le type de consultation</h2>
@@ -518,6 +579,7 @@ let chronometerStartTime = null;
 let chronometerElapsed = 0;
 let chronometerPaused = false;
 let chronometerFinalTime = null;
+let currentUser = null;
 
 // ==================== INITIALIZATION ====================
 document.addEventListener('DOMContentLoaded', function() {
@@ -558,6 +620,80 @@ document.addEventListener('DOMContentLoaded', function() {
     renderBoosterCheckboxList();
     updateDataStatusDisplay();
 });
+
+// ==================== USER SELECTION ====================
+function selectUser(userName) {
+    currentUser = userName;
+    document.getElementById('invitedInputSection').style.display = 'none';
+    document.getElementById('lotsSetupSection').style.display = 'block';
+    updateLotsStatusStartup();
+}
+
+function showInvitedInput() {
+    document.getElementById('invitedInputSection').style.display = 'block';
+    document.getElementById('invitedName').focus();
+}
+
+function confirmInvitedUser() {
+    const name = document.getElementById('invitedName').value.trim();
+    if (name) {
+        selectUser(name);
+    } else {
+        alert('Veuillez entrer votre nom');
+    }
+}
+
+function updateLotsStatusStartup() {
+    const statusDiv = document.getElementById('lotsStatusStartup');
+    if (vaccineLots.length > 0) {
+        const uniqueVaccines = [...new Set(vaccineLots.map(l => l.vaccine))].length;
+        statusDiv.innerHTML = '✅ <strong>' + vaccineLots.length + ' lots</strong> chargés (' + uniqueVaccines + ' vaccins)';
+        statusDiv.style.color = '#2e7d32';
+    } else {
+        statusDiv.innerHTML = '⚠️ Aucun lot chargé - veuillez importer un fichier Excel';
+        statusDiv.style.color = '#ef6c00';
+    }
+}
+
+function handleLotsUploadStartup(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+            vaccineLots = [];
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                if (row[0] && row[1]) {
+                    vaccineLots.push({
+                        vaccine: row[0].toString().trim(),
+                        lot: row[1].toString().trim(),
+                        expiration: row[2] ? excelDateToJSDate(row[2]) : null
+                    });
+                }
+            }
+            localStorage.setItem('vaccineLots', JSON.stringify(vaccineLots));
+            localStorage.setItem('vaccineLotsDate', new Date().toISOString());
+            updateLotsStatusStartup();
+            alert('✅ Lots importés: ' + vaccineLots.length + ' entrées');
+        } catch (error) {
+            alert('❌ Erreur lecture fichier: ' + error.message);
+        }
+    };
+    reader.readAsArrayBuffer(file);
+    event.target.value = '';
+}
+
+function proceedToHome() {
+    document.getElementById('userSelectScreen').classList.add('hidden');
+    document.getElementById('homeScreen').classList.remove('hidden');
+}
 
 // ==================== NAVIGATION ====================
 let consultationMode = null; // 'new_patient', 'known_patient_new_voyage', 'known_patient_rappel'
@@ -633,9 +769,58 @@ function startRappelOnly() {
     document.getElementById('appContent').style.display = 'block';
     document.getElementById('pdfUploadSection').style.display = 'none';
     displayPatientHistoryInApp();
-    
+
+    // Prefill vaccines from scheduled boosters
+    prefillScheduledBoosters();
+
     // Start chronometer automatically
     startChronometer();
+}
+
+function prefillScheduledBoosters() {
+    if (!loadedPatientJSON || !loadedPatientJSON.consultations) return;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Collect all scheduled boosters from all consultations
+    const scheduledVaccines = new Set();
+
+    loadedPatientJSON.consultations.forEach(consult => {
+        if (consult.boosters_scheduled) {
+            consult.boosters_scheduled.forEach(booster => {
+                // Check if due_date_1 is today or past
+                if (booster.due_date_1) {
+                    const dueDate1 = new Date(booster.due_date_1);
+                    dueDate1.setHours(0, 0, 0, 0);
+                    if (dueDate1 <= today) {
+                        scheduledVaccines.add(booster.vaccine);
+                    }
+                }
+                // Check if due_date_2 is today or past
+                if (booster.due_date_2) {
+                    const dueDate2 = new Date(booster.due_date_2);
+                    dueDate2.setHours(0, 0, 0, 0);
+                    if (dueDate2 <= today) {
+                        scheduledVaccines.add(booster.vaccine);
+                    }
+                }
+            });
+        }
+    });
+
+    // Add scheduled vaccines to administered vaccines
+    scheduledVaccines.forEach(vaccine => {
+        if (!administeredVaccines.some(v => v.vaccine === vaccine)) {
+            const lots = vaccineLots.filter(l => l.vaccine === vaccine && !isLotExpired(l.expiration));
+            administeredVaccines.push({ vaccine: vaccine, lot: lots.length > 0 ? lots[0].lot : '', id: Date.now() + Math.random() });
+        }
+    });
+
+    // Update UI
+    renderVaccineCheckboxList();
+    renderAdministeredVaccinesTable();
+    updateDossierStatus();
 }
 
 function displayPatientHistoryInApp() {
@@ -1123,14 +1308,15 @@ function renderBoosterCheckboxList() {
         container.innerHTML = '<div class="no-data-message">📅 Importez d\'abord le calendrier vaccinal</div>';
         return;
     }
-    const vaccinesWithBoosters = vaccineSchedule.filter(v => v.booster1 || v.booster2);
-    container.innerHTML = vaccinesWithBoosters.map(vaccine => {
+    container.innerHTML = vaccineSchedule.map(vaccine => {
         const isChecked = plannedBoosters.some(b => b.vaccine === vaccine.name);
         let boosterInfo = '';
         if (vaccine.booster1) {
             boosterInfo = '<span style="color: #666; font-size: 12px; margin-left: 5px;">→ ' + vaccine.booster1;
             if (vaccine.booster2) boosterInfo += ', ' + vaccine.booster2;
             boosterInfo += '</span>';
+        } else {
+            boosterInfo = '<span style="color: #999; font-size: 12px; margin-left: 5px;">(date manuelle)</span>';
         }
         return '<div class="checkbox-item ' + (isChecked ? 'selected' : '') + '" onclick="toggleBoosterSelection(\'' + escapeHtml(vaccine.name) + '\')"><input type="checkbox" ' + (isChecked ? 'checked' : '') + '><label>' + escapeHtml(vaccine.name) + '</label>' + boosterInfo + '</div>';
     }).join('');
@@ -1175,10 +1361,10 @@ function renderBoosterTable() {
     const hasSecondBooster = plannedBoosters.some(b => b.booster2Date);
     header2nd.style.display = hasSecondBooster ? 'table-cell' : 'none';
     tbody.innerHTML = plannedBoosters.map(item => {
-        const booster1Input = item.booster1Date ? '<input type="date" value="' + item.booster1Date + '" onchange="updateBoosterDate(' + item.id + ', 1, this.value)">' : '<span style="color: #999;">—</span>';
+        const booster1Input = '<input type="date" value="' + (item.booster1Date || '') + '" onchange="updateBoosterDate(' + item.id + ', 1, this.value)">';
         let booster2Cell = '';
         if (hasSecondBooster) {
-            booster2Cell = item.booster2Date ? '<td><input type="date" value="' + item.booster2Date + '" onchange="updateBoosterDate(' + item.id + ', 2, this.value)"></td>' : '<td><span style="color: #999;">—</span></td>';
+            booster2Cell = '<td><input type="date" value="' + (item.booster2Date || '') + '" onchange="updateBoosterDate(' + item.id + ', 2, this.value)"></td>';
         }
         return '<tr><td>' + escapeHtml(item.vaccine) + '</td><td>' + booster1Input + '</td>' + booster2Cell + '<td><button class="remove-row" onclick="removeBooster(' + item.id + ')">✕</button></td></tr>';
     }).join('');
@@ -1235,6 +1421,25 @@ function formatTime(ms) {
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
     return hours.toString().padStart(2, '0') + ':' + minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0');
+}
+
+function toggleNotesExpand(notesId) {
+    const element = document.getElementById(notesId);
+    const contentSpan = element.querySelector('.notes-content');
+    const hintSpan = element.querySelector('.notes-expand-hint');
+    const fullNotes = element.getAttribute('data-full-notes').replace(/&#10;/g, '\n').replace(/&quot;/g, '"');
+    const isExpanded = element.getAttribute('data-expanded') === 'true';
+
+    if (isExpanded) {
+        contentSpan.textContent = fullNotes.substring(0, 150) + '...';
+        hintSpan.textContent = '(cliquer pour voir tout)';
+        element.setAttribute('data-expanded', 'false');
+    } else {
+        contentSpan.textContent = fullNotes;
+        contentSpan.style.whiteSpace = 'pre-wrap';
+        hintSpan.textContent = '(cliquer pour réduire)';
+        element.setAttribute('data-expanded', 'true');
+    }
 }
 
 // ==================== CONSEILS FUNCTIONS ====================
@@ -2350,7 +2555,7 @@ function generatePrescriptionPdf() {
     let y = isA5 ? 12 : 20;
     doc.setFontSize(headerFontSize);
     doc.setFont('helvetica', 'bold');
-    doc.text('Dr. méd. Ludovico Cobuccio', leftMargin, y);
+    doc.text(currentUser, leftMargin, y);
     y += sectionSpacing;
     doc.setFontSize(smallFontSize);
     doc.setFont('helvetica', 'normal');
@@ -2694,9 +2899,10 @@ function displayPatientHistory(consultations) {
         const consultDate = consult.date ? formatDateSwiss(new Date(consult.date)) : 'Date inconnue';
         const consultType = consult.type === 'consultation_voyage' ? 'Voyage' : 'Rappel';
         const duration = consult.duration_minutes ? consult.duration_minutes + ' min' : '';
-        
+        const practitioner = consult.practitioner ? ' • ' + consult.practitioner : '';
+
         html += '<div class="history-consultation">';
-        html += '<h5>Consultation #' + consult.id + ' - ' + consultDate + ' (' + consultType + ')' + (duration ? ' - ' + duration : '') + '</h5>';
+        html += '<h5>Consultation #' + consult.id + ' - ' + consultDate + ' (' + consultType + ')' + (duration ? ' - ' + duration : '') + practitioner + '</h5>';
         
         // Voyage info (FIRST)
         if (consult.voyage) {
@@ -2791,9 +2997,15 @@ function displayPatientHistory(consultations) {
         
         // Notes (THIRD)
         if (consult.notes) {
-            html += '<div class="history-section"><strong>Notes :</strong> ' + consult.notes.substring(0, 150);
-            if (consult.notes.length > 150) html += '...';
-            html += '</div>';
+            const notesId = 'notes-' + index;
+            if (consult.notes.length > 150) {
+                html += '<div class="history-section notes-expandable" onclick="toggleNotesExpand(\'' + notesId + '\')" id="' + notesId + '" data-full-notes="' + consult.notes.replace(/"/g, '&quot;').replace(/\n/g, '&#10;') + '">';
+                html += '<strong>Notes :</strong> <span class="notes-content">' + consult.notes.substring(0, 150) + '...</span>';
+                html += '<span class="notes-expand-hint">(cliquer pour voir tout)</span>';
+                html += '</div>';
+            } else {
+                html += '<div class="history-section"><strong>Notes :</strong> ' + consult.notes + '</div>';
+            }
         }
         
         // Vaccines administered (FOURTH)
@@ -2846,8 +3058,9 @@ function generatePatientJson() {
         id: loadedPatientJSON ? (loadedPatientJSON.consultations || []).length + 1 : 1,
         date: consultDate.split('T')[0],
         type: 'consultation_voyage',
+        practitioner: currentUser,
         duration_minutes: Math.floor(chronometerElapsed / 60000),
-        
+
         vaccines_administered: administeredVaccines.map(v => ({
             name: v.vaccine,
             lot: v.lot,
@@ -2973,7 +3186,7 @@ function exportConsultationPdf() {
     
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text('Dr. méd. Ludovico Cobuccio', pageWidth / 2, y, { align: 'center' });
+    doc.text(currentUser, pageWidth / 2, y, { align: 'center' });
     y += 15;
     
     // Date and Duration
@@ -3453,24 +3666,6 @@ function renderAdministeredVaccinesTable() {
             expiryWarning = '<span class="expiry-warning">⚠️ Expire dans ' + daysLeft + ' jours</span>';
         }
         return '<tr><td>' + escapeHtml(item.vaccine) + '</td><td><select onchange="updateAdministeredLot(' + item.id + ', this.value)">' + lotOptions + '</select>' + expiryWarning + '</td><td><button class="remove-row" onclick="removeAdministeredVaccine(' + item.id + ')">✕</button></td></tr>';
-    }).join('');
-}
-
-function renderBoosterTable() {
-    const table = document.getElementById('boosterTable');
-    const tbody = document.getElementById('boosterTableBody');
-    const header2nd = document.getElementById('booster2ndHeader');
-    if (plannedBoosters.length === 0) { table.style.display = 'none'; return; }
-    table.style.display = 'table';
-    const hasSecondBooster = plannedBoosters.some(function(b) { return b.booster2Date; });
-    header2nd.style.display = hasSecondBooster ? 'table-cell' : 'none';
-    tbody.innerHTML = plannedBoosters.map(function(item) {
-        const booster1Input = item.booster1Date ? '<input type="date" value="' + item.booster1Date + '" onchange="updateBoosterDate(' + item.id + ', 1, this.value)">' : '<span style="color: #999;">—</span>';
-        let booster2Cell = '';
-        if (hasSecondBooster) {
-            booster2Cell = item.booster2Date ? '<td><input type="date" value="' + item.booster2Date + '" onchange="updateBoosterDate(' + item.id + ', 2, this.value)"></td>' : '<td><span style="color: #999;">—</span></td>';
-        }
-        return '<tr><td>' + escapeHtml(item.vaccine) + '</td><td>' + booster1Input + '</td>' + booster2Cell + '<td><button class="remove-row" onclick="removeBooster(' + item.id + ')">✕</button></td></tr>';
     }).join('');
 }
 
