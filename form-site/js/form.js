@@ -1002,7 +1002,30 @@ function generateHealthSummary() {
         if (data.comorbidities.includes('aucune')) {
             html += `<p><strong>${t('health.comorbidities_title')}:</strong> ${t('health.comorbidity_none')}</p>`;
         } else {
-            const comorbidities = data.comorbidities.map(c => t('health.comorbidity_' + c) || c).join(', ');
+            // Map checkbox values to translation keys
+            const comorbidityKeyMap = {
+                'vih': 'hiv',
+                'thymus': 'thymus',
+                'rate': 'spleen',
+                'cancer': 'cancer',
+                'hematologie': 'hematologic',
+                'hypertension': 'hypertension',
+                'cardiaque': 'heart',
+                'diabete': 'diabetes',
+                'asthme': 'asthma',
+                'inflammatoire': 'inflammatory',
+                'digestive': 'digestive',
+                'rhumatologie': 'rheumatic',
+                'epilepsie': 'epilepsy',
+                'musculaire': 'muscular',
+                'psychiatrique': 'psychiatric',
+                'chirurgie': 'surgery',
+                'autre': 'other'
+            };
+            const comorbidities = data.comorbidities.map(c => {
+                const key = comorbidityKeyMap[c] || c;
+                return t('health.comorbidity_' + key) || c;
+            }).join(', ');
             html += `<p><strong>${t('health.comorbidities_title')}:</strong> ${comorbidities}</p>`;
         }
     }

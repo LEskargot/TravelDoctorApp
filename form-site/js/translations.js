@@ -167,8 +167,8 @@ const TRANSLATIONS = {
       allergy_food: "Aliments",
       allergy_environment: "Environnement",
       allergy_other: "Autre",
-      allergies_details: "Précisez vos allergies",
-      allergies_details_placeholder: "Ex: Pénicilline, fruits de mer...",
+      allergies_details: "Précisez vos allergies et type de réaction",
+      allergies_details_placeholder: "Ex: Pénicilline - urticaire, fruits de mer - choc anaphylactique...",
 
       // Specific diseases
       diseases_title: "Maladies spécifiques",
@@ -248,6 +248,7 @@ const TRANSLATIONS = {
         autre: "Autre"
       },
       hiv_cd4: "Dernier CD4",
+      hiv_cd4_date: "Date",
       comorbidity_other_detail: "Précisez",
       recent_chemotherapy: "Chimio/radio/immunomodulateur dans les 6 derniers mois ?",
       psychiatric_details: "Détails",
@@ -581,8 +582,8 @@ const TRANSLATIONS = {
       allergy_food: "Food",
       allergy_environment: "Environmental",
       allergy_other: "Other",
-      allergies_details: "Please specify your allergies",
-      allergies_details_placeholder: "E.g., Penicillin, seafood...",
+      allergies_details: "Please specify your allergies and type of reaction",
+      allergies_details_placeholder: "E.g., Penicillin - hives, seafood - anaphylaxis...",
 
       diseases_title: "Specific diseases",
       dengue: "Have you had dengue fever?",
@@ -627,7 +628,8 @@ const TRANSLATIONS = {
         surgery: "Recent surgery or immobilization (< 6 weeks)",
         autre: "Other"
       },
-      hiv_cd4: "What is your last CD4 count and when was it taken?",
+      hiv_cd4: "Last CD4 count",
+      hiv_cd4_date: "Date",
       comorbidity_other_detail: "Please specify",
       recent_chemotherapy: "Have you had chemotherapy, radiotherapy, or immunomodulatory treatment in the last 6 months?",
       psychiatric_details: "Please describe your situation",
@@ -925,8 +927,8 @@ const TRANSLATIONS = {
       allergy_food: "Alimenti",
       allergy_environment: "Ambiente",
       allergy_other: "Altro",
-      allergies_details: "Specifichi le sue allergie",
-      allergies_details_placeholder: "Es: Penicillina, frutti di mare...",
+      allergies_details: "Specifichi le sue allergie e tipo di reazione",
+      allergies_details_placeholder: "Es: Penicillina - orticaria, frutti di mare - anafilassi...",
 
       diseases_title: "Malattie specifiche",
       dengue: "Ha avuto la dengue?",
@@ -1001,7 +1003,8 @@ const TRANSLATIONS = {
         surgery: "Chirurgia o immobilizzazione recente (< 6 settimane)",
         autre: "Altro"
       },
-      hiv_cd4: "Qual è il suo ultimo valore CD4 e quando è stato misurato?",
+      hiv_cd4: "Ultimo valore CD4",
+      hiv_cd4_date: "Data",
       comorbidity_other_detail: "Specificare",
       recent_chemotherapy: "Ha fatto chemioterapia, radioterapia o trattamento immunomodulatore negli ultimi 6 mesi?",
       psychiatric_details: "Descriva la sua situazione",
@@ -1331,8 +1334,8 @@ const TRANSLATIONS = {
       allergy_food: "Alimentos",
       allergy_environment: "Ambiente",
       allergy_other: "Otro",
-      allergies_details: "Especifique sus alergias",
-      allergies_details_placeholder: "Ej: Penicilina, mariscos...",
+      allergies_details: "Especifique sus alergias y tipo de reacción",
+      allergies_details_placeholder: "Ej: Penicilina - urticaria, mariscos - anafilaxia...",
 
       diseases_title: "Enfermedades específicas",
       dengue: "¿Ha tenido dengue?",
@@ -1407,7 +1410,8 @@ const TRANSLATIONS = {
         surgery: "Cirugía o inmovilización reciente (< 6 semanas)",
         autre: "Otro"
       },
-      hiv_cd4: "¿Cuál es su último recuento de CD4 y cuándo se midió?",
+      hiv_cd4: "Último recuento de CD4",
+      hiv_cd4_date: "Fecha",
       comorbidity_other_detail: "Especifique",
       recent_chemotherapy: "¿Ha recibido quimioterapia, radioterapia o tratamiento inmunomodulador en los últimos 6 meses?",
       psychiatric_details: "Describa su situación",

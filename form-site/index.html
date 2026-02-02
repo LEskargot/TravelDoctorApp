@@ -440,7 +440,7 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="allergies_details" data-translate="health.allergies_details">Pr&eacute;cisez vos allergies *</label>
+                        <label for="allergies_details" data-translate="health.allergies_details">Pr&eacute;cisez vos allergies et type de r&eacute;action *</label>
                         <textarea id="allergies_details" name="allergies_details" rows="3"
                                   data-placeholder="health.allergies_details_placeholder"></textarea>
                         <span class="error-message"></span>
@@ -534,7 +534,9 @@
                             </label>
                             <div id="hiv-cd4-field" class="inline-field hidden">
                                 <label for="hiv_cd4" data-translate="health.hiv_cd4">Dernier CD4:</label>
-                                <input type="number" id="hiv_cd4" name="hiv_cd4" min="0">
+                                <input type="number" id="hiv_cd4" name="hiv_cd4" min="0" style="width: 100px;">
+                                <label for="hiv_cd4_date" data-translate="health.hiv_cd4_date">Date:</label>
+                                <input type="date" id="hiv_cd4_date" name="hiv_cd4_date">
                             </div>
                             <label class="checkbox-label">
                                 <input type="checkbox" name="comorbidities" value="thymus">

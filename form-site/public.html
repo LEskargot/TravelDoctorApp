@@ -462,7 +462,7 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="allergies_details" data-translate="health.allergies_details">Pr&eacute;cisez vos allergies *</label>
+                        <label for="allergies_details" data-translate="health.allergies_details">Pr&eacute;cisez vos allergies et type de r&eacute;action *</label>
                         <textarea id="allergies_details" name="allergies_details" rows="3"></textarea>
                         <span class="error-message"></span>
                     </div>
@@ -537,47 +537,153 @@
                     <span class="error-message"></span>
                 </div>
 
-                <!-- Comorbidities (simplified for public form) -->
+                <!-- Comorbidities -->
                 <div class="section-title" data-translate="health.comorbidities_title">Maladies chroniques</div>
                 <div class="form-group">
                     <label data-translate="health.comorbidities">Souffrez-vous de... ? *</label>
-                    <div class="checkbox-group">
+                    <div class="checkbox-group comorbidities-grouped">
                         <label class="checkbox-label standalone">
                             <input type="checkbox" name="comorbidities" value="aucune" onchange="toggleNoneComorbidity(this)">
                             <span data-translate="health.comorbidity_none">Aucune maladie chronique</span>
                         </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="comorbidities" value="diabete">
-                            <span data-translate="health.comorbidity_diabetes">Diab&egrave;te</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="comorbidities" value="hypertension">
-                            <span data-translate="health.comorbidity_hypertension">Hypertension</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="comorbidities" value="cardiaque">
-                            <span data-translate="health.comorbidity_heart">Maladie cardiaque</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="comorbidities" value="asthme">
-                            <span data-translate="health.comorbidity_asthma">Asthme</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="comorbidities" value="cancer">
-                            <span data-translate="health.comorbidity_cancer">Cancer</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="comorbidities" value="vih">
-                            <span data-translate="health.comorbidity_hiv">VIH</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="comorbidities" value="autre" onchange="toggleOtherComorbidity(this)">
-                            <span data-translate="health.comorbidity_other">Autre</span>
-                        </label>
+
+                        <div class="comorbidity-group">
+                            <div class="group-title" data-translate="health.comorbidity_group_immune">Syst&egrave;me immunitaire</div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="vih" onchange="toggleHivField(this)">
+                                <span data-translate="health.comorbidity_hiv">VIH</span>
+                            </label>
+                            <div id="hiv-cd4-field" class="inline-field hidden">
+                                <label for="hiv_cd4" data-translate="health.hiv_cd4">Dernier CD4:</label>
+                                <input type="number" id="hiv_cd4" name="hiv_cd4" min="0" style="width: 100px;">
+                                <label for="hiv_cd4_date" data-translate="health.hiv_cd4_date">Date:</label>
+                                <input type="date" id="hiv_cd4_date" name="hiv_cd4_date">
+                            </div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="thymus">
+                                <span data-translate="health.comorbidity_thymus">Probl&egrave;me du thymus</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="rate">
+                                <span data-translate="health.comorbidity_spleen">Absence de rate</span>
+                            </label>
+                        </div>
+
+                        <div class="comorbidity-group">
+                            <div class="group-title" data-translate="health.comorbidity_group_cancer">Cancers et maladies du sang</div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="cancer" onchange="toggleChemoQuestion()">
+                                <span data-translate="health.comorbidity_cancer">Cancer</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="hematologie" onchange="toggleChemoQuestion()">
+                                <span data-translate="health.comorbidity_hematologic">Maladie h&eacute;matologique</span>
+                            </label>
+                        </div>
+
+                        <div class="comorbidity-group">
+                            <div class="group-title" data-translate="health.comorbidity_group_cardio">Cardiovasculaire</div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="hypertension">
+                                <span data-translate="health.comorbidity_hypertension">Hypertension</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="cardiaque">
+                                <span data-translate="health.comorbidity_heart">Maladie cardiaque</span>
+                            </label>
+                        </div>
+
+                        <div class="comorbidity-group">
+                            <div class="group-title" data-translate="health.comorbidity_group_metabolic">M&eacute;tabolique</div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="diabete">
+                                <span data-translate="health.comorbidity_diabetes">Diab&egrave;te</span>
+                            </label>
+                        </div>
+
+                        <div class="comorbidity-group">
+                            <div class="group-title" data-translate="health.comorbidity_group_respiratory">Respiratoire</div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="asthme">
+                                <span data-translate="health.comorbidity_asthma">Asthme</span>
+                            </label>
+                        </div>
+
+                        <div class="comorbidity-group">
+                            <div class="group-title" data-translate="health.comorbidity_group_digestive">Digestif</div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="inflammatoire">
+                                <span data-translate="health.comorbidity_inflammatory">Maladie inflammatoire (Crohn, RCH)</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="digestive">
+                                <span data-translate="health.comorbidity_digestive">Maladie digestive chronique</span>
+                            </label>
+                        </div>
+
+                        <div class="comorbidity-group">
+                            <div class="group-title" data-translate="health.comorbidity_group_rheumatic">Rhumatologique</div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="rhumatologie" onchange="toggleChemoQuestion()">
+                                <span data-translate="health.comorbidity_rheumatic">Polyarthrite, lupus, etc.</span>
+                            </label>
+                        </div>
+
+                        <div class="comorbidity-group">
+                            <div class="group-title" data-translate="health.comorbidity_group_neuro">Neurologique</div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="epilepsie">
+                                <span data-translate="health.comorbidity_epilepsy">&Eacute;pilepsie</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="musculaire">
+                                <span data-translate="health.comorbidity_muscular">Maladie musculaire (myasth&eacute;nie)</span>
+                            </label>
+                        </div>
+
+                        <div class="comorbidity-group">
+                            <div class="group-title" data-translate="health.comorbidity_group_mental">Sant&eacute; mentale</div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="psychiatrique" onchange="togglePsychiatricField(this)">
+                                <span data-translate="health.comorbidity_psychiatric">Maladie psychiatrique</span>
+                            </label>
+                            <div id="psychiatric-details-field" class="inline-field hidden">
+                                <label for="psychiatric_details" data-translate="health.psychiatric_details">D&eacute;tails:</label>
+                                <input type="text" id="psychiatric_details" name="psychiatric_details">
+                            </div>
+                        </div>
+
+                        <div class="comorbidity-group">
+                            <div class="group-title" data-translate="health.comorbidity_group_other">Autres</div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="chirurgie">
+                                <span data-translate="health.comorbidity_surgery">Chirurgie/immobilisation r&eacute;cente (&lt; 6 semaines)</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="autre" onchange="toggleOtherComorbidity(this)">
+                                <span data-translate="health.comorbidity_other">Autre</span>
+                            </label>
+                            <div id="comorbidity-other-field" class="inline-field hidden">
+                                <label for="comorbidity_other" data-translate="health.comorbidity_other_details">D&eacute;tails:</label>
+                                <input type="text" id="comorbidity_other" name="comorbidity_other">
+                            </div>
+                        </div>
                     </div>
-                    <div id="comorbidity-other-field" class="inline-field hidden">
-                        <label for="comorbidity_other" data-translate="health.comorbidity_other_details">D&eacute;tails:</label>
-                        <input type="text" id="comorbidity_other" name="comorbidity_other">
+                    <span class="error-message"></span>
+                </div>
+
+                <!-- Chemotherapy question (conditional) -->
+                <div id="chemotherapy-question" class="form-group hidden">
+                    <label data-translate="health.recent_chemotherapy">Chimio/radio/immunomodulateur dans les 6 derniers mois ? *</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="recent_chemotherapy" value="oui">
+                            <span data-translate="buttons.yes">Oui</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="recent_chemotherapy" value="non">
+                            <span data-translate="buttons.no">Non</span>
+                        </label>
                     </div>
                     <span class="error-message"></span>
                 </div>
