@@ -890,7 +890,7 @@
                 // Submit form data with captcha
                 const formData = collectFormData();
                 formData.vaccination_file_ids = fileIds;
-                formData.language = currentLanguage;
+                formData.language = currentLang;
 
                 const response = await fetch('/api/submit-public.php', {
                     method: 'POST',
