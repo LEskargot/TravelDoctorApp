@@ -8,7 +8,8 @@ function corsHeaders() {
 }
 
 function pbAdminAuth() {
-    $response = pbRequest('/api/admins/auth-with-password', 'POST', [
+    // PocketBase v0.20+ uses _superusers collection
+    $response = pbRequest('/api/collections/_superusers/auth-with-password', 'POST', [
         'identity' => POCKETBASE_ADMIN_EMAIL,
         'password' => POCKETBASE_ADMIN_PASSWORD
     ]);
