@@ -1,0 +1,6 @@
+# Sensitive files - create manually on server
+api/config.php
+
+# Development files
+*.md
+generate-key.php

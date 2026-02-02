@@ -1,0 +1,290 @@
+// Countries list with translations (FR, EN, IT, ES)
+// ISO 3166-1 alpha-2 codes
+
+const COUNTRIES = [
+  { code: "AF", fr: "Afghanistan", en: "Afghanistan", it: "Afghanistan", es: "Afganistán" },
+  { code: "AL", fr: "Albanie", en: "Albania", it: "Albania", es: "Albania" },
+  { code: "DZ", fr: "Algérie", en: "Algeria", it: "Algeria", es: "Argelia" },
+  { code: "AS", fr: "Samoa américaines", en: "American Samoa", it: "Samoa Americane", es: "Samoa Americana" },
+  { code: "AD", fr: "Andorre", en: "Andorra", it: "Andorra", es: "Andorra" },
+  { code: "AO", fr: "Angola", en: "Angola", it: "Angola", es: "Angola" },
+  { code: "AI", fr: "Anguilla", en: "Anguilla", it: "Anguilla", es: "Anguila" },
+  { code: "AQ", fr: "Antarctique", en: "Antarctica", it: "Antartide", es: "Antártida" },
+  { code: "AG", fr: "Antigua-et-Barbuda", en: "Antigua and Barbuda", it: "Antigua e Barbuda", es: "Antigua y Barbuda" },
+  { code: "AR", fr: "Argentine", en: "Argentina", it: "Argentina", es: "Argentina" },
+  { code: "AM", fr: "Arménie", en: "Armenia", it: "Armenia", es: "Armenia" },
+  { code: "AW", fr: "Aruba", en: "Aruba", it: "Aruba", es: "Aruba" },
+  { code: "AU", fr: "Australie", en: "Australia", it: "Australia", es: "Australia" },
+  { code: "AT", fr: "Autriche", en: "Austria", it: "Austria", es: "Austria" },
+  { code: "AZ", fr: "Azerbaïdjan", en: "Azerbaijan", it: "Azerbaigian", es: "Azerbaiyán" },
+  { code: "BS", fr: "Bahamas", en: "Bahamas", it: "Bahamas", es: "Bahamas" },
+  { code: "BH", fr: "Bahreïn", en: "Bahrain", it: "Bahrein", es: "Bahréin" },
+  { code: "BD", fr: "Bangladesh", en: "Bangladesh", it: "Bangladesh", es: "Bangladesh" },
+  { code: "BB", fr: "Barbade", en: "Barbados", it: "Barbados", es: "Barbados" },
+  { code: "BY", fr: "Biélorussie", en: "Belarus", it: "Bielorussia", es: "Bielorrusia" },
+  { code: "BE", fr: "Belgique", en: "Belgium", it: "Belgio", es: "Bélgica" },
+  { code: "BZ", fr: "Belize", en: "Belize", it: "Belize", es: "Belice" },
+  { code: "BJ", fr: "Bénin", en: "Benin", it: "Benin", es: "Benín" },
+  { code: "BM", fr: "Bermudes", en: "Bermuda", it: "Bermuda", es: "Bermudas" },
+  { code: "BT", fr: "Bhoutan", en: "Bhutan", it: "Bhutan", es: "Bután" },
+  { code: "BO", fr: "Bolivie", en: "Bolivia", it: "Bolivia", es: "Bolivia" },
+  { code: "BA", fr: "Bosnie-Herzégovine", en: "Bosnia and Herzegovina", it: "Bosnia ed Erzegovina", es: "Bosnia y Herzegovina" },
+  { code: "BW", fr: "Botswana", en: "Botswana", it: "Botswana", es: "Botsuana" },
+  { code: "BR", fr: "Brésil", en: "Brazil", it: "Brasile", es: "Brasil" },
+  { code: "BN", fr: "Brunei", en: "Brunei", it: "Brunei", es: "Brunéi" },
+  { code: "BG", fr: "Bulgarie", en: "Bulgaria", it: "Bulgaria", es: "Bulgaria" },
+  { code: "BF", fr: "Burkina Faso", en: "Burkina Faso", it: "Burkina Faso", es: "Burkina Faso" },
+  { code: "BI", fr: "Burundi", en: "Burundi", it: "Burundi", es: "Burundi" },
+  { code: "KH", fr: "Cambodge", en: "Cambodia", it: "Cambogia", es: "Camboya" },
+  { code: "CM", fr: "Cameroun", en: "Cameroon", it: "Camerun", es: "Camerún" },
+  { code: "CA", fr: "Canada", en: "Canada", it: "Canada", es: "Canadá" },
+  { code: "CV", fr: "Cap-Vert", en: "Cape Verde", it: "Capo Verde", es: "Cabo Verde" },
+  { code: "KY", fr: "Îles Caïmans", en: "Cayman Islands", it: "Isole Cayman", es: "Islas Caimán" },
+  { code: "CF", fr: "République centrafricaine", en: "Central African Republic", it: "Repubblica Centrafricana", es: "República Centroafricana" },
+  { code: "TD", fr: "Tchad", en: "Chad", it: "Ciad", es: "Chad" },
+  { code: "CL", fr: "Chili", en: "Chile", it: "Cile", es: "Chile" },
+  { code: "CN", fr: "Chine", en: "China", it: "Cina", es: "China" },
+  { code: "CO", fr: "Colombie", en: "Colombia", it: "Colombia", es: "Colombia" },
+  { code: "KM", fr: "Comores", en: "Comoros", it: "Comore", es: "Comoras" },
+  { code: "CG", fr: "Congo", en: "Congo", it: "Congo", es: "Congo" },
+  { code: "CD", fr: "Congo (RDC)", en: "Congo (DRC)", it: "Congo (RDC)", es: "Congo (RDC)" },
+  { code: "CK", fr: "Îles Cook", en: "Cook Islands", it: "Isole Cook", es: "Islas Cook" },
+  { code: "CR", fr: "Costa Rica", en: "Costa Rica", it: "Costa Rica", es: "Costa Rica" },
+  { code: "HR", fr: "Croatie", en: "Croatia", it: "Croazia", es: "Croacia" },
+  { code: "CU", fr: "Cuba", en: "Cuba", it: "Cuba", es: "Cuba" },
+  { code: "CW", fr: "Curaçao", en: "Curaçao", it: "Curaçao", es: "Curazao" },
+  { code: "CY", fr: "Chypre", en: "Cyprus", it: "Cipro", es: "Chipre" },
+  { code: "CZ", fr: "République tchèque", en: "Czech Republic", it: "Repubblica Ceca", es: "República Checa" },
+  { code: "CI", fr: "Côte d'Ivoire", en: "Côte d'Ivoire", it: "Costa d'Avorio", es: "Costa de Marfil" },
+  { code: "DK", fr: "Danemark", en: "Denmark", it: "Danimarca", es: "Dinamarca" },
+  { code: "DJ", fr: "Djibouti", en: "Djibouti", it: "Gibuti", es: "Yibuti" },
+  { code: "DM", fr: "Dominique", en: "Dominica", it: "Dominica", es: "Dominica" },
+  { code: "DO", fr: "République dominicaine", en: "Dominican Republic", it: "Repubblica Dominicana", es: "República Dominicana" },
+  { code: "EC", fr: "Équateur", en: "Ecuador", it: "Ecuador", es: "Ecuador" },
+  { code: "EG", fr: "Égypte", en: "Egypt", it: "Egitto", es: "Egipto" },
+  { code: "SV", fr: "Salvador", en: "El Salvador", it: "El Salvador", es: "El Salvador" },
+  { code: "GQ", fr: "Guinée équatoriale", en: "Equatorial Guinea", it: "Guinea Equatoriale", es: "Guinea Ecuatorial" },
+  { code: "ER", fr: "Érythrée", en: "Eritrea", it: "Eritrea", es: "Eritrea" },
+  { code: "EE", fr: "Estonie", en: "Estonia", it: "Estonia", es: "Estonia" },
+  { code: "SZ", fr: "Eswatini", en: "Eswatini", it: "Eswatini", es: "Esuatini" },
+  { code: "ET", fr: "Éthiopie", en: "Ethiopia", it: "Etiopia", es: "Etiopía" },
+  { code: "FK", fr: "Îles Malouines", en: "Falkland Islands", it: "Isole Falkland", es: "Islas Malvinas" },
+  { code: "FO", fr: "Îles Féroé", en: "Faroe Islands", it: "Isole Fær Øer", es: "Islas Feroe" },
+  { code: "FJ", fr: "Fidji", en: "Fiji", it: "Figi", es: "Fiyi" },
+  { code: "FI", fr: "Finlande", en: "Finland", it: "Finlandia", es: "Finlandia" },
+  { code: "FR", fr: "France", en: "France", it: "Francia", es: "Francia" },
+  { code: "GF", fr: "Guyane française", en: "French Guiana", it: "Guyana Francese", es: "Guayana Francesa" },
+  { code: "PF", fr: "Polynésie française", en: "French Polynesia", it: "Polinesia Francese", es: "Polinesia Francesa" },
+  { code: "GA", fr: "Gabon", en: "Gabon", it: "Gabon", es: "Gabón" },
+  { code: "GM", fr: "Gambie", en: "Gambia", it: "Gambia", es: "Gambia" },
+  { code: "GE", fr: "Géorgie", en: "Georgia", it: "Georgia", es: "Georgia" },
+  { code: "DE", fr: "Allemagne", en: "Germany", it: "Germania", es: "Alemania" },
+  { code: "GH", fr: "Ghana", en: "Ghana", it: "Ghana", es: "Ghana" },
+  { code: "GI", fr: "Gibraltar", en: "Gibraltar", it: "Gibilterra", es: "Gibraltar" },
+  { code: "GR", fr: "Grèce", en: "Greece", it: "Grecia", es: "Grecia" },
+  { code: "GL", fr: "Groenland", en: "Greenland", it: "Groenlandia", es: "Groenlandia" },
+  { code: "GD", fr: "Grenade", en: "Grenada", it: "Grenada", es: "Granada" },
+  { code: "GP", fr: "Guadeloupe", en: "Guadeloupe", it: "Guadalupa", es: "Guadalupe" },
+  { code: "GU", fr: "Guam", en: "Guam", it: "Guam", es: "Guam" },
+  { code: "GT", fr: "Guatemala", en: "Guatemala", it: "Guatemala", es: "Guatemala" },
+  { code: "GN", fr: "Guinée", en: "Guinea", it: "Guinea", es: "Guinea" },
+  { code: "GW", fr: "Guinée-Bissau", en: "Guinea-Bissau", it: "Guinea-Bissau", es: "Guinea-Bisáu" },
+  { code: "GY", fr: "Guyana", en: "Guyana", it: "Guyana", es: "Guyana" },
+  { code: "HT", fr: "Haïti", en: "Haiti", it: "Haiti", es: "Haití" },
+  { code: "HN", fr: "Honduras", en: "Honduras", it: "Honduras", es: "Honduras" },
+  { code: "HK", fr: "Hong Kong", en: "Hong Kong", it: "Hong Kong", es: "Hong Kong" },
+  { code: "HU", fr: "Hongrie", en: "Hungary", it: "Ungheria", es: "Hungría" },
+  { code: "IS", fr: "Islande", en: "Iceland", it: "Islanda", es: "Islandia" },
+  { code: "IN", fr: "Inde", en: "India", it: "India", es: "India" },
+  { code: "ID", fr: "Indonésie", en: "Indonesia", it: "Indonesia", es: "Indonesia" },
+  { code: "IR", fr: "Iran", en: "Iran", it: "Iran", es: "Irán" },
+  { code: "IQ", fr: "Irak", en: "Iraq", it: "Iraq", es: "Irak" },
+  { code: "IE", fr: "Irlande", en: "Ireland", it: "Irlanda", es: "Irlanda" },
+  { code: "IL", fr: "Israël", en: "Israel", it: "Israele", es: "Israel" },
+  { code: "IT", fr: "Italie", en: "Italy", it: "Italia", es: "Italia" },
+  { code: "JM", fr: "Jamaïque", en: "Jamaica", it: "Giamaica", es: "Jamaica" },
+  { code: "JP", fr: "Japon", en: "Japan", it: "Giappone", es: "Japón" },
+  { code: "JO", fr: "Jordanie", en: "Jordan", it: "Giordania", es: "Jordania" },
+  { code: "KZ", fr: "Kazakhstan", en: "Kazakhstan", it: "Kazakistan", es: "Kazajistán" },
+  { code: "KE", fr: "Kenya", en: "Kenya", it: "Kenya", es: "Kenia" },
+  { code: "KI", fr: "Kiribati", en: "Kiribati", it: "Kiribati", es: "Kiribati" },
+  { code: "KP", fr: "Corée du Nord", en: "North Korea", it: "Corea del Nord", es: "Corea del Norte" },
+  { code: "KR", fr: "Corée du Sud", en: "South Korea", it: "Corea del Sud", es: "Corea del Sur" },
+  { code: "KW", fr: "Koweït", en: "Kuwait", it: "Kuwait", es: "Kuwait" },
+  { code: "KG", fr: "Kirghizistan", en: "Kyrgyzstan", it: "Kirghizistan", es: "Kirguistán" },
+  { code: "LA", fr: "Laos", en: "Laos", it: "Laos", es: "Laos" },
+  { code: "LV", fr: "Lettonie", en: "Latvia", it: "Lettonia", es: "Letonia" },
+  { code: "LB", fr: "Liban", en: "Lebanon", it: "Libano", es: "Líbano" },
+  { code: "LS", fr: "Lesotho", en: "Lesotho", it: "Lesotho", es: "Lesoto" },
+  { code: "LR", fr: "Libéria", en: "Liberia", it: "Liberia", es: "Liberia" },
+  { code: "LY", fr: "Libye", en: "Libya", it: "Libia", es: "Libia" },
+  { code: "LI", fr: "Liechtenstein", en: "Liechtenstein", it: "Liechtenstein", es: "Liechtenstein" },
+  { code: "LT", fr: "Lituanie", en: "Lithuania", it: "Lituania", es: "Lituania" },
+  { code: "LU", fr: "Luxembourg", en: "Luxembourg", it: "Lussemburgo", es: "Luxemburgo" },
+  { code: "MO", fr: "Macao", en: "Macau", it: "Macao", es: "Macao" },
+  { code: "MK", fr: "Macédoine du Nord", en: "North Macedonia", it: "Macedonia del Nord", es: "Macedonia del Norte" },
+  { code: "MG", fr: "Madagascar", en: "Madagascar", it: "Madagascar", es: "Madagascar" },
+  { code: "MW", fr: "Malawi", en: "Malawi", it: "Malawi", es: "Malaui" },
+  { code: "MY", fr: "Malaisie", en: "Malaysia", it: "Malesia", es: "Malasia" },
+  { code: "MV", fr: "Maldives", en: "Maldives", it: "Maldive", es: "Maldivas" },
+  { code: "ML", fr: "Mali", en: "Mali", it: "Mali", es: "Malí" },
+  { code: "MT", fr: "Malte", en: "Malta", it: "Malta", es: "Malta" },
+  { code: "MH", fr: "Îles Marshall", en: "Marshall Islands", it: "Isole Marshall", es: "Islas Marshall" },
+  { code: "MQ", fr: "Martinique", en: "Martinique", it: "Martinica", es: "Martinica" },
+  { code: "MR", fr: "Mauritanie", en: "Mauritania", it: "Mauritania", es: "Mauritania" },
+  { code: "MU", fr: "Maurice", en: "Mauritius", it: "Mauritius", es: "Mauricio" },
+  { code: "YT", fr: "Mayotte", en: "Mayotte", it: "Mayotte", es: "Mayotte" },
+  { code: "MX", fr: "Mexique", en: "Mexico", it: "Messico", es: "México" },
+  { code: "FM", fr: "Micronésie", en: "Micronesia", it: "Micronesia", es: "Micronesia" },
+  { code: "MD", fr: "Moldavie", en: "Moldova", it: "Moldavia", es: "Moldavia" },
+  { code: "MC", fr: "Monaco", en: "Monaco", it: "Monaco", es: "Mónaco" },
+  { code: "MN", fr: "Mongolie", en: "Mongolia", it: "Mongolia", es: "Mongolia" },
+  { code: "ME", fr: "Monténégro", en: "Montenegro", it: "Montenegro", es: "Montenegro" },
+  { code: "MS", fr: "Montserrat", en: "Montserrat", it: "Montserrat", es: "Montserrat" },
+  { code: "MA", fr: "Maroc", en: "Morocco", it: "Marocco", es: "Marruecos" },
+  { code: "MZ", fr: "Mozambique", en: "Mozambique", it: "Mozambico", es: "Mozambique" },
+  { code: "MM", fr: "Myanmar", en: "Myanmar", it: "Myanmar", es: "Myanmar" },
+  { code: "NA", fr: "Namibie", en: "Namibia", it: "Namibia", es: "Namibia" },
+  { code: "NR", fr: "Nauru", en: "Nauru", it: "Nauru", es: "Nauru" },
+  { code: "NP", fr: "Népal", en: "Nepal", it: "Nepal", es: "Nepal" },
+  { code: "NL", fr: "Pays-Bas", en: "Netherlands", it: "Paesi Bassi", es: "Países Bajos" },
+  { code: "NC", fr: "Nouvelle-Calédonie", en: "New Caledonia", it: "Nuova Caledonia", es: "Nueva Caledonia" },
+  { code: "NZ", fr: "Nouvelle-Zélande", en: "New Zealand", it: "Nuova Zelanda", es: "Nueva Zelanda" },
+  { code: "NI", fr: "Nicaragua", en: "Nicaragua", it: "Nicaragua", es: "Nicaragua" },
+  { code: "NE", fr: "Niger", en: "Niger", it: "Niger", es: "Níger" },
+  { code: "NG", fr: "Nigeria", en: "Nigeria", it: "Nigeria", es: "Nigeria" },
+  { code: "NU", fr: "Niue", en: "Niue", it: "Niue", es: "Niue" },
+  { code: "NF", fr: "Île Norfolk", en: "Norfolk Island", it: "Isola Norfolk", es: "Isla Norfolk" },
+  { code: "MP", fr: "Îles Mariannes du Nord", en: "Northern Mariana Islands", it: "Isole Marianne Settentrionali", es: "Islas Marianas del Norte" },
+  { code: "NO", fr: "Norvège", en: "Norway", it: "Norvegia", es: "Noruega" },
+  { code: "OM", fr: "Oman", en: "Oman", it: "Oman", es: "Omán" },
+  { code: "PK", fr: "Pakistan", en: "Pakistan", it: "Pakistan", es: "Pakistán" },
+  { code: "PW", fr: "Palaos", en: "Palau", it: "Palau", es: "Palaos" },
+  { code: "PS", fr: "Palestine", en: "Palestine", it: "Palestina", es: "Palestina" },
+  { code: "PA", fr: "Panama", en: "Panama", it: "Panama", es: "Panamá" },
+  { code: "PG", fr: "Papouasie-Nouvelle-Guinée", en: "Papua New Guinea", it: "Papua Nuova Guinea", es: "Papúa Nueva Guinea" },
+  { code: "PY", fr: "Paraguay", en: "Paraguay", it: "Paraguay", es: "Paraguay" },
+  { code: "PE", fr: "Pérou", en: "Peru", it: "Perù", es: "Perú" },
+  { code: "PH", fr: "Philippines", en: "Philippines", it: "Filippine", es: "Filipinas" },
+  { code: "PL", fr: "Pologne", en: "Poland", it: "Polonia", es: "Polonia" },
+  { code: "PT", fr: "Portugal", en: "Portugal", it: "Portogallo", es: "Portugal" },
+  { code: "PR", fr: "Porto Rico", en: "Puerto Rico", it: "Porto Rico", es: "Puerto Rico" },
+  { code: "QA", fr: "Qatar", en: "Qatar", it: "Qatar", es: "Catar" },
+  { code: "RO", fr: "Roumanie", en: "Romania", it: "Romania", es: "Rumanía" },
+  { code: "RU", fr: "Russie", en: "Russia", it: "Russia", es: "Rusia" },
+  { code: "RW", fr: "Rwanda", en: "Rwanda", it: "Ruanda", es: "Ruanda" },
+  { code: "RE", fr: "La Réunion", en: "Réunion", it: "Riunione", es: "Reunión" },
+  { code: "BL", fr: "Saint-Barthélemy", en: "Saint Barthélemy", it: "Saint-Barthélemy", es: "San Bartolomé" },
+  { code: "SH", fr: "Sainte-Hélène", en: "Saint Helena", it: "Sant'Elena", es: "Santa Elena" },
+  { code: "KN", fr: "Saint-Kitts-et-Nevis", en: "Saint Kitts and Nevis", it: "Saint Kitts e Nevis", es: "San Cristóbal y Nieves" },
+  { code: "LC", fr: "Sainte-Lucie", en: "Saint Lucia", it: "Santa Lucia", es: "Santa Lucía" },
+  { code: "MF", fr: "Saint-Martin", en: "Saint Martin", it: "Saint-Martin", es: "San Martín" },
+  { code: "PM", fr: "Saint-Pierre-et-Miquelon", en: "Saint Pierre and Miquelon", it: "Saint-Pierre e Miquelon", es: "San Pedro y Miquelón" },
+  { code: "VC", fr: "Saint-Vincent-et-les-Grenadines", en: "Saint Vincent and the Grenadines", it: "Saint Vincent e Grenadine", es: "San Vicente y las Granadinas" },
+  { code: "WS", fr: "Samoa", en: "Samoa", it: "Samoa", es: "Samoa" },
+  { code: "SM", fr: "Saint-Marin", en: "San Marino", it: "San Marino", es: "San Marino" },
+  { code: "ST", fr: "Sao Tomé-et-Príncipe", en: "São Tomé and Príncipe", it: "São Tomé e Príncipe", es: "Santo Tomé y Príncipe" },
+  { code: "SA", fr: "Arabie saoudite", en: "Saudi Arabia", it: "Arabia Saudita", es: "Arabia Saudita" },
+  { code: "SN", fr: "Sénégal", en: "Senegal", it: "Senegal", es: "Senegal" },
+  { code: "RS", fr: "Serbie", en: "Serbia", it: "Serbia", es: "Serbia" },
+  { code: "SC", fr: "Seychelles", en: "Seychelles", it: "Seychelles", es: "Seychelles" },
+  { code: "SL", fr: "Sierra Leone", en: "Sierra Leone", it: "Sierra Leone", es: "Sierra Leona" },
+  { code: "SG", fr: "Singapour", en: "Singapore", it: "Singapore", es: "Singapur" },
+  { code: "SX", fr: "Saint-Martin (partie néerlandaise)", en: "Sint Maarten", it: "Sint Maarten", es: "San Martín (parte neerlandesa)" },
+  { code: "SK", fr: "Slovaquie", en: "Slovakia", it: "Slovacchia", es: "Eslovaquia" },
+  { code: "SI", fr: "Slovénie", en: "Slovenia", it: "Slovenia", es: "Eslovenia" },
+  { code: "SB", fr: "Îles Salomon", en: "Solomon Islands", it: "Isole Salomone", es: "Islas Salomón" },
+  { code: "SO", fr: "Somalie", en: "Somalia", it: "Somalia", es: "Somalia" },
+  { code: "ZA", fr: "Afrique du Sud", en: "South Africa", it: "Sudafrica", es: "Sudáfrica" },
+  { code: "SS", fr: "Soudan du Sud", en: "South Sudan", it: "Sudan del Sud", es: "Sudán del Sur" },
+  { code: "ES", fr: "Espagne", en: "Spain", it: "Spagna", es: "España" },
+  { code: "LK", fr: "Sri Lanka", en: "Sri Lanka", it: "Sri Lanka", es: "Sri Lanka" },
+  { code: "SD", fr: "Soudan", en: "Sudan", it: "Sudan", es: "Sudán" },
+  { code: "SR", fr: "Suriname", en: "Suriname", it: "Suriname", es: "Surinam" },
+  { code: "SE", fr: "Suède", en: "Sweden", it: "Svezia", es: "Suecia" },
+  { code: "CH", fr: "Suisse", en: "Switzerland", it: "Svizzera", es: "Suiza" },
+  { code: "SY", fr: "Syrie", en: "Syria", it: "Siria", es: "Siria" },
+  { code: "TW", fr: "Taïwan", en: "Taiwan", it: "Taiwan", es: "Taiwán" },
+  { code: "TJ", fr: "Tadjikistan", en: "Tajikistan", it: "Tagikistan", es: "Tayikistán" },
+  { code: "TZ", fr: "Tanzanie", en: "Tanzania", it: "Tanzania", es: "Tanzania" },
+  { code: "TH", fr: "Thaïlande", en: "Thailand", it: "Thailandia", es: "Tailandia" },
+  { code: "TL", fr: "Timor oriental", en: "Timor-Leste", it: "Timor Est", es: "Timor Oriental" },
+  { code: "TG", fr: "Togo", en: "Togo", it: "Togo", es: "Togo" },
+  { code: "TK", fr: "Tokelau", en: "Tokelau", it: "Tokelau", es: "Tokelau" },
+  { code: "TO", fr: "Tonga", en: "Tonga", it: "Tonga", es: "Tonga" },
+  { code: "TT", fr: "Trinité-et-Tobago", en: "Trinidad and Tobago", it: "Trinidad e Tobago", es: "Trinidad y Tobago" },
+  { code: "TN", fr: "Tunisie", en: "Tunisia", it: "Tunisia", es: "Túnez" },
+  { code: "TR", fr: "Turquie", en: "Turkey", it: "Turchia", es: "Turquía" },
+  { code: "TM", fr: "Turkménistan", en: "Turkmenistan", it: "Turkmenistan", es: "Turkmenistán" },
+  { code: "TC", fr: "Îles Turques-et-Caïques", en: "Turks and Caicos Islands", it: "Isole Turks e Caicos", es: "Islas Turcas y Caicos" },
+  { code: "TV", fr: "Tuvalu", en: "Tuvalu", it: "Tuvalu", es: "Tuvalu" },
+  { code: "UG", fr: "Ouganda", en: "Uganda", it: "Uganda", es: "Uganda" },
+  { code: "UA", fr: "Ukraine", en: "Ukraine", it: "Ucraina", es: "Ucrania" },
+  { code: "AE", fr: "Émirats arabes unis", en: "United Arab Emirates", it: "Emirati Arabi Uniti", es: "Emiratos Árabes Unidos" },
+  { code: "GB", fr: "Royaume-Uni", en: "United Kingdom", it: "Regno Unito", es: "Reino Unido" },
+  { code: "US", fr: "États-Unis", en: "United States", it: "Stati Uniti", es: "Estados Unidos" },
+  { code: "UY", fr: "Uruguay", en: "Uruguay", it: "Uruguay", es: "Uruguay" },
+  { code: "UZ", fr: "Ouzbékistan", en: "Uzbekistan", it: "Uzbekistan", es: "Uzbekistán" },
+  { code: "VU", fr: "Vanuatu", en: "Vanuatu", it: "Vanuatu", es: "Vanuatu" },
+  { code: "VA", fr: "Vatican", en: "Vatican City", it: "Città del Vaticano", es: "Ciudad del Vaticano" },
+  { code: "VE", fr: "Venezuela", en: "Venezuela", it: "Venezuela", es: "Venezuela" },
+  { code: "VN", fr: "Viêt Nam", en: "Vietnam", it: "Vietnam", es: "Vietnam" },
+  { code: "VG", fr: "Îles Vierges britanniques", en: "British Virgin Islands", it: "Isole Vergini Britanniche", es: "Islas Vírgenes Británicas" },
+  { code: "VI", fr: "Îles Vierges américaines", en: "U.S. Virgin Islands", it: "Isole Vergini Americane", es: "Islas Vírgenes de EE. UU." },
+  { code: "WF", fr: "Wallis-et-Futuna", en: "Wallis and Futuna", it: "Wallis e Futuna", es: "Wallis y Futuna" },
+  { code: "EH", fr: "Sahara occidental", en: "Western Sahara", it: "Sahara Occidentale", es: "Sahara Occidental" },
+  { code: "YE", fr: "Yémen", en: "Yemen", it: "Yemen", es: "Yemen" },
+  { code: "ZM", fr: "Zambie", en: "Zambia", it: "Zambia", es: "Zambia" },
+  { code: "ZW", fr: "Zimbabwe", en: "Zimbabwe", it: "Zimbabwe", es: "Zimbabue" }
+];
+
+// Get country name in current language
+function getCountryName(code, lang = 'fr') {
+  const country = COUNTRIES.find(c => c.code === code);
+  if (country) {
+    return country[lang] || country.fr;
+  }
+  return code;
+}
+
+// Get countries sorted by name in current language
+function getCountriesSorted(lang = 'fr') {
+  return [...COUNTRIES].sort((a, b) => {
+    const nameA = (a[lang] || a.fr).toLowerCase();
+    const nameB = (b[lang] || b.fr).toLowerCase();
+    return nameA.localeCompare(nameB, lang);
+  });
+}
+
+// Search countries (fuzzy match)
+function searchCountries(query, lang = 'fr', limit = 10) {
+  if (!query || query.length < 2) return [];
+
+  const normalizedQuery = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+  const results = COUNTRIES.filter(country => {
+    const name = (country[lang] || country.fr).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return name.includes(normalizedQuery) || country.code.toLowerCase() === normalizedQuery;
+  });
+
+  // Sort by relevance (starts with query first)
+  results.sort((a, b) => {
+    const nameA = (a[lang] || a.fr).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const nameB = (b[lang] || b.fr).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    const startsWithA = nameA.startsWith(normalizedQuery);
+    const startsWithB = nameB.startsWith(normalizedQuery);
+
+    if (startsWithA && !startsWithB) return -1;
+    if (!startsWithA && startsWithB) return 1;
+
+    return nameA.localeCompare(nameB, lang);
+  });
+
+  return results.slice(0, limit);
+}
+
+// Export for use
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { COUNTRIES, getCountryName, getCountriesSorted, searchCountries };
+}

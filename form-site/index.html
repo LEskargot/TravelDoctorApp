@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel Doctor - Formulaire Patient</title>
+    <link rel="stylesheet" href="css/form.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="form-container">
+        <!-- Header -->
+        <header class="form-header">
+            <div class="logo">
+                <a href="https://www.traveldoctor.ch" class="logo-text">TravelDoctor.ch</a>
+            </div>
+            <div class="language-selector">
+                <select id="language-select" onchange="setLanguage(this.value)">
+                    <option value="fr">Fran&ccedil;ais</option>
+                    <option value="en">English</option>
+                    <option value="it">Italiano</option>
+                    <option value="es">Espa&ntilde;ol</option>
+                </select>
+            </div>
+        </header>
+
+        <!-- Progress Steps -->
+        <div class="progress-container">
+            <div class="progress-steps">
+                <div class="step active" data-step="1" onclick="goToStep(1)">
+                    <div class="step-number">1</div>
+                    <div class="step-label" data-translate="steps.identity">Identit&eacute;</div>
+                </div>
+                <div class="step-line"></div>
+                <div class="step" data-step="2" onclick="goToStep(2)">
+                    <div class="step-number">2</div>
+                    <div class="step-label" data-translate="steps.travel">Voyage</div>
+                </div>
+                <div class="step-line"></div>
+                <div class="step" data-step="3" onclick="goToStep(3)">
+                    <div class="step-number">3</div>
+                    <div class="step-label" data-translate="steps.health">Sant&eacute;</div>
+                </div>
+                <div class="step-line"></div>
+                <div class="step" data-step="4" onclick="goToStep(4)">
+                    <div class="step-number">4</div>
+                    <div class="step-label" data-translate="steps.vaccination">Vaccinations</div>
+                </div>
+                <div class="step-line"></div>
+                <div class="step" data-step="5" onclick="goToStep(5)">
+                    <div class="step-number">5</div>
+                    <div class="step-label" data-translate="steps.referral">Referral</div>
+                </div>
+                <div class="step-line"></div>
+                <div class="step" data-step="6" onclick="goToStep(6)">
+                    <div class="step-number">6</div>
+                    <div class="step-label" data-translate="steps.summary">R&eacute;capitulatif</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <form id="patient-form" novalidate>
+            <!-- Step 1: Identity -->
+            <div class="form-step active" data-step="1">
+                <h2 class="step-title" data-translate="steps.identity">Identit&eacute;</h2>
+                <p class="step-subtitle" data-translate="identity.subtitle">Une seule personne par formulaire</p>
+
+                <div class="form-group">
+                    <label for="full_name" data-translate="identity.full_name">Pr&eacute;nom et Nom *</label>
+                    <input type="text" id="full_name" name="full_name" required
+                           data-placeholder="identity.full_name_placeholder">
+                    <span class="error-message"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="birthdate" data-translate="identity.birthdate">Date de naissance *</label>
+                    <input type="date" id="birthdate" name="birthdate" required>
+                    <span class="error-message"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="email" data-translate="identity.email">Email *</label>
+                    <input type="email" id="email" name="email" required
+                           data-placeholder="identity.email_placeholder">
+                    <span class="hint" data-translate="identity.email_hint">Email pour recevoir la confirmation</span>
+                    <span class="error-message"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone" data-translate="identity.phone">T&eacute;l&eacute;phone</label>
+                    <input type="tel" id="phone" name="phone"
+                           data-placeholder="identity.phone_placeholder">
+                    <span class="optional-badge" data-translate="buttons.optional">Facultatif</span>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group flex-2">
+                        <label for="street" data-translate="identity.street">Rue</label>
+                        <input type="text" id="street" name="street">
+                        <span class="optional-badge" data-translate="buttons.optional">Facultatif</span>
+                    </div>
+                    <div class="form-group flex-1">
+                        <label for="postal_code" data-translate="identity.postal_code">Code postal</label>
+                        <input type="text" id="postal_code" name="postal_code">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label for="city" data-translate="identity.city">Ville</label>
+                        <input type="text" id="city" name="city">
+                    </div>
+                    <div class="form-group flex-1">
+                        <label for="residence_country" data-translate="identity.country">Pays de r&eacute;sidence</label>
+                        <div class="country-autocomplete">
+                            <input type="text" id="residence_country_search"
+                                   data-placeholder="identity.country_placeholder"
+                                   autocomplete="off">
+                            <input type="hidden" id="residence_country" name="residence_country">
+                            <div class="autocomplete-dropdown"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label data-translate="identity.gender">Genre *</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="gender" value="femme" required>
+                            <span data-translate="identity.gender_female">Femme</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="gender" value="homme">
+                            <span data-translate="identity.gender_male">Homme</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="gender" value="non_binaire">
+                            <span data-translate="identity.gender_nonbinary">Non-binaire</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="gender" value="autre">
+                            <span data-translate="identity.gender_other">Autre</span>
+                        </label>
+                    </div>
+                    <span class="error-message"></span>
+                </div>
+            </div>
+
+            <!-- Step 2: Travel -->
+            <div class="form-step" data-step="2">
+                <h2 class="step-title" data-translate="steps.travel">Voyage</h2>
+
+                <div class="form-group">
+                    <label data-translate="travel.destinations">Pays de destination *</label>
+                    <div id="destinations-container">
+                        <div class="destination-row" data-index="0">
+                            <div class="destination-fields">
+                                <div class="country-autocomplete destination-country-wrapper">
+                                    <input type="text" class="destination-country-search"
+                                           data-placeholder="travel.country_placeholder"
+                                           autocomplete="off">
+                                    <input type="hidden" class="destination-country" name="destinations[0][country]">
+                                    <div class="autocomplete-dropdown"></div>
+                                </div>
+                                <input type="date" class="destination-departure" name="destinations[0][departure]"
+                                       title="Date de d&eacute;part">
+                                <input type="date" class="destination-return" name="destinations[0][return]"
+                                       title="Date de retour">
+                                <button type="button" class="btn-remove-destination" onclick="removeDestination(this)" style="display:none;">
+                                    &times;
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-add" onclick="addDestination()">
+                        <span>+</span> <span data-translate="travel.add_country">Ajouter un pays</span>
+                    </button>
+                    <span class="error-message"></span>
+                </div>
+
+                <div class="form-group">
+                    <label data-translate="travel.reason">Nature du voyage *</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="travel_reason" value="tourisme_organise">
+                            <span data-translate="travel.reason_organized">Tourisme en voyage organis&eacute;</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="travel_reason" value="tourisme_independant">
+                            <span data-translate="travel.reason_independent">Tourisme ind&eacute;pendant</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="travel_reason" value="affaires">
+                            <span data-translate="travel.reason_business">Voyage d'affaires</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="travel_reason" value="aventure">
+                            <span data-translate="travel.reason_adventure">Aventure</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="travel_reason" value="visite_famille">
+                            <span data-translate="travel.reason_family">Visite amis/famille</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="travel_reason" value="humanitaire">
+                            <span data-translate="travel.reason_humanitarian">Mission humanitaire</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="travel_reason" value="pelerinage">
+                            <span data-translate="travel.reason_pilgrimage">P&egrave;lerinage</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="travel_reason" value="expatriation">
+                            <span data-translate="travel.reason_expatriation">Expatriation</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="travel_reason" value="autre" onchange="toggleOtherField(this, 'travel_reason_other')">
+                            <span data-translate="travel.reason_other">Autre</span>
+                        </label>
+                    </div>
+                    <input type="text" id="travel_reason_other" name="travel_reason_other" class="other-field hidden"
+                           data-placeholder="travel.specify">
+                    <span class="error-message"></span>
+                </div>
+
+                <div class="form-group">
+                    <label data-translate="travel.accommodation">Type d'h&eacute;bergement *</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="accommodation" value="pas_decide">
+                            <span data-translate="travel.accommodation_undecided">Pas encore d&eacute;cid&eacute;</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="accommodation" value="habitant">
+                            <span data-translate="travel.accommodation_local">Chez l'habitant</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="accommodation" value="hotel">
+                            <span data-translate="travel.accommodation_hotel">H&ocirc;tel</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="accommodation" value="autre" onchange="toggleOtherField(this, 'accommodation_other')">
+                            <span data-translate="travel.accommodation_other">Autre</span>
+                        </label>
+                    </div>
+                    <input type="text" id="accommodation_other" name="accommodation_other" class="other-field hidden"
+                           data-placeholder="travel.specify">
+                    <span class="error-message"></span>
+                </div>
+
+                <div class="form-group">
+                    <label data-translate="travel.activities">Activit&eacute;s pr&eacute;vues *</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="activities" value="alpinisme">
+                            <span data-translate="travel.activity_mountaineering">Alpinisme</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="activities" value="randonnee">
+                            <span data-translate="travel.activity_hiking">Randonn&eacute;e</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="activities" value="plongee">
+                            <span data-translate="travel.activity_diving">Plong&eacute;e</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="activities" value="rafting">
+                            <span data-translate="travel.activity_rafting">Rafting</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="activities" value="velo">
+                            <span data-translate="travel.activity_cycling">V&eacute;lo</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="activities" value="snorkeling">
+                            <span data-translate="travel.activity_snorkeling">Snorkeling</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="activities" value="autre" onchange="toggleOtherField(this, 'activities_other')">
+                            <span data-translate="travel.activity_other">Autre</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="activities" value="aucune">
+                            <span data-translate="travel.activity_none">Aucune de ces activit&eacute;s</span>
+                        </label>
+                    </div>
+                    <input type="text" id="activities_other" name="activities_other" class="other-field hidden"
+                           data-placeholder="travel.specify">
+                    <span class="error-message"></span>
+                </div>
+
+                <div class="form-group">
+                    <label data-translate="travel.rural">S&eacute;jour en zone rurale ou isol&eacute;e ? *</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="rural_stay" value="oui" required>
+                            <span data-translate="buttons.yes">Oui</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="rural_stay" value="non">
+                            <span data-translate="buttons.no">Non</span>
+                        </label>
+                    </div>
+                    <span class="error-message"></span>
+                </div>
+            </div>
+
+            <!-- Step 3: Health -->
+            <div class="form-step" data-step="3">
+                <h2 class="step-title" data-translate="steps.health">Sant&eacute;</h2>
+
+                <div class="form-group">
+                    <label for="weight" data-translate="health.weight">Poids (kg) *</label>
+                    <input type="number" id="weight" name="weight" min="1" max="300" required>
+                    <span class="error-message"></span>
+                </div>
+
+                <!-- Reproductive Health (conditional) -->
+                <div id="reproductive-section" class="conditional-section">
+                    <div class="section-title" data-translate="health.reproductive_title">Sant&eacute; reproductive</div>
+
+                    <!-- Show for non-binary/other -->
+                    <div id="show-reproductive-question" class="form-group hidden">
+                        <label data-translate="health.show_reproductive">Souhaitez-vous r&eacute;pondre aux questions sur la sant&eacute; reproductive ?</label>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="show_reproductive" value="oui" onchange="toggleReproductiveQuestions()">
+                                <span data-translate="buttons.yes">Oui</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="show_reproductive" value="non" onchange="toggleReproductiveQuestions()">
+                                <span data-translate="buttons.no">Non</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="reproductive-questions">
+                        <div class="form-group">
+                            <label data-translate="health.pregnancy">Enceinte ou projet de grossesse ?</label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="pregnancy" value="oui">
+                                    <span data-translate="buttons.yes">Oui</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="pregnancy" value="non">
+                                    <span data-translate="buttons.no">Non</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="pregnancy" value="na">
+                                    <span data-translate="buttons.not_applicable">Non applicable</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label data-translate="health.contraception">Contraception ?</label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="contraception" value="oui">
+                                    <span data-translate="buttons.yes">Oui</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="contraception" value="non">
+                                    <span data-translate="buttons.no">Non</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="contraception" value="na">
+                                    <span data-translate="buttons.not_applicable">Non applicable</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label data-translate="health.breastfeeding">Allaitement ?</label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="breastfeeding" value="oui">
+                                    <span data-translate="buttons.yes">Oui</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="breastfeeding" value="non">
+                                    <span data-translate="buttons.no">Non</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="last_menses" data-translate="health.last_menses">Derni&egrave;res r&egrave;gles</label>
+                            <input type="date" id="last_menses" name="last_menses">
+                            <span class="optional-badge" data-translate="buttons.optional">Facultatif</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Allergies -->
+                <div class="section-title" data-translate="health.allergies_title">Allergies</div>
+                <div class="form-group">
+                    <label data-translate="health.has_allergies">Avez-vous des allergies ? *</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="has_allergies" value="oui" required onchange="toggleAllergiesSection()">
+                            <span data-translate="buttons.yes">Oui</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="has_allergies" value="non" onchange="toggleAllergiesSection()">
+                            <span data-translate="buttons.no">Non</span>
+                        </label>
+                    </div>
+                    <span class="error-message"></span>
+                </div>
+
+                <div id="allergies-details" class="conditional-section hidden">
+                    <div class="form-group">
+                        <label data-translate="health.allergy_types">Types d'allergies</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="allergy_types" value="oeufs">
+                                <span data-translate="health.allergy_eggs">&#338;ufs</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="allergy_types" value="medicaments">
+                                <span data-translate="health.allergy_medication">M&eacute;dicaments</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="allergy_types" value="aliments">
+                                <span data-translate="health.allergy_food">Aliments</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="allergy_types" value="environnement">
+                                <span data-translate="health.allergy_environment">Environnement</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="allergy_types" value="autre">
+                                <span data-translate="health.allergy_other">Autre</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="allergies_details" data-translate="health.allergies_details">Pr&eacute;cisez vos allergies *</label>
+                        <textarea id="allergies_details" name="allergies_details" rows="3"
+                                  data-placeholder="health.allergies_details_placeholder"></textarea>
+                        <span class="error-message"></span>
+                    </div>
+                </div>
+
+                <!-- Specific Diseases -->
+                <div class="section-title" data-translate="health.diseases_title">Maladies sp&eacute;cifiques</div>
+                <div class="form-group">
+                    <label data-translate="health.dengue">Avez-vous eu la dengue ? *</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="dengue_history" value="oui" required>
+                            <span data-translate="buttons.yes">Oui</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="dengue_history" value="non">
+                            <span data-translate="buttons.no">Non</span>
+                        </label>
+                    </div>
+                    <span class="error-message"></span>
+                </div>
+
+                <div class="form-group">
+                    <label data-translate="health.chickenpox_disease">Avez-vous eu la varicelle ? *</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="chickenpox_disease" value="oui" required>
+                            <span data-translate="buttons.yes">Oui</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="chickenpox_disease" value="non">
+                            <span data-translate="buttons.no">Non</span>
+                        </label>
+                    </div>
+                    <span class="error-message"></span>
+                </div>
+
+                <div class="form-group">
+                    <label data-translate="health.chickenpox_vaccine">Vaccin&eacute; contre la varicelle ? *</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="chickenpox_vaccine" value="oui" required>
+                            <span data-translate="buttons.yes">Oui</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="chickenpox_vaccine" value="non">
+                            <span data-translate="buttons.no">Non</span>
+                        </label>
+                    </div>
+                    <span class="error-message"></span>
+                </div>
+
+                <!-- Vaccination History -->
+                <div class="section-title" data-translate="health.vaccination_history_title">Vaccinations ant&eacute;rieures</div>
+                <div class="form-group">
+                    <label data-translate="health.vaccination_problem">Probl&egrave;me avec une vaccination ant&eacute;rieure ? *</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="vaccination_problem" value="oui" required onchange="toggleVaccinationProblem()">
+                            <span data-translate="buttons.yes">Oui</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="vaccination_problem" value="non" onchange="toggleVaccinationProblem()">
+                            <span data-translate="buttons.no">Non</span>
+                        </label>
+                    </div>
+                    <span class="error-message"></span>
+                </div>
+                <div id="vaccination-problem-details" class="form-group hidden">
+                    <label for="vaccination_problem_details" data-translate="health.vaccination_problem_details">D&eacute;tails *</label>
+                    <textarea id="vaccination_problem_details" name="vaccination_problem_details" rows="2"></textarea>
+                    <span class="error-message"></span>
+                </div>
+
+                <!-- Comorbidities -->
+                <div class="section-title" data-translate="health.comorbidities_title">Maladies chroniques</div>
+                <div class="form-group">
+                    <label data-translate="health.comorbidities">Souffrez-vous de... ? *</label>
+                    <div class="checkbox-group comorbidities-grouped">
+                        <label class="checkbox-label standalone">
+                            <input type="checkbox" name="comorbidities" value="aucune" onchange="toggleNoneComorbidity(this)">
+                            <span data-translate="health.comorbidity_none">Aucune maladie chronique</span>
+                        </label>
+
+                        <div class="comorbidity-group">
+                            <div class="group-title" data-translate="health.comorbidity_group_immune">Syst&egrave;me immunitaire</div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="vih" onchange="toggleHivField(this)">
+                                <span data-translate="health.comorbidity_hiv">VIH</span>
+                            </label>
+                            <div id="hiv-cd4-field" class="inline-field hidden">
+                                <label for="hiv_cd4" data-translate="health.hiv_cd4">Dernier CD4:</label>
+                                <input type="number" id="hiv_cd4" name="hiv_cd4" min="0">
+                            </div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="thymus">
+                                <span data-translate="health.comorbidity_thymus">Probl&egrave;me du thymus</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="rate">
+                                <span data-translate="health.comorbidity_spleen">Absence de rate</span>
+                            </label>
+                        </div>
+
+                        <div class="comorbidity-group">
+                            <div class="group-title" data-translate="health.comorbidity_group_cancer">Cancers et maladies du sang</div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="cancer" onchange="toggleChemoQuestion()">
+                                <span data-translate="health.comorbidity_cancer">Cancer</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="hematologie" onchange="toggleChemoQuestion()">
+                                <span data-translate="health.comorbidity_hematologic">Maladie h&eacute;matologique</span>
+                            </label>
+                        </div>
+
+                        <div class="comorbidity-group">
+                            <div class="group-title" data-translate="health.comorbidity_group_cardio">Cardiovasculaire</div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="hypertension">
+                                <span data-translate="health.comorbidity_hypertension">Hypertension</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="cardiaque">
+                                <span data-translate="health.comorbidity_heart">Maladie cardiaque</span>
+                            </label>
+                        </div>
+
+                        <div class="comorbidity-group">
+                            <div class="group-title" data-translate="health.comorbidity_group_metabolic">M&eacute;tabolique</div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="diabete">
+                                <span data-translate="health.comorbidity_diabetes">Diab&egrave;te</span>
+                            </label>
+                        </div>
+
+                        <div class="comorbidity-group">
+                            <div class="group-title" data-translate="health.comorbidity_group_respiratory">Respiratoire</div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="asthme">
+                                <span data-translate="health.comorbidity_asthma">Asthme</span>
+                            </label>
+                        </div>
+
+                        <div class="comorbidity-group">
+                            <div class="group-title" data-translate="health.comorbidity_group_digestive">Digestif</div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="inflammatoire">
+                                <span data-translate="health.comorbidity_inflammatory">Maladie inflammatoire (Crohn, RCH)</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="digestive">
+                                <span data-translate="health.comorbidity_digestive">Maladie digestive chronique</span>
+                            </label>
+                        </div>
+
+                        <div class="comorbidity-group">
+                            <div class="group-title" data-translate="health.comorbidity_group_rheumatic">Rhumatologique</div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="rhumatologie" onchange="toggleChemoQuestion()">
+                                <span data-translate="health.comorbidity_rheumatic">Polyarthrite, lupus, etc.</span>
+                            </label>
+                        </div>
+
+                        <div class="comorbidity-group">
+                            <div class="group-title" data-translate="health.comorbidity_group_neuro">Neurologique</div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="epilepsie">
+                                <span data-translate="health.comorbidity_epilepsy">&Eacute;pilepsie</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="musculaire">
+                                <span data-translate="health.comorbidity_muscular">Maladie musculaire (myasth&eacute;nie)</span>
+                            </label>
+                        </div>
+
+                        <div class="comorbidity-group">
+                            <div class="group-title" data-translate="health.comorbidity_group_mental">Sant&eacute; mentale</div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="psychiatrique" onchange="togglePsychiatricField(this)">
+                                <span data-translate="health.comorbidity_psychiatric">Maladie psychiatrique</span>
+                            </label>
+                            <div id="psychiatric-details-field" class="inline-field hidden">
+                                <label for="psychiatric_details" data-translate="health.psychiatric_details">D&eacute;tails:</label>
+                                <input type="text" id="psychiatric_details" name="psychiatric_details">
+                            </div>
+                        </div>
+
+                        <div class="comorbidity-group">
+                            <div class="group-title" data-translate="health.comorbidity_group_other">Autres</div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="chirurgie">
+                                <span data-translate="health.comorbidity_surgery">Chirurgie/immobilisation r&eacute;cente (&lt; 6 semaines)</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="comorbidities" value="autre" onchange="toggleOtherComorbidity(this)">
+                                <span data-translate="health.comorbidity_other">Autre</span>
+                            </label>
+                            <div id="comorbidity-other-field" class="inline-field hidden">
+                                <label for="comorbidity_other" data-translate="health.comorbidity_other_details">D&eacute;tails:</label>
+                                <input type="text" id="comorbidity_other" name="comorbidity_other">
+                            </div>
+                        </div>
+                    </div>
+                    <span class="error-message"></span>
+                </div>
+
+                <!-- Chemotherapy question (conditional) -->
+                <div id="chemotherapy-question" class="form-group hidden">
+                    <label data-translate="health.recent_chemotherapy">Chimio/radio/immunomodulateur dans les 6 derniers mois ? *</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="recent_chemotherapy" value="oui">
+                            <span data-translate="buttons.yes">Oui</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="recent_chemotherapy" value="non">
+                            <span data-translate="buttons.no">Non</span>
+                        </label>
+                    </div>
+                    <span class="error-message"></span>
+                </div>
+
+                <!-- Medications -->
+                <div class="section-title" data-translate="health.medications_title">M&eacute;dicaments</div>
+                <div class="form-group">
+                    <label data-translate="health.takes_medication">Prenez-vous des m&eacute;dicaments ? *</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="takes_medication" value="oui" required onchange="toggleMedicationField()">
+                            <span data-translate="buttons.yes">Oui</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="takes_medication" value="non" onchange="toggleMedicationField()">
+                            <span data-translate="buttons.no">Non</span>
+                        </label>
+                    </div>
+                    <span class="error-message"></span>
+                </div>
+                <div id="medication-details" class="form-group hidden">
+                    <label for="medication_list" data-translate="health.medication_list">Liste des m&eacute;dicaments *</label>
+                    <textarea id="medication_list" name="medication_list" rows="3"
+                              data-placeholder="health.medication_placeholder"></textarea>
+                    <span class="error-message"></span>
+                </div>
+            </div>
+
+            <!-- Step 4: Vaccination -->
+            <div class="form-step" data-step="4">
+                <h2 class="step-title" data-translate="steps.vaccination">Carnet de vaccination</h2>
+                <p class="step-subtitle" data-translate="vaccination.subtitle">T&eacute;l&eacute;versez votre carnet de vaccination</p>
+
+                <div class="form-group">
+                    <div class="file-dropzone" id="file-dropzone">
+                        <div class="dropzone-icon">&#128206;</div>
+                        <div class="dropzone-text" data-translate="vaccination.dropzone_text">Glissez vos fichiers ici ou cliquez</div>
+                        <div class="dropzone-formats" data-translate="vaccination.dropzone_formats">Formats: PDF, JPG, PNG, HEIC</div>
+                        <div class="dropzone-limit" data-translate="vaccination.dropzone_limit">Maximum: 10 fichiers, 10 MB chacun</div>
+                        <input type="file" id="vaccination_files" name="vaccination_files" multiple
+                               accept=".pdf,.jpg,.jpeg,.png,.heic,.heif" class="file-input">
+                    </div>
+                    <div class="file-list" id="file-list"></div>
+                    <span class="error-message"></span>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label standalone">
+                        <input type="checkbox" name="no_vaccination_card" id="no_vaccination_card" onchange="toggleNoVaccinationCard()">
+                        <span data-translate="vaccination.no_card">Je n'ai pas de carnet de vaccination</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Step 5: Referral -->
+            <div class="form-step" data-step="5">
+                <h2 class="step-title" data-translate="steps.referral">Comment nous avez-vous trouv&eacute; ?</h2>
+                <p class="step-subtitle" data-translate="referral.subtitle">Ces questions sont facultatives</p>
+
+                <div class="form-group">
+                    <label data-translate="referral.source">Comment avez-vous entendu parler de nous ?</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="referral_source" value="internet">
+                            <span data-translate="referral.source_internet">Recherche Internet</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="referral_source" value="social" onchange="toggleReferralDetail(this, 'referral-social')">
+                            <span data-translate="referral.source_social">R&eacute;seaux sociaux</span>
+                        </label>
+                        <div id="referral-social" class="inline-field hidden">
+                            <label for="referral_social_platform" data-translate="referral.social_platform">Plateforme:</label>
+                            <input type="text" id="referral_social_platform" name="referral_social_platform">
+                        </div>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="referral_source" value="doctor" onchange="toggleReferralDetail(this, 'referral-doctor')">
+                            <span data-translate="referral.source_doctor">M&eacute;decin/professionnel de sant&eacute;</span>
+                        </label>
+                        <div id="referral-doctor" class="inline-field hidden">
+                            <label for="referral_doctor_name" data-translate="referral.doctor_name">Nom:</label>
+                            <input type="text" id="referral_doctor_name" name="referral_doctor_name">
+                        </div>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="referral_source" value="friend" onchange="toggleReferralDetail(this, 'referral-friend')">
+                            <span data-translate="referral.source_friend">Ami/famille</span>
+                        </label>
+                        <div id="referral-friend" class="inline-field hidden">
+                            <label for="referral_friend_name" data-translate="referral.friend_name">Nom:</label>
+                            <input type="text" id="referral_friend_name" name="referral_friend_name">
+                        </div>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="referral_source" value="pharmacy">
+                            <span data-translate="referral.source_pharmacy">Pharmacie</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="referral_source" value="employer">
+                            <span data-translate="referral.source_employer">Employeur</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="referral_source" value="travel_agency">
+                            <span data-translate="referral.source_travel_agency">Agence de voyage</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="referral_source" value="insurance">
+                            <span data-translate="referral.source_insurance">Assurance</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="referral_source" value="returning">
+                            <span data-translate="referral.source_returning">D&eacute;j&agrave; patient</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="referral_source" value="advertising" onchange="toggleReferralDetail(this, 'referral-advertising')">
+                            <span data-translate="referral.source_advertising">Publicit&eacute;</span>
+                        </label>
+                        <div id="referral-advertising" class="inline-field hidden">
+                            <label for="referral_ad_location" data-translate="referral.ad_location">O&ugrave; ?</label>
+                            <input type="text" id="referral_ad_location" name="referral_ad_location">
+                        </div>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="referral_source" value="other" onchange="toggleReferralDetail(this, 'referral-other')">
+                            <span data-translate="referral.source_other">Autre</span>
+                        </label>
+                        <div id="referral-other" class="inline-field hidden">
+                            <label for="referral_other_specify" data-translate="referral.other_specify">Pr&eacute;cisez:</label>
+                            <input type="text" id="referral_other_specify" name="referral_other_specify">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label data-translate="referral.choice_factor">Facteur principal de choix</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="choice_factor" value="location">
+                            <span data-translate="referral.factor_location">Emplacement</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="choice_factor" value="price">
+                            <span data-translate="referral.factor_price">Prix</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="choice_factor" value="reputation">
+                            <span data-translate="referral.factor_reputation">R&eacute;putation</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="choice_factor" value="recommendation">
+                            <span data-translate="referral.factor_recommendation">Recommandation</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="choice_factor" value="expertise">
+                            <span data-translate="referral.factor_expertise">Expertise</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="choice_factor" value="availability">
+                            <span data-translate="referral.factor_availability">Disponibilit&eacute;</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="choice_factor" value="languages">
+                            <span data-translate="referral.factor_languages">Langues parl&eacute;es</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="choice_factor" value="other">
+                            <span data-translate="referral.factor_other">Autre</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="comment" data-translate="referral.comment">Commentaire</label>
+                    <textarea id="comment" name="comment" rows="3"
+                              data-placeholder="referral.comment_placeholder"></textarea>
+                    <span class="optional-badge" data-translate="buttons.optional">Facultatif</span>
+                </div>
+            </div>
+
+            <!-- Step 6: Summary -->
+            <div class="form-step" data-step="6">
+                <h2 class="step-title" data-translate="steps.summary">R&eacute;capitulatif</h2>
+                <p class="step-subtitle" data-translate="summary.subtitle">V&eacute;rifiez vos informations avant envoi</p>
+
+                <div class="summary-container">
+                    <!-- Identity Summary -->
+                    <div class="summary-section">
+                        <div class="summary-header">
+                            <h3 data-translate="steps.identity">Identit&eacute;</h3>
+                            <button type="button" class="btn-edit" onclick="goToStep(1)" data-translate="buttons.edit">Modifier</button>
+                        </div>
+                        <div class="summary-content" id="summary-identity"></div>
+                    </div>
+
+                    <!-- Travel Summary -->
+                    <div class="summary-section">
+                        <div class="summary-header">
+                            <h3 data-translate="steps.travel">Voyage</h3>
+                            <button type="button" class="btn-edit" onclick="goToStep(2)" data-translate="buttons.edit">Modifier</button>
+                        </div>
+                        <div class="summary-content" id="summary-travel"></div>
+                    </div>
+
+                    <!-- Health Summary -->
+                    <div class="summary-section">
+                        <div class="summary-header">
+                            <h3 data-translate="steps.health">Sant&eacute;</h3>
+                            <button type="button" class="btn-edit" onclick="goToStep(3)" data-translate="buttons.edit">Modifier</button>
+                        </div>
+                        <div class="summary-content" id="summary-health"></div>
+                    </div>
+
+                    <!-- Vaccination Summary -->
+                    <div class="summary-section">
+                        <div class="summary-header">
+                            <h3 data-translate="steps.vaccination">Carnet de vaccination</h3>
+                            <button type="button" class="btn-edit" onclick="goToStep(4)" data-translate="buttons.edit">Modifier</button>
+                        </div>
+                        <div class="summary-content" id="summary-vaccination"></div>
+                    </div>
+
+                    <!-- Referral Summary -->
+                    <div class="summary-section">
+                        <div class="summary-header">
+                            <h3 data-translate="steps.referral">Referral</h3>
+                            <button type="button" class="btn-edit" onclick="goToStep(5)" data-translate="buttons.edit">Modifier</button>
+                        </div>
+                        <div class="summary-content" id="summary-referral"></div>
+                    </div>
+                </div>
+
+                <!-- Consent -->
+                <div class="form-group consent-group">
+                    <label class="checkbox-label consent-checkbox">
+                        <input type="checkbox" name="consent" id="consent" required>
+                        <span data-translate="summary.consent">Je d&eacute;clare avoir r&eacute;pondu &agrave; ce questionnaire de mani&egrave;re honn&ecirc;te et sinc&egrave;re. Je reconnais que ces informations seront utilis&eacute;es pour &eacute;valuer mon &eacute;tat de sant&eacute;.</span>
+                    </label>
+                    <span class="error-message"></span>
+                </div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="form-navigation">
+                <button type="button" class="btn btn-secondary" id="btn-previous" onclick="previousStep()" style="display:none;">
+                    <span data-translate="buttons.previous">&larr; Pr&eacute;c&eacute;dent</span>
+                </button>
+                <button type="button" class="btn btn-primary" id="btn-next" onclick="nextStep()">
+                    <span data-translate="buttons.next">Suivant &rarr;</span>
+                </button>
+                <button type="submit" class="btn btn-success" id="btn-submit" style="display:none;">
+                    <span data-translate="buttons.submit">&#10003; Confirmer et envoyer</span>
+                </button>
+            </div>
+        </form>
+
+        <!-- Draft saved indicator -->
+        <div class="draft-indicator hidden" id="draft-indicator">
+            <span data-translate="messages.draft_saved">Brouillon sauvegard&eacute;</span>
+        </div>
+
+        <!-- Footer -->
+        <footer class="form-footer">
+            <p>En cas de probl&egrave;me technique, <a href="https://www.traveldoctor.ch/whatsapp" target="_blank">contactez-nous via WhatsApp</a></p>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/translations.js"></script>
+    <script src="js/countries.js"></script>
+    <script src="js/form.js"></script>
+</body>
+</html>
