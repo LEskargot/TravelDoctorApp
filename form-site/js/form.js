@@ -969,7 +969,21 @@ function generateTravelSummary() {
     }
 
     if (data.activities && data.activities.length > 0) {
-        const activities = data.activities.map(a => t('travel.activity_' + a) || a).join(', ');
+        // Map checkbox values to translation keys
+        const activityKeyMap = {
+            'alpinisme': 'mountaineering',
+            'randonnee': 'hiking',
+            'plongee': 'diving',
+            'rafting': 'rafting',
+            'velo': 'cycling',
+            'snorkeling': 'snorkeling',
+            'autre': 'other',
+            'aucune': 'none'
+        };
+        const activities = data.activities.map(a => {
+            const key = activityKeyMap[a] || a;
+            return t('travel.activity_' + key) || a;
+        }).join(', ');
         html += `<p><strong>${t('travel.activities')}:</strong> ${activities}</p>`;
     }
 
