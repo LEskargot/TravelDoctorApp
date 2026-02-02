@@ -938,7 +938,15 @@ function generateIdentitySummary() {
         html += `<p><strong>${t('identity.country')}:</strong> ${getCountryName(data.residence_country, currentLang)}</p>`;
     }
 
-    html += `<p><strong>${t('identity.gender')}:</strong> ${t('identity.gender_' + data.gender) || data.gender}</p>`;
+    // Map gender values to translation keys
+    const genderKeyMap = {
+        'femme': 'female',
+        'homme': 'male',
+        'non_binaire': 'nonbinary',
+        'autre': 'other'
+    };
+    const genderKey = genderKeyMap[data.gender] || data.gender;
+    html += `<p><strong>${t('identity.gender')}:</strong> ${t('identity.gender_' + genderKey) || data.gender}</p>`;
 
     container.innerHTML = html;
 }
