@@ -65,13 +65,32 @@ function checkUrlParams() {
     const token = urlParams.get('token');
     const editToken = urlParams.get('edit');
 
+    // Check if this is the authenticated form (not public.html)
+    const isPublicForm = window.location.pathname.includes('public.html');
+
     if (editToken) {
         loadDraft(editToken);
     } else if (token) {
         currentToken = token;
         // Pre-fill email if available
         verifyToken(token);
+    } else if (!isPublicForm) {
+        // No token on authenticated form - redirect to main site
+        showAccessDenied();
     }
+}
+
+/**
+ * Show access denied message and redirect
+ */
+function showAccessDenied() {
+    document.body.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: 'Open Sans', sans-serif; text-align: center; padding: 20px;">
+            <h1 style="color: #333; margin-bottom: 20px;">Accès non autorisé</h1>
+            <p style="color: #666; margin-bottom: 30px;">Ce formulaire nécessite un lien d'accès valide.<br>Veuillez utiliser le lien reçu par email.</p>
+            <a href="https://www.traveldoctor.ch" style="background: #2ea3f2; color: white; padding: 12px 24px; border-radius: 3px; text-decoration: none;">Retour au site</a>
+        </div>
+    `;
 }
 
 /**
