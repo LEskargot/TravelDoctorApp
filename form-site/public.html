@@ -278,35 +278,35 @@
                     <label data-translate="travel.activities">Activit&eacute;s pr&eacute;vues *</label>
                     <div class="checkbox-group">
                         <label class="checkbox-label">
-                            <input type="checkbox" name="activities" value="alpinisme">
+                            <input type="checkbox" name="activities" value="alpinisme" onchange="uncheckNoneActivity()">
                             <span data-translate="travel.activity_mountaineering">Alpinisme</span>
                         </label>
                         <label class="checkbox-label">
-                            <input type="checkbox" name="activities" value="randonnee">
+                            <input type="checkbox" name="activities" value="randonnee" onchange="uncheckNoneActivity()">
                             <span data-translate="travel.activity_hiking">Randonn&eacute;e</span>
                         </label>
                         <label class="checkbox-label">
-                            <input type="checkbox" name="activities" value="plongee">
+                            <input type="checkbox" name="activities" value="plongee" onchange="uncheckNoneActivity()">
                             <span data-translate="travel.activity_diving">Plong&eacute;e</span>
                         </label>
                         <label class="checkbox-label">
-                            <input type="checkbox" name="activities" value="rafting">
+                            <input type="checkbox" name="activities" value="rafting" onchange="uncheckNoneActivity()">
                             <span data-translate="travel.activity_rafting">Rafting</span>
                         </label>
                         <label class="checkbox-label">
-                            <input type="checkbox" name="activities" value="velo">
+                            <input type="checkbox" name="activities" value="velo" onchange="uncheckNoneActivity()">
                             <span data-translate="travel.activity_cycling">V&eacute;lo</span>
                         </label>
                         <label class="checkbox-label">
-                            <input type="checkbox" name="activities" value="snorkeling">
+                            <input type="checkbox" name="activities" value="snorkeling" onchange="uncheckNoneActivity()">
                             <span data-translate="travel.activity_snorkeling">Snorkeling</span>
                         </label>
                         <label class="checkbox-label">
-                            <input type="checkbox" name="activities" value="autre" onchange="toggleOtherField(this, 'activities_other')">
+                            <input type="checkbox" name="activities" value="autre" onchange="toggleOtherField(this, 'activities_other'); uncheckNoneActivity()">
                             <span data-translate="travel.activity_other">Autre</span>
                         </label>
                         <label class="checkbox-label">
-                            <input type="checkbox" name="activities" value="aucune">
+                            <input type="checkbox" name="activities" value="aucune" onchange="toggleNoneActivity(this)">
                             <span data-translate="travel.activity_none">Aucune de ces activit&eacute;s</span>
                         </label>
                     </div>

@@ -495,6 +495,29 @@ function toggleNoneComorbidity(checkbox) {
     }
 }
 
+function toggleNoneActivity(checkbox) {
+    if (checkbox.checked) {
+        // Uncheck all other activities
+        document.querySelectorAll('input[name="activities"]').forEach(cb => {
+            if (cb !== checkbox) {
+                cb.checked = false;
+            }
+        });
+        // Hide "other" field if visible
+        const otherField = document.getElementById('activities_other');
+        if (otherField) {
+            otherField.classList.add('hidden');
+        }
+    }
+}
+
+function uncheckNoneActivity() {
+    const noneCheckbox = document.querySelector('input[name="activities"][value="aucune"]');
+    if (noneCheckbox) {
+        noneCheckbox.checked = false;
+    }
+}
+
 function toggleHivField(checkbox) {
     const hivField = document.getElementById('hiv-cd4-field');
     if (checkbox.checked) {
@@ -666,12 +689,12 @@ function initCountryAutocompleteForElement(input) {
             return;
         }
 
-        const results = searchCountries(query, currentLanguage, 10);
+        const results = searchCountries(query, currentLang, 10);
 
         if (results.length > 0) {
             dropdown.innerHTML = results.map(country => `
                 <div class="autocomplete-item" data-code="${country.code}">
-                    ${getCountryName(country.code, currentLanguage)}
+                    ${getCountryName(country.code, currentLang)}
                 </div>
             `).join('');
             dropdown.classList.add('active');
@@ -680,7 +703,7 @@ function initCountryAutocompleteForElement(input) {
             dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
                 item.addEventListener('click', function() {
                     const code = this.dataset.code;
-                    input.value = getCountryName(code, currentLanguage);
+                    input.value = getCountryName(code, currentLang);
                     hiddenInput.value = code;
                     dropdown.classList.remove('active');
                 });
@@ -893,7 +916,7 @@ function generateIdentitySummary() {
     }
 
     if (data.residence_country) {
-        html += `<p><strong>${t('identity.country')}:</strong> ${getCountryName(data.residence_country, currentLanguage)}</p>`;
+        html += `<p><strong>${t('identity.country')}:</strong> ${getCountryName(data.residence_country, currentLang)}</p>`;
     }
 
     html += `<p><strong>${t('identity.gender')}:</strong> ${t('identity.gender_' + data.gender) || data.gender}</p>`;
@@ -910,7 +933,7 @@ function generateTravelSummary() {
     if (data.destinations && data.destinations.length > 0) {
         data.destinations.forEach(dest => {
             if (dest.country) {
-                html += `<li>${getCountryName(dest.country, currentLanguage)}: ${formatDate(dest.departure)} - ${formatDate(dest.return)}</li>`;
+                html += `<li>${getCountryName(dest.country, currentLang)}: ${formatDate(dest.departure)} - ${formatDate(dest.return)}</li>`;
             }
         });
     }
@@ -1104,7 +1127,7 @@ async function saveDraft() {
                 token: currentToken,
                 step_reached: currentStep,
                 form_data: collectFormData(),
-                language: currentLanguage
+                language: currentLang
             })
         });
 
@@ -1189,7 +1212,7 @@ function populateForm(data) {
                 if (dest.country) {
                     row.querySelector('.destination-country').value = dest.country;
                     row.querySelector('.destination-country-search').value =
-                        getCountryName(dest.country, currentLanguage);
+                        getCountryName(dest.country, currentLang);
                 }
                 if (dest.departure) {
                     row.querySelector('.destination-departure').value = dest.departure;
@@ -1240,7 +1263,7 @@ async function submitForm() {
         // Then submit form data
         const formData = collectFormData();
         formData.vaccination_file_ids = fileIds;
-        formData.language = currentLanguage;
+        formData.language = currentLang;
 
         const response = await fetch(API_URL + '/submit-form.php', {
             method: 'POST',
