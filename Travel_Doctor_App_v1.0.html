@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Générateur d'Ordonnances - Dr. Cobuccio</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -181,6 +180,49 @@
         .accordion-section.active .accordion-content { max-height: 5000px; }
         .accordion-body { padding: 20px; }
 
+        /* PENDING FORMS SCREEN */
+        .pending-forms-container { max-width: 800px; margin: 0 auto; text-align: left; }
+        .pending-forms-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+        .pending-forms-search { display: flex; gap: 10px; flex: 1; max-width: 400px; }
+        .pending-forms-search input { flex: 1; padding: 10px 15px; border: 1px solid #ddd; border-radius: 6px; }
+        .form-card { background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px 20px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; }
+        .form-card:hover { border-color: #2196F3; box-shadow: 0 2px 8px rgba(33,150,243,0.15); transform: translateX(3px); }
+        .form-card-info { flex: 1; }
+        .form-card-name { font-weight: 600; font-size: 16px; color: #333; margin-bottom: 4px; }
+        .form-card-details { font-size: 13px; color: #666; display: flex; gap: 15px; flex-wrap: wrap; }
+        .form-card-badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .badge-known { background: #e3f2fd; color: #1565C0; }
+        .badge-new { background: #fff3e0; color: #e65100; }
+        .form-card-date { font-size: 12px; color: #999; }
+        .manual-entry-btn { background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%); color: white; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .manual-entry-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(67,160,71,0.3); }
+        .no-forms-message { text-align: center; padding: 40px; color: #666; }
+        .refresh-btn { background: #f5f5f5; border: 1px solid #ddd; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+        .refresh-btn:hover { background: #e0e0e0; }
+
+        /* PATIENT HISTORY TIMELINE MODAL */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: flex; align-items: center; justify-content: center; }
+        .modal-content { background: white; border-radius: 12px; max-width: 700px; width: 90%; max-height: 80vh; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+        .modal-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h2 { margin: 0; font-size: 18px; }
+        .modal-close { background: rgba(255,255,255,0.2); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; }
+        .modal-close:hover { background: rgba(255,255,255,0.3); }
+        .modal-body { padding: 20px; max-height: calc(80vh - 70px); overflow-y: auto; }
+        .timeline { position: relative; padding-left: 30px; }
+        .timeline::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: #e0e0e0; }
+        .timeline-item { position: relative; padding-bottom: 25px; }
+        .timeline-item:last-child { padding-bottom: 0; }
+        .timeline-dot { position: absolute; left: -26px; width: 16px; height: 16px; border-radius: 50%; background: #2196F3; border: 3px solid white; box-shadow: 0 0 0 2px #2196F3; }
+        .timeline-dot.booster { background: #9C27B0; box-shadow: 0 0 0 2px #9C27B0; }
+        .timeline-dot.overdue { background: #f44336; box-shadow: 0 0 0 2px #f44336; }
+        .timeline-date { font-size: 12px; color: #666; margin-bottom: 5px; }
+        .timeline-content { background: #f5f5f5; padding: 12px 15px; border-radius: 8px; }
+        .timeline-title { font-weight: 600; color: #333; margin-bottom: 8px; }
+        .timeline-details { font-size: 13px; color: #555; }
+        .timeline-details ul { margin: 5px 0 0 15px; padding: 0; }
+        .timeline-details li { margin-bottom: 3px; }
+        .overdue-badge { background: #ffebee; color: #c62828; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 8px; }
+
         /* LOGIN SCREEN */
         .login-screen { text-align: center; padding: 60px 20px; max-width: 400px; margin: 0 auto; }
         .login-screen h1 { font-size: 32px; margin-bottom: 10px; color: #2c3e50; }
@@ -291,16 +333,41 @@
             <h2 style="color: #555; font-size: 18px; margin: 40px 0 30px 0;">Choisissez le type de consultation</h2>
 
             <div class="scenario-choice">
-                <div class="scenario-card voyage" onclick="startNewPatient()">
-                    <div class="scenario-icon">✈️</div>
-                    <h2>NOUVEAU VOYAGEUR</h2>
-                    <p>Première consultation</p>
+                <div class="scenario-card voyage" onclick="showPendingForms()">
+                    <div class="scenario-icon">📋</div>
+                    <h2>NOUVEAU RDV</h2>
+                    <p>Formulaires en attente + saisie manuelle</p>
                 </div>
 
                 <div class="scenario-card rappel" onclick="startKnownPatient()">
-                    <div class="scenario-icon">📂</div>
-                    <h2>PATIENT CONNU</h2>
-                    <p>Rechercher un patient</p>
+                    <div class="scenario-icon">💉</div>
+                    <h2>RAPPEL / SUIVI</h2>
+                    <p>Patient connu, vaccins uniquement</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- PENDING FORMS SCREEN -->
+        <div id="pendingFormsScreen" class="home-screen hidden">
+            <button type="button" class="btn-secondary btn-small" onclick="returnToHome()" style="position: absolute; top: 20px; right: 20px;">🏠 Retour</button>
+
+            <h1 style="margin-top: 20px;">📋 Formulaires en attente</h1>
+
+            <div class="pending-forms-container">
+                <div class="pending-forms-header">
+                    <div class="pending-forms-search">
+                        <input type="text" id="formSearchInput" placeholder="Rechercher par nom, date de naissance..." oninput="filterPendingForms()">
+                        <button type="button" class="refresh-btn" onclick="loadPendingForms()">🔄 Actualiser</button>
+                    </div>
+                    <button type="button" class="manual-entry-btn" onclick="startManualEntry()">
+                        <span>✏️</span> Saisie manuelle (walk-in)
+                    </button>
+                </div>
+
+                <div id="pendingFormsList">
+                    <div class="no-forms-message">
+                        <p>⏳ Chargement des formulaires...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -336,7 +403,7 @@
                     <div class="scenario-card voyage" onclick="startNewVoyage()">
                         <div class="scenario-icon">✈️</div>
                         <h2>NOUVEAU VOYAGE</h2>
-                        <p>Upload PDF KoBoToolbox</p>
+                        <p>Nouvelle consultation voyage</p>
                     </div>
 
                     <div class="scenario-card rappel" onclick="startRappelOnly()">
@@ -399,22 +466,6 @@
             </div>
             <div class="accordion-content">
                 <div class="accordion-body">
-                    <!-- PDF UPLOAD SECTION (integrated) -->
-                    <div id="pdfUploadSection" style="margin-bottom: 20px;">
-                        <h3 style="margin-bottom: 15px;">📤 Upload du formulaire KoBoToolbox</h3>
-                        <div class="upload-section" id="uploadZone" onclick="document.getElementById('pdfUpload').click()">
-                            <input type="file" id="pdfUpload" accept=".pdf">
-                            <div class="upload-icon">📄</div>
-                            <div class="upload-text">Cliquez ou glissez-déposez le PDF KoBoToolbox</div>
-                            <div class="upload-hint">Les données patient seront extraites automatiquement</div>
-                        </div>
-                        <div class="upload-status" id="uploadStatus"></div>
-                        <div class="extracted-preview" id="extractedPreview" style="display: none; background: #f5f5f5; padding: 20px; border-radius: 8px; margin-top: 15px;">
-                            <h3 style="color: #1565C0; margin-bottom: 15px;">📋 Données extraites du PDF</h3>
-                            <div id="extractedContent" style="background: white; padding: 15px; border-radius: 8px;"></div>
-                        </div>
-                    </div>
-
                     <!-- PATIENT SUMMARY (compact) -->
                     <div id="patientCompactView" style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -443,7 +494,11 @@
                         
                         <label style="font-size: 12px; font-weight: 600;">Téléphone :</label>
                         <input type="tel" id="manualPhone" placeholder="Ex: 076 342 46 17" onchange="updatePatientSummary()" style="margin-bottom: 10px;">
-                        
+
+                        <label style="font-size: 12px; font-weight: 600;">Numéro AVS :</label>
+                        <input type="text" id="manualAvs" placeholder="756.1234.5678.90" onchange="updatePatientSummary()" oninput="formatAvsInput(this)" style="margin-bottom: 10px;">
+                        <div style="font-size: 11px; color: #666; margin-bottom: 10px;">Identifiant unique recommandé</div>
+
                         <button type="button" class="btn-secondary btn-small" onclick="togglePatientEdit()">✓ Valider</button>
                     </div>
                     
@@ -451,7 +506,10 @@
                     <div id="consultCountSection" style="display: none; background: #f5f5f5; padding: 12px; border-radius: 8px; margin-bottom: 10px;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <span id="consultCountText" style="font-weight: 600; color: #1565C0;">-</span>
-                            <button type="button" class="btn-secondary btn-small" onclick="toggleHistory()" id="toggleHistoryBtn">▼ Voir historique</button>
+                            <div style="display: flex; gap: 8px;">
+                                <button type="button" class="btn-secondary btn-small" onclick="toggleHistory()" id="toggleHistoryBtn">▼ Voir historique</button>
+                                <button type="button" class="btn-primary btn-small" onclick="showPatientTimeline()">📋 Timeline</button>
+                            </div>
                         </div>
                     </div>
                     
@@ -605,7 +663,7 @@
         <div class="dossier-status">
             <h3>📁 Contenu du dossier patient</h3>
             <ul class="dossier-files">
-                <li id="statusKobo" class="pending"><span class="file-icon">📕</span> Formulaire KoBoToolbox: <em>non uploadé</em></li>
+                <li id="statusPatient" class="pending"><span class="file-icon">👤</span> Patient: <em>non renseigné</em></li>
                 <li id="statusVaccines" class="pending"><span class="file-icon">💉</span> Vaccins administrés: <em>aucun</em></li>
                 <li id="statusBoosters" class="pending"><span class="file-icon">📅</span> Rappels planifiés: <em>aucun</em></li>
                 <li id="statusNotes" class="pending"><span class="file-icon">📘</span> Notes de consultation: <em>vide</em></li>
@@ -623,12 +681,11 @@
     </div> <!-- Close appContent -->
     </div> <!-- Close container -->
     <script>
-// Initialize PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
 // ==================== POCKETBASE CONFIGURATION ====================
 // PocketBase server URL
 const POCKETBASE_URL = 'https://db.traveldoctor.ch';
+// Form API URL (PHP backend for form handling)
+const FORM_API_URL = 'https://form.traveldoctor.ch/api';
 
 const pb = new PocketBase(POCKETBASE_URL);
 
@@ -639,6 +696,8 @@ let selectedPatientId = null;
 let selectedPatientData = null;
 let searchDebounceTimer = null;
 let isOnline = false;
+let pendingForms = [];
+let selectedFormData = null;
 
 // ==================== CONNECTION HANDLING ====================
 function updateConnectionStatus(status, message) {
@@ -1063,6 +1122,7 @@ async function saveConsultationToDb() {
 
         // Create or update patient
         let patientId = selectedPatientId;
+        const avsValue = document.getElementById('manualAvs').value.trim();
         const patientData = {
             nom: nom,
             prenom: prenom,
@@ -1070,7 +1130,8 @@ async function saveConsultationToDb() {
             email: document.getElementById('manualEmail').value.trim() || null,
             telephone: document.getElementById('manualPhone').value.trim() || null,
             adresse: document.getElementById('manualAddress').value.trim() || null,
-            poids: parseFloat(document.getElementById('weight').value) || null
+            poids: parseFloat(document.getElementById('weight').value) || null,
+            avs: avsValue || null
         };
 
         if (patientId) {
@@ -1095,8 +1156,8 @@ async function saveConsultationToDb() {
             consultation_type: consultationMode === 'known_patient_rappel' ? 'rappel' : 'consultation_voyage',
             duration_minutes: Math.floor(chronometerElapsed / 60000),
             notes: document.getElementById('consultationNotes').value.trim() || null,
-            voyage: extractedKoboData?.voyage || null,
-            medical: extractedKoboData?.medical || null
+            voyage: patientFormData?.voyage || null,
+            medical: patientFormData?.medical || null
         };
 
         const consultation = await withConnectionHandling(() =>
@@ -1142,6 +1203,24 @@ async function saveConsultationToDb() {
                     dosing: m.dosing
                 }))
             });
+        }
+
+        // Mark online form as processed if applicable
+        if (selectedFormData && selectedFormData.id) {
+            try {
+                await fetch(`${FORM_API_URL}/mark-form-processed.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        form_id: selectedFormData.id,
+                        patient_id: patientId,
+                        action: 'process'
+                    })
+                });
+            } catch (e) {
+                console.warn('Could not mark form as processed:', e);
+            }
+            selectedFormData = null;
         }
 
         // Offer backup JSON download
@@ -1299,9 +1378,7 @@ const medications = {
 };
 
 let selectedMedications = [];
-let uploadedPdfData = null;
-let uploadedPdfName = '';
-let extractedKoboData = null;
+let patientFormData = null;
 let vaccineSchedule = [];
 let vaccineLots = [];
 let administeredVaccines = [];
@@ -1325,21 +1402,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.getElementById('customMedInputs').classList.toggle('active', this.value === 'custom');
     });
     document.getElementById('consultationNotes').addEventListener('input', updateDossierStatus);
-
-    // PDF upload handlers
-    const uploadZone = document.getElementById('uploadZone');
-    uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
-    uploadZone.addEventListener('dragleave', () => { uploadZone.classList.remove('dragover'); });
-    uploadZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        uploadZone.classList.remove('dragover');
-        if (e.dataTransfer.files.length > 0 && e.dataTransfer.files[0].type === 'application/pdf') {
-            handlePdfUpload(e.dataTransfer.files[0]);
-        }
-    });
-    document.getElementById('pdfUpload').addEventListener('change', (e) => {
-        if (e.target.files.length > 0) handlePdfUpload(e.target.files[0]);
-    });
 
     // Login form enter key handler
     document.getElementById('loginPassword').addEventListener('keypress', (e) => {
@@ -1385,7 +1447,6 @@ function startNewPatient() {
     loadedPatientJSON = null;
     document.getElementById('homeScreen').classList.add('hidden');
     document.getElementById('appContent').style.display = 'block';
-    document.getElementById('pdfUploadSection').style.display = 'block';
 
     // Update user info in app header
     document.getElementById('appUserName').textContent = currentUser || '';
@@ -1421,7 +1482,6 @@ function startNewVoyage() {
     consultationMode = 'known_patient_new_voyage';
     document.getElementById('knownPatientChoice').classList.add('hidden');
     document.getElementById('appContent').style.display = 'block';
-    document.getElementById('pdfUploadSection').style.display = 'block';
 
     // Update user info in app header
     document.getElementById('appUserName').textContent = currentUser || '';
@@ -1437,7 +1497,6 @@ function startRappelOnly() {
     consultationMode = 'known_patient_rappel';
     document.getElementById('knownPatientChoice').classList.add('hidden');
     document.getElementById('appContent').style.display = 'block';
-    document.getElementById('pdfUploadSection').style.display = 'none';
 
     // Update user info in app header
     document.getElementById('appUserName').textContent = currentUser || '';
@@ -1542,10 +1601,12 @@ function returnToHome() {
     consultationMode = null;
     selectedPatientId = null;
     selectedPatientData = null;
+    selectedFormData = null;
 
     // Hide all screens
     document.getElementById('appContent').style.display = 'none';
     document.getElementById('knownPatientChoice').classList.add('hidden');
+    document.getElementById('pendingFormsScreen').classList.add('hidden');
 
     // Show home
     document.getElementById('homeScreen').classList.remove('hidden');
@@ -1560,6 +1621,410 @@ function returnToHome() {
 
     // IMPORTANT: Ensure patient section is visible for next time
     document.getElementById('accordionPatient').style.display = 'block';
+}
+
+// ==================== PENDING FORMS ====================
+async function showPendingForms() {
+    document.getElementById('homeScreen').classList.add('hidden');
+    document.getElementById('pendingFormsScreen').classList.remove('hidden');
+    await loadPendingForms();
+}
+
+async function loadPendingForms() {
+    const listContainer = document.getElementById('pendingFormsList');
+    listContainer.innerHTML = '<div class="no-forms-message"><p>⏳ Chargement des formulaires...</p></div>';
+
+    try {
+        const response = await fetch(`${FORM_API_URL}/get-pending-forms.php`);
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'Erreur lors du chargement');
+        }
+
+        pendingForms = data.forms || [];
+        renderPendingForms();
+    } catch (error) {
+        console.error('Error loading pending forms:', error);
+        listContainer.innerHTML = `<div class="no-forms-message"><p>❌ Erreur: ${error.message}</p><button class="refresh-btn" onclick="loadPendingForms()">Réessayer</button></div>`;
+    }
+}
+
+function filterPendingForms() {
+    renderPendingForms();
+}
+
+function renderPendingForms() {
+    const listContainer = document.getElementById('pendingFormsList');
+    const searchTerm = (document.getElementById('formSearchInput').value || '').toLowerCase();
+
+    let filtered = pendingForms;
+    if (searchTerm) {
+        filtered = pendingForms.filter(form =>
+            (form.patient_name || '').toLowerCase().includes(searchTerm) ||
+            (form.birthdate || '').includes(searchTerm) ||
+            (form.avs || '').includes(searchTerm)
+        );
+    }
+
+    if (filtered.length === 0) {
+        listContainer.innerHTML = `<div class="no-forms-message"><p>📭 Aucun formulaire en attente</p></div>`;
+        return;
+    }
+
+    let html = '';
+    filtered.forEach(form => {
+        const submittedDate = form.submitted_at ? new Date(form.submitted_at).toLocaleDateString('fr-CH') : '-';
+        const birthdate = form.birthdate ? formatDateDisplay(form.birthdate) : '-';
+        const badgeClass = form.is_known_patient ? 'badge-known' : 'badge-new';
+        const badgeText = form.is_known_patient ? '⚡ CONNU' : '🆕 NOUVEAU';
+
+        html += `
+            <div class="form-card" onclick="selectPendingForm('${form.id}')">
+                <div class="form-card-info">
+                    <div class="form-card-name">${escapeHtml(form.patient_name || 'Sans nom')}</div>
+                    <div class="form-card-details">
+                        <span>📅 ${birthdate}</span>
+                        <span>🌍 ${escapeHtml(form.destination || '-')}</span>
+                        ${form.avs ? `<span>🆔 ${escapeHtml(form.avs)}</span>` : ''}
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <span class="form-card-badge ${badgeClass}">${badgeText}</span>
+                    <div class="form-card-date">Reçu le ${submittedDate}</div>
+                </div>
+            </div>
+        `;
+    });
+
+    listContainer.innerHTML = html;
+}
+
+async function selectPendingForm(formId) {
+    try {
+        // Fetch full form data
+        const response = await fetch(`${FORM_API_URL}/decrypt-form.php?id=${formId}`);
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'Erreur lors du chargement');
+        }
+
+        selectedFormData = data.form;
+
+        // Check if patient exists
+        if (data.existing_patient) {
+            selectedPatientId = data.existing_patient.id;
+            selectedPatientData = data.existing_patient;
+            consultationMode = 'known_patient_new_voyage';
+
+            // Load patient history
+            await loadPatientHistoryFromDb(data.existing_patient.id);
+        } else {
+            consultationMode = 'new_patient';
+            selectedPatientId = null;
+            selectedPatientData = null;
+            loadedPatientJSON = null;
+        }
+
+        // Populate form fields from imported data
+        populateFromOnlineForm(data.form);
+
+        // Show app content
+        document.getElementById('pendingFormsScreen').classList.add('hidden');
+        document.getElementById('appContent').style.display = 'block';
+
+        // Update user info
+        document.getElementById('appUserName').textContent = currentUser || '';
+        document.getElementById('appLocationBadge').textContent = currentLocationName || '';
+
+        startChronometer();
+    } catch (error) {
+        console.error('Error loading form:', error);
+        alert('Erreur lors du chargement du formulaire: ' + error.message);
+    }
+}
+
+function populateFromOnlineForm(formData) {
+    // Populate patient info
+    const nameParts = (formData.patient_name || '').split(' ');
+    document.getElementById('manualName').value = formData.patient_name || '';
+    document.getElementById('manualEmail').value = formData.email || '';
+    document.getElementById('manualAvs').value = formData.avs || '';
+
+    const fd = formData.form_data || {};
+    document.getElementById('manualDob').value = fd.birthdate || '';
+    document.getElementById('manualPhone').value = fd.phone || '';
+
+    // Build address
+    const addressParts = [];
+    if (fd.street) addressParts.push(fd.street);
+    if (fd.postal_code || fd.city) {
+        addressParts.push([fd.postal_code, fd.city].filter(Boolean).join(' '));
+    }
+    document.getElementById('manualAddress').value = addressParts.join('\n');
+
+    // Update age calculation
+    updateCalculatedAge();
+    updatePatientSummary();
+
+    // Store form data in the expected structure for displayExtractedData
+    // Calculate travel duration
+    let duree = '';
+    if (fd.destinations && fd.destinations.length > 0) {
+        const allDepartures = fd.destinations.map(d => d.departure_date).filter(Boolean).sort();
+        const allReturns = fd.destinations.map(d => d.return_date).filter(Boolean).sort();
+        if (allDepartures.length > 0 && allReturns.length > 0) {
+            const startDate = new Date(allDepartures[0]);
+            const endDate = new Date(allReturns[allReturns.length - 1]);
+            if (!isNaN(startDate) && !isNaN(endDate)) {
+                const diffDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+                if (diffDays > 0) duree = diffDays + ' jours';
+            }
+        }
+    }
+
+    patientFormData = {
+        patient: {
+            nom: formData.patient_name || '',
+            dob: fd.birthdate || '',
+            dobISO: fd.birthdate || '',
+            rue: fd.street || '',
+            codePostal: fd.postal_code || '',
+            ville: fd.city || '',
+            pays: 'Suisse',
+            email: formData.email || '',
+            telephone: fd.phone || '',
+            genre: fd.gender || '',
+            poids: fd.weight || ''
+        },
+        voyage: {
+            destinations: (fd.destinations || []).map(d => ({
+                pays: d.country || '',
+                depart: d.departure_date || '',
+                retour: d.return_date || ''
+            })),
+            dateDepart: fd.destinations && fd.destinations.length > 0 ? fd.destinations[0].departure_date : '',
+            dateRetour: fd.destinations && fd.destinations.length > 0 ? fd.destinations[fd.destinations.length - 1].return_date : '',
+            duree: duree,
+            nature: fd.travel_reason || [],
+            hebergement: fd.accommodation || [],
+            activites: fd.activities || [],
+            zonesRurales: fd.rural_stay === 'yes' ? true : (fd.rural_stay === 'no' ? false : null)
+        },
+        medical: {
+            grossesse: fd.pregnancy === 'yes' ? true : (fd.pregnancy === 'no' ? false : null),
+            contraception: null,
+            allaitement: fd.breastfeeding === 'yes' ? true : (fd.breastfeeding === 'no' ? false : null),
+            allergieOeufs: null,
+            autresAllergies: fd.allergies === 'yes' ? ['Oui'] : [],
+            allergiesDetails: fd.allergies_details || '',
+            varicelleContractee: null,
+            varicelleVaccine: null,
+            problemeVaccination: null,
+            maladies: fd.comorbidities || [],
+            medicaments: fd.medications === 'yes' ? true : (fd.medications === 'no' ? false : null),
+            medicamentsDetails: fd.medications_details || ''
+        }
+    };
+
+    // Set weight field
+    if (fd.weight) {
+        document.getElementById('weight').value = fd.weight;
+    }
+}
+
+function startManualEntry() {
+    consultationMode = 'new_patient';
+    selectedPatientId = null;
+    selectedPatientData = null;
+    loadedPatientJSON = null;
+    selectedFormData = null;
+
+    document.getElementById('pendingFormsScreen').classList.add('hidden');
+    document.getElementById('appContent').style.display = 'block';
+
+    document.getElementById('appUserName').textContent = currentUser || '';
+    document.getElementById('appLocationBadge').textContent = currentLocationName || '';
+
+    startChronometer();
+}
+
+async function loadPatientHistoryFromDb(patientId) {
+    try {
+        const response = await fetch(`${FORM_API_URL}/get-patient-history.php?patient_id=${patientId}`);
+        const data = await response.json();
+
+        if (data.success) {
+            // Convert to loadedPatientJSON format for compatibility
+            loadedPatientJSON = {
+                patient: data.patient,
+                consultations: data.consultations.map(c => ({
+                    date: c.date,
+                    destinations: c.destinations,
+                    notes: c.notes,
+                    vaccines_administered: data.vaccines.filter(v => v.consultation_id === c.id),
+                    boosters_scheduled: data.boosters.filter(b => !b.completed)
+                }))
+            };
+            displayPatientHistoryInApp();
+        }
+    } catch (error) {
+        console.error('Error loading patient history:', error);
+    }
+}
+
+function formatAvsInput(input) {
+    let value = input.value.replace(/[^\d]/g, '');
+    if (value.length > 0) {
+        let formatted = '';
+        if (value.length >= 3) {
+            formatted = value.substring(0, 3);
+            if (value.length > 3) formatted += '.' + value.substring(3, 7);
+            if (value.length > 7) formatted += '.' + value.substring(7, 11);
+            if (value.length > 11) formatted += '.' + value.substring(11, 13);
+        } else {
+            formatted = value;
+        }
+        input.value = formatted;
+    }
+}
+
+function formatDateDisplay(dateStr) {
+    if (!dateStr) return '-';
+    try {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('fr-CH');
+    } catch {
+        return dateStr;
+    }
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// ==================== TIMELINE MODAL ====================
+function showPatientTimeline() {
+    if (!loadedPatientJSON) {
+        alert('Aucun historique patient disponible');
+        return;
+    }
+
+    const patient = loadedPatientJSON.patient || {};
+    const consults = loadedPatientJSON.consultations || [];
+
+    let timelineHtml = '<div class="timeline">';
+
+    // Build timeline items
+    const timelineItems = [];
+
+    // Add consultations
+    consults.forEach(c => {
+        timelineItems.push({
+            date: c.date,
+            type: 'consultation',
+            data: c
+        });
+    });
+
+    // Add boosters from all consultations
+    consults.forEach(c => {
+        if (c.boosters_scheduled) {
+            c.boosters_scheduled.forEach(b => {
+                if (b.due_date_1) {
+                    timelineItems.push({
+                        date: b.due_date_1,
+                        type: 'booster',
+                        data: { ...b, dose: 1 }
+                    });
+                }
+                if (b.due_date_2) {
+                    timelineItems.push({
+                        date: b.due_date_2,
+                        type: 'booster',
+                        data: { ...b, dose: 2 }
+                    });
+                }
+            });
+        }
+    });
+
+    // Sort by date (newest first)
+    timelineItems.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    timelineItems.forEach(item => {
+        const itemDate = new Date(item.date);
+        const isOverdue = item.type === 'booster' && itemDate < today;
+
+        if (item.type === 'consultation') {
+            const c = item.data;
+            const destinations = (c.destinations || []).map(d => d.country || d).join(', ');
+            const vaccines = (c.vaccines_administered || []).map(v => v.vaccine_name || v.vaccine || v).join(', ');
+
+            timelineHtml += `
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-date">📅 ${formatDateDisplay(c.date)}</div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">${destinations || 'Consultation'}</div>
+                        <div class="timeline-details">
+                            ${vaccines ? `<p>💉 ${vaccines}</p>` : ''}
+                            ${c.notes ? `<p>📋 ${escapeHtml(c.notes.substring(0, 100))}${c.notes.length > 100 ? '...' : ''}</p>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (item.type === 'booster') {
+            const b = item.data;
+            const dotClass = isOverdue ? 'overdue' : 'booster';
+
+            timelineHtml += `
+                <div class="timeline-item">
+                    <div class="timeline-dot ${dotClass}"></div>
+                    <div class="timeline-date">⏰ ${formatDateDisplay(b.due_date_1 || b.due_date_2)} - Rappel prévu</div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">
+                            💉 ${escapeHtml(b.vaccine)} ${b.dose ? `dose ${b.dose}` : ''}
+                            ${isOverdue ? '<span class="overdue-badge">⚠️ DÛ</span>' : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    });
+
+    timelineHtml += '</div>';
+
+    // Create modal
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 'timelineModal';
+    modal.onclick = function(e) { if (e.target === modal) closeTimelineModal(); };
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📋 Historique - ${escapeHtml(patient.prenom || '')} ${escapeHtml(patient.nom || patient.name || '')}</h2>
+                <button class="modal-close" onclick="closeTimelineModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                ${timelineItems.length > 0 ? timelineHtml : '<p style="text-align:center;color:#666;">Aucun historique disponible</p>'}
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+}
+
+function closeTimelineModal() {
+    const modal = document.getElementById('timelineModal');
+    if (modal) modal.remove();
 }
 
 // ==================== ACCORDION SYSTEM ====================
@@ -1602,32 +2067,32 @@ function toggleEditVoyage() {
 }
 
 function saveVoyageEdit() {
-    if (!extractedKoboData) return;
+    if (!patientFormData) return;
     
-    // Update extractedKoboData with edited values
-    extractedKoboData.voyage.dateDepart = document.getElementById('editVoyageDateDepart').value;
-    extractedKoboData.voyage.dateRetour = document.getElementById('editVoyageDateRetour').value;
+    // Update patientFormData with edited values
+    patientFormData.voyage.dateDepart = document.getElementById('editVoyageDateDepart').value;
+    patientFormData.voyage.dateRetour = document.getElementById('editVoyageDateRetour').value;
     
     // Parse arrays (comma-separated input back to arrays)
-    extractedKoboData.voyage.nature = normalizeArray(document.getElementById('editVoyageNature').value);
-    extractedKoboData.voyage.hebergement = normalizeArray(document.getElementById('editVoyageHebergement').value);
-    extractedKoboData.voyage.activites = normalizeArray(document.getElementById('editVoyageActivites').value);
+    patientFormData.voyage.nature = normalizeArray(document.getElementById('editVoyageNature').value);
+    patientFormData.voyage.hebergement = normalizeArray(document.getElementById('editVoyageHebergement').value);
+    patientFormData.voyage.activites = normalizeArray(document.getElementById('editVoyageActivites').value);
     
     // Parse boolean
     var zonesValue = document.getElementById('editVoyageZonesRurales').value;
-    extractedKoboData.voyage.zonesRurales = zonesValue === 'true' ? true : (zonesValue === 'false' ? false : null);
+    patientFormData.voyage.zonesRurales = zonesValue === 'true' ? true : (zonesValue === 'false' ? false : null);
     
     // Recalculate duration
-    if (extractedKoboData.voyage.dateDepart && extractedKoboData.voyage.dateRetour) {
-        const start = new Date(extractedKoboData.voyage.dateDepart);
-        const end = new Date(extractedKoboData.voyage.dateRetour);
+    if (patientFormData.voyage.dateDepart && patientFormData.voyage.dateRetour) {
+        const start = new Date(patientFormData.voyage.dateDepart);
+        const end = new Date(patientFormData.voyage.dateRetour);
         const diffTime = Math.abs(end - start);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        extractedKoboData.voyage.duree = diffDays + ' jours';
+        patientFormData.voyage.duree = diffDays + ' jours';
     }
     
     // Refresh display
-    displayExtractedData(extractedKoboData);
+    displayExtractedData(patientFormData);
     
     alert('✅ Données voyage mises à jour !');
 }
@@ -1646,24 +2111,24 @@ function toggleEditMedical() {
 }
 
 function saveMedicalEdit() {
-    if (!extractedKoboData || !extractedKoboData.medical) return;
+    if (!patientFormData || !patientFormData.medical) return;
     
-    // Update extractedKoboData with edited values
-    extractedKoboData.medical.maladies = document.getElementById('editMedicalMaladies').value;
-    extractedKoboData.medical.allergieOeufs = document.getElementById('editMedicalAllergieOeufs').value;
-    extractedKoboData.medical.autresAllergies = document.getElementById('editMedicalAutresAllergies').value;
-    extractedKoboData.medical.allergiesDetails = document.getElementById('editMedicalAllergiesDetails').value;
-    extractedKoboData.medical.grossesse = document.getElementById('editMedicalGrossesse').value;
-    extractedKoboData.medical.contraception = document.getElementById('editMedicalContraception').value;
-    extractedKoboData.medical.allaitement = document.getElementById('editMedicalAllaitement').value;
-    extractedKoboData.medical.varicelleContractee = document.getElementById('editMedicalVaricelleContractee').value;
-    extractedKoboData.medical.varicelleVaccine = document.getElementById('editMedicalVaricelleVaccine').value;
-    extractedKoboData.medical.problemeVaccination = document.getElementById('editMedicalProblemeVaccination').value;
-    extractedKoboData.medical.medicaments = document.getElementById('editMedicalMedicaments').value;
-    extractedKoboData.medical.medicamentsDetails = document.getElementById('editMedicalMedicamentsDetails').value;
+    // Update patientFormData with edited values
+    patientFormData.medical.maladies = document.getElementById('editMedicalMaladies').value;
+    patientFormData.medical.allergieOeufs = document.getElementById('editMedicalAllergieOeufs').value;
+    patientFormData.medical.autresAllergies = document.getElementById('editMedicalAutresAllergies').value;
+    patientFormData.medical.allergiesDetails = document.getElementById('editMedicalAllergiesDetails').value;
+    patientFormData.medical.grossesse = document.getElementById('editMedicalGrossesse').value;
+    patientFormData.medical.contraception = document.getElementById('editMedicalContraception').value;
+    patientFormData.medical.allaitement = document.getElementById('editMedicalAllaitement').value;
+    patientFormData.medical.varicelleContractee = document.getElementById('editMedicalVaricelleContractee').value;
+    patientFormData.medical.varicelleVaccine = document.getElementById('editMedicalVaricelleVaccine').value;
+    patientFormData.medical.problemeVaccination = document.getElementById('editMedicalProblemeVaccination').value;
+    patientFormData.medical.medicaments = document.getElementById('editMedicalMedicaments').value;
+    patientFormData.medical.medicamentsDetails = document.getElementById('editMedicalMedicamentsDetails').value;
     
     // Refresh display
-    displayExtractedData(extractedKoboData);
+    displayExtractedData(patientFormData);
     
     alert('✅ Données médicales mises à jour !');
 }
@@ -1690,12 +2155,16 @@ function updatePatientSummary() {
     const dob = document.getElementById('manualDob').value;
     const phone = document.getElementById('manualPhone').value.trim();
     const email = document.getElementById('manualEmail').value.trim();
-    
+    const avs = document.getElementById('manualAvs').value.trim();
+
     document.getElementById('displayPatientName').textContent = name;
-    
+
     let info = '';
     if (dob) {
         info += formatDateSwiss(new Date(dob));
+    }
+    if (avs) {
+        info += (info ? ' • AVS: ' : 'AVS: ') + avs;
     }
     if (phone) {
         info += (info ? ' • ' : '') + phone;
@@ -1706,7 +2175,7 @@ function updatePatientSummary() {
     if (!info) {
         info = '-';
     }
-    
+
     document.getElementById('displayPatientInfo').textContent = info;
 }
 
@@ -2220,17 +2689,6 @@ function resetChronometer() {
     chronometerElapsed = 0; chronometerPaused = false; chronometerFinalTime = null;
     document.getElementById('chronometerDisplay').textContent = '00:00:00';
     document.getElementById('chronometerFinal').style.display = 'none';
-    if (uploadedPdfData) {
-        chronometerStartTime = Date.now();
-        document.getElementById('chronometerStatus').textContent = 'En cours...';
-        updateChronometerButton();
-        chronometerInterval = setInterval(function() {
-            if (!chronometerPaused) {
-                chronometerElapsed = Date.now() - chronometerStartTime;
-                document.getElementById('chronometerDisplay').textContent = formatTime(chronometerElapsed);
-            }
-        }, 1000);
-    }
 }
 
 function hideChronometer() {
@@ -2239,603 +2697,6 @@ function hideChronometer() {
     document.getElementById('chronometerDisplay').textContent = '00:00:00';
     document.getElementById('chronometerSection').style.display = 'none';
     document.getElementById('chronometerFinal').style.display = 'none';
-}
-
-// ==================== PDF UPLOAD & EXTRACTION ====================
-async function handlePdfUpload(file) {
-    const statusDiv = document.getElementById('uploadStatus');
-    statusDiv.className = 'upload-status loading';
-    statusDiv.innerHTML = '⏳ Extraction en cours...<span class="loading-spinner"></span>';
-    try {
-        const arrayBuffer = await file.arrayBuffer();
-        uploadedPdfData = new Blob([arrayBuffer], { type: 'application/pdf' });
-        uploadedPdfName = file.name;
-        startChronometer();
-        
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        let fullText = '';
-        let attachmentLinks = [];
-        
-        for (let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-            const textContent = await page.getTextContent();
-            
-            // Simple extraction - just join all text items
-            const pageText = textContent.items.map(item => item.str).join(' ');
-            fullText += pageText + '\n';
-            
-            // Extract annotations (links) from the page
-            const annotations = await page.getAnnotations();
-            console.log('DEBUG: Page', i, 'has', annotations.length, 'annotation(s)');
-            annotations.forEach((annotation, idx) => {
-                console.log('DEBUG: Annotation', idx, ':', {
-                    subtype: annotation.subtype,
-                    url: annotation.url,
-                    dest: annotation.dest,
-                    contents: annotation.contents
-                });
-                if (annotation.subtype === 'Link' && annotation.url) {
-                    // Check if it's a KoBoToolbox attachment link
-                    if (annotation.url.includes('kobotoolbox.org') && annotation.url.includes('attachments')) {
-                        attachmentLinks.push(annotation.url);
-                    }
-                }
-            });
-        }
-        
-        console.log('DEBUG: Found attachment links from annotations:', attachmentLinks);
-        
-        // Check if extraction yielded meaningful content
-        const meaningfulText = fullText.replace(/\s+/g, ' ').trim();
-        console.log('DEBUG: Extracted text length:', fullText.length);
-        console.log('DEBUG: Searching for kobotoolbox links in text...');
-        const linkMatch = fullText.match(/kobotoolbox\.org[^\s]*/gi);
-        console.log('DEBUG: Link matches found:', linkMatch);
-        
-        if (meaningfulText.length < 100 || !meaningfulText.includes('Prénom')) {
-            // Extraction failed - likely a "Print to PDF" file
-            statusDiv.className = 'upload-status error';
-            statusDiv.innerHTML = '⚠️ <strong>Ce PDF ne peut pas être lu automatiquement.</strong><br>' +
-                '<small>Cause probable : Le PDF a été créé avec "Microsoft Print to PDF".<br>' +
-                '<strong>Solution :</strong> Depuis KoBoToolbox, cliquez sur "Afficher" puis Ctrl+P → choisissez <strong>"Enregistrer au format PDF"</strong> (pas "Microsoft Print to PDF").<br>' +
-                'Vous pouvez continuer avec la saisie manuelle ci-dessous.</small>';
-            updateDossierStatus();
-            return;
-        }
-        
-        extractedKoboData = parseKoboText(fullText);
-        
-        // Add attachment links extracted from PDF annotations
-        if (attachmentLinks.length > 0) {
-            // Merge with any links found in text, then deduplicate
-            const allLinks = [...attachmentLinks, ...(extractedKoboData.medical.vaccination_card_links || [])];
-            // Use Set to remove duplicates
-            extractedKoboData.medical.vaccination_card_links = [...new Set(allLinks)];
-            console.log('DEBUG: Added', extractedKoboData.medical.vaccination_card_links.length, 'unique attachment links to medical data');
-        }
-        
-        populateFormFromKobo(extractedKoboData);
-        displayExtractedData(extractedKoboData);
-        statusDiv.className = 'upload-status success';
-        statusDiv.innerHTML = '✅ <strong>' + file.name + '</strong> - Données extraites avec succès!';
-        updateDossierStatus();
-        
-        // Start chronometer automatically
-        startChronometer();
-    } catch (error) {
-        console.error('Erreur extraction PDF:', error);
-        statusDiv.className = 'upload-status error';
-        statusDiv.innerHTML = '❌ Erreur: ' + error.message + '. Vous pouvez continuer avec la saisie manuelle.';
-    }
-}
-
-function parseKoboText(text) {
-    const data = {
-        patient: { nom: '', dob: '', dobISO: '', rue: '', codePostal: '', ville: '', pays: '', email: '', telephone: '', genre: '', poids: '' },
-        voyage: { nombrePays: '', destinations: [], dateDepart: '', dateRetour: '', duree: '', nature: '', natureAutre: '', hebergement: '', hebergementAutre: '', activites: '', activitesAutre: '', zonesRurales: '' },
-        medical: { grossesse: '', contraception: '', allaitement: '', dernieresRegles: '', allergieOeufs: '', autresAllergies: '', allergiesDetails: '', varicelleContractee: '', varicelleVaccine: '', problemeVaccination: '', problemeVaccinationDetails: '', maladies: '', cd4: '', chimio: '', psychologique: '', medicaments: '', medicamentsDetails: '', carnetVaccination: '', carnetFichier: '', vaccination_card_links: [] }
-    };
-    
-    // First, normalize the text to handle both PDF formats
-    // Replace newlines with spaces, then collapse multiple spaces
-    var normalizedText = text.replace(/\r\n/g, '\n').replace(/\n+/g, ' ').replace(/\s+/g, ' ');
-    text = normalizedText;
-    
-    var cleanValue = function(val) {
-        if (!val) return '';
-        // Remove bullet points (•) and list markers
-        val = val.replace(/[•●▪▫■□]/g, '');
-        // Remove entire KoboToolbox footer lines (starts with "KoboToolbox https://")
-        val = val.replace(/KoboToolbox\s+https:\/\/[^\n]*/gi, '');
-        // Remove Unicode special characters
-        val = val.replace(/[\u25A0-\u25FF\u2600-\u26FF\u2700-\u27BF\u2610-\u2612\uFFFD\uFEFF\u200B-\u200D\u2060\u00A0\uE000-\uF8FF]/g, '');
-        // Collapse multiple spaces and commas
-        val = val.replace(/\s*,\s*,\s*/g, ', ').replace(/,\s*$/g, '').replace(/\s+/g, ' ');
-        return val.trim();
-    };
-    
-    var extractBetween = function(startLabel, endLabel) {
-        // Make label matching flexible with whitespace
-        var flexLabel = function(label) {
-            return label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
-        };
-        var startRegex = new RegExp(flexLabel(startLabel), 'i');
-        var endRegex = new RegExp(flexLabel(endLabel), 'i');
-        var startMatch = text.match(startRegex);
-        if (!startMatch) return '';
-        var startIndex = startMatch.index + startMatch[0].length;
-        var afterStart = text.substring(startIndex);
-        var endMatch = afterStart.match(endRegex);
-        if (!endMatch) return cleanValue(afterStart.substring(0, 150));
-        return cleanValue(afterStart.substring(0, endMatch.index));
-    };
-    
-    // Extract value right after a label (for simple fields)
-    var extractSimpleValue = function(label, maxLength) {
-        maxLength = maxLength || 100;
-        var regex = new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*([^\\n]+)', 'i');
-        var match = text.match(regex);
-        if (match && match[1]) {
-            return cleanValue(match[1].substring(0, maxLength));
-        }
-        return '';
-    };
-    
-    // ==================== DATA NORMALIZATION FUNCTIONS ====================
-    
-    // Convert "Oui"/"Non"/"-" to boolean
-    var normalizeBoolean = function(value) {
-        if (!value || value === '-' || value === '') return null;
-        var cleaned = value.trim().toLowerCase();
-        if (cleaned === 'oui' || cleaned === 'yes') return true;
-        if (cleaned === 'non' || cleaned === 'no') return false;
-        return null;
-    };
-    
-    // Convert string to number (integer or float)
-    var normalizeNumber = function(value, isInteger) {
-        if (!value || value === '-' || value === '') return null;
-        var cleaned = value.toString().replace(/[^\d.,-]/g, '').replace(',', '.');
-        var num = isInteger ? parseInt(cleaned) : parseFloat(cleaned);
-        return isNaN(num) ? null : num;
-    };
-    
-    // Convert comma-separated string to array
-    var normalizeArray = function(value) {
-        if (!value || value === '-' || value === '') return [];
-        // Split by comma, filter empty values, trim each item
-        return value.split(',')
-            .map(function(item) { return item.trim(); })
-            .filter(function(item) { return item.length > 0; });
-    };
-    
-    // Normalize date to ISO format (YYYY-MM-DD)
-    var normalizeDate = function(value) {
-        if (!value || value === '-' || value === '') return null;
-        // If already in ISO format
-        if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
-        // Try to convert
-        var isoDate = convertFrenchDateToISO(value);
-        return isoDate || null;
-    };
-    
-    // ==================== END NORMALIZATION FUNCTIONS ====================
-    
-    // Patient data
-    data.patient.nom = extractBetween('Prénom Nom', 'Date de naissance');
-    data.patient.dob = extractBetween('Date de naissance', 'Rue');
-    data.patient.rue = extractBetween('Rue', 'Code postal');
-    data.patient.codePostal = extractBetween('Code postal', 'Ville');
-    data.patient.ville = extractBetween('Ville', 'Pays');
-    data.patient.pays = extractBetween('Pays', 'Téléphone');
-    data.patient.telephone = extractBetween('Téléphone', 'Courriel');
-    data.patient.email = extractBetween('Courriel', 'Quel est votre genre');
-    data.patient.genre = extractBetween('Quel est votre genre ?', 'Combien de pays');
-    // Normalize dates to ISO format
-    data.patient.dob = normalizeDate(data.patient.dob);
-    data.patient.dobISO = data.patient.dob; // dobISO is same as dob now
-    
-    // Number of countries - normalize to integer
-    var nombrePaysRaw = extractBetween('Combien de pays allez-vous visiter?', 'Quel est le pays de destination');
-    data.voyage.nombrePays = normalizeNumber(nombrePaysRaw, true); // true = integer
-    var numCountries = data.voyage.nombrePays || 1;
-    
-    // Multi-country extraction
-    var allDepartures = [];
-    var allReturns = [];
-    
-    if (numCountries === 1) {
-        // Single country case - try both formats
-        var dest = extractBetween('Quel est le pays de destination?', 'Quelle est la date de départ');
-        var depart = extractBetween('Quelle est la date de départ?', 'Quelle est la date de retour');
-        var retour = extractBetween('Quelle est la date de retour?', 'Quel est le pays de destination n°1');
-        
-        // If retour captured too much (empty country questions), clean it up
-        if (retour && retour.indexOf('Quel est le pays') > -1) {
-            retour = retour.split('Quel est le pays')[0].trim();
-        }
-        // Also try to extract just the date pattern
-        if (retour) {
-            var dateMatch = retour.match(/(\d{1,2}\s+[a-zéûô]+\.?\s*\d{4})/i);
-            if (!dateMatch) dateMatch = retour.match(/([A-Za-z]+\s+\d{1,2},?\s*\d{4})/i);
-            if (dateMatch) retour = dateMatch[1];
-        }
-        
-        if (dest) {
-            data.voyage.destinations.push({ 
-                pays: dest, 
-                depart: normalizeDate(depart), 
-                retour: normalizeDate(retour)
-            });
-            if (depart) allDepartures.push(convertFrenchDateToISO(depart));
-            if (retour) allReturns.push(convertFrenchDateToISO(retour));
-        }
-        
-        // If no single destination found, try n°1 format (some forms use this even for 1 country)
-        if (!dest) {
-            dest = extractBetween('Quel est le pays de destination n°1?', 'Quelle est la date de départ');
-            if (dest) {
-                // Use the multi-country extraction for country 1
-                numCountries = 1; // Will be handled below
-            }
-        }
-    }
-    
-    if (numCountries > 1 || (numCountries === 1 && data.voyage.destinations.length === 0)) {
-        // Multiple countries - extract each one
-        for (var i = 1; i <= Math.min(numCountries, 10); i++) {
-            var countryLabel = 'Quel est le pays de destination n°' + i + '?';
-            var nextCountryLabel = 'Quel est le pays de destination n°' + (i + 1) + '?';
-            var endLabel = i < numCountries ? nextCountryLabel : 'Quelle est la nature de votre voyage';
-            
-            // Find the country block
-            var countryRegex = new RegExp(countryLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-            var countryMatch = text.match(countryRegex);
-            
-            if (countryMatch) {
-                var blockStart = countryMatch.index;
-                var endRegex = new RegExp(endLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-                var afterCountry = text.substring(blockStart);
-                var endMatch = afterCountry.match(endRegex);
-                var blockEnd = endMatch ? endMatch.index : afterCountry.length;
-                var block = afterCountry.substring(0, blockEnd);
-                
-                // Extract country name
-                var countryName = '';
-                var countryNameMatch = block.match(/destination n°\d+\?\s*(.+?)(?:\s*Quelle est la date|$)/i);
-                if (countryNameMatch) countryName = cleanValue(countryNameMatch[1]);
-                
-                // Extract departure date - support both French and English formats
-                // French: "16 janv. 2026" | English: "Jan 23, 2026"
-                var departMatch = block.match(/date de départ\?\s*(\d{1,2}\s+[a-zéûô]+\.?\s*\d{4})/i);
-                if (!departMatch) {
-                    departMatch = block.match(/date de départ\?\s*([A-Za-z]+\s+\d{1,2},?\s*\d{4})/i);
-                }
-                var departDate = departMatch ? cleanValue(departMatch[1]) : '';
-                
-                // Extract return date
-                var retourMatch = block.match(/date de retour\?\s*(\d{1,2}\s+[a-zéûô]+\.?\s*\d{4})/i);
-                if (!retourMatch) {
-                    retourMatch = block.match(/date de retour\?\s*([A-Za-z]+\s+\d{1,2},?\s*\d{4})/i);
-                }
-                var retourDate = retourMatch ? cleanValue(retourMatch[1]) : '';
-                
-                if (countryName) {
-                    data.voyage.destinations.push({ 
-                        pays: countryName, 
-                        depart: normalizeDate(departDate), 
-                        retour: normalizeDate(retourDate)
-                    });
-                    if (departDate) allDepartures.push(convertFrenchDateToISO(departDate));
-                    if (retourDate) allReturns.push(convertFrenchDateToISO(retourDate));
-                }
-            }
-        }
-    }
-    
-    // Calculate overall trip dates (earliest departure to latest return)
-    if (allDepartures.length > 0) {
-        allDepartures.sort();
-        data.voyage.dateDepart = allDepartures[0]; // Earliest
-    }
-    if (allReturns.length > 0) {
-        allReturns.sort();
-        data.voyage.dateRetour = allReturns[allReturns.length - 1]; // Latest
-    }
-    
-    // Calculate total duration
-    if (data.voyage.dateDepart && data.voyage.dateRetour) {
-        var startDate = new Date(data.voyage.dateDepart);
-        var endDate = new Date(data.voyage.dateRetour);
-        if (!isNaN(startDate) && !isNaN(endDate)) {
-            var diffDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-            data.voyage.duree = diffDays > 0 ? diffDays + ' jours' : '';
-        }
-    }
-    
-    // Travel nature - capture all selected options between question and next section
-    var natureBlock = extractBetween('Quelle est la nature de votre voyage', "Quel type d'hébergement");
-    if (natureBlock) {
-        // Remove the "?" and "Autre, spécifiez" label, keep the options
-        var natureClean = natureBlock.replace(/^\s*\?\s*/, '').replace(/Autre,?\s*spécifiez\s*/gi, '');
-        // Known options to format with commas
-        var natureOptions = ['Tourisme en voyage organisé', 'Tourisme indépendant', 'Voyage d\'affaires', 'Aventure', 'Visite à des amis ou de la famille', 'Mission humanitaire', 'Pèlerinage', 'Pélérinage', 'Expatriation', 'Autre', 'Aucune des précédentes'];
-        natureOptions.forEach(function(opt) {
-            var regex = new RegExp('\\s+(' + opt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
-            natureClean = natureClean.replace(regex, ', $1');
-        });
-        natureClean = natureClean.replace(/^,\s*/, '').replace(/,\s*,/g, ',').trim();
-        // Check for "Autre, spécifiez" value
-        var autreNatureMatch = text.match(/nature de votre voyage[\s\S]*?Autre,?\s*spécifiez\s+([^\n]+?)(?=\s*Quel type d'hébergement)/i);
-        if (autreNatureMatch && autreNatureMatch[1]) {
-            var autreVal = cleanValue(autreNatureMatch[1]);
-            if (autreVal && natureClean.indexOf(autreVal) === -1) {
-                natureClean = natureClean ? natureClean + ' (Autre: ' + autreVal + ')' : autreVal;
-            }
-        }
-        data.voyage.nature = natureClean || '-';
-    } else {
-        data.voyage.nature = '-';
-    }
-    // Normalize nature to array
-    data.voyage.nature = normalizeArray(data.voyage.nature);
-    
-    // Accommodation - capture all selected options
-    var hebergementBlock = extractBetween("Quel type d'hébergement avez-vous prévu?", 'Avez-vous prévu une ou plusieurs');
-    if (hebergementBlock) {
-        var hebergementClean = hebergementBlock.replace(/Autre,?\s*spécifiez\s*/gi, '');
-        var hebergementOptions = ['Pas encore décidé', 'Chez l\'habitant', 'Hôtel', 'Autre'];
-        hebergementOptions.forEach(function(opt) {
-            var regex = new RegExp('\\s+(' + opt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
-            hebergementClean = hebergementClean.replace(regex, ', $1');
-        });
-        hebergementClean = hebergementClean.replace(/^,\s*/, '').replace(/,\s*,/g, ',').trim();
-        // Check for "Autre, spécifiez" value
-        var autreHebMatch = text.match(/hébergement avez-vous prévu\?[\s\S]*?Autre,?\s*spécifiez\s+([^\n]+?)(?=\s*Avez-vous prévu une ou plusieurs)/i);
-        if (autreHebMatch && autreHebMatch[1]) {
-            var autreHebVal = cleanValue(autreHebMatch[1]);
-            if (autreHebVal && hebergementClean.indexOf(autreHebVal) === -1) {
-                hebergementClean = hebergementClean ? hebergementClean + ' (Autre: ' + autreHebVal + ')' : autreHebVal;
-            }
-        }
-        data.voyage.hebergement = hebergementClean || '-';
-    } else {
-        data.voyage.hebergement = '-';
-    }
-    // Normalize hebergement to array
-    data.voyage.hebergement = normalizeArray(data.voyage.hebergement);
-    
-    // Activities - capture all selected options
-    var activitesBlock = extractBetween('Avez-vous prévu une ou plusieurs de ces activités spécifiques ?', 'Avez-vous prévu de séjourner');
-    if (activitesBlock) {
-        var activitesClean = activitesBlock.replace(/Autre,?\s*spécifiez\s*/gi, '');
-        var activitesOptions = ['Alpinisme', 'Randonnée', 'Plongée', 'Rafting', 'Vélo', 'Snorkeling', 'Autre', 'Aucune des précédentes'];
-        activitesOptions.forEach(function(opt) {
-            var regex = new RegExp('\\s+(' + opt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
-            activitesClean = activitesClean.replace(regex, ', $1');
-        });
-        activitesClean = activitesClean.replace(/^,\s*/, '').replace(/,\s*,/g, ',').trim();
-        // Check for "Autre, spécifiez" value
-        var autreActMatch = text.match(/activités spécifiques[\s\S]*?Autre,?\s*spécifiez\s+([^\n]+?)(?=\s*Avez-vous prévu de séjourner)/i);
-        if (autreActMatch && autreActMatch[1]) {
-            var autreActVal = cleanValue(autreActMatch[1]);
-            if (autreActVal && activitesClean.indexOf(autreActVal) === -1) {
-                activitesClean = activitesClean ? activitesClean + ' (Autre: ' + autreActVal + ')' : autreActVal;
-            }
-        }
-        data.voyage.activites = activitesClean || '-';
-    } else {
-        data.voyage.activites = '-';
-    }
-    // Normalize activites to array
-    data.voyage.activites = normalizeArray(data.voyage.activites);
-    
-    // Rural areas - text is split across lines in PDF, look for "Oui" after the question
-    var zonesMatch = text.match(/zones rurales ou isolées\s*\??\s*(Oui|Non)/i);
-    if (!zonesMatch) {
-        // Try alternate pattern where answer is on next line
-        zonesMatch = text.match(/séjourner dans\s+(Oui|Non)/i);
-    }
-    var zonesRaw = zonesMatch ? zonesMatch[1] : '-';
-    data.voyage.zonesRurales = normalizeBoolean(zonesRaw);
-    
-    // Weight - extract and normalize to number
-    var poidsRaw = extractBetween('Quel est votre poids?', 'Est-t-il possible que vous soyez enceinte');
-    data.patient.poids = normalizeNumber(poidsRaw, false); // false = float
-    
-    // Medical history
-    var grossesseRaw = extractBetween('Est-t-il possible que vous soyez enceinte', 'Quelle contraception');
-    // Clean up pregnancy field
-    if (grossesseRaw.indexOf('envisagez') > -1) grossesseRaw = '';
-    data.medical.grossesse = normalizeBoolean(grossesseRaw);
-    
-    var contraceptionRaw = extractBetween('Quelle contraception utilisez-vous?', 'Allaitez-vous');
-    data.medical.contraception = normalizeBoolean(contraceptionRaw);
-    
-    var allaitementRaw = extractBetween('Allaitez-vous ?', 'Date des dernières règles');
-    data.medical.allaitement = normalizeBoolean(allaitementRaw);
-    
-    var dernieresReglesRaw = extractBetween('Date des dernières règles', 'Êtes-vous allergique aux oeufs');
-    data.medical.dernieresRegles = normalizeDate(dernieresReglesRaw);
-    // Egg allergy - extract and normalize to boolean
-    var allergieOeufsRaw = extractBetween('Êtes-vous allergique aux oeufs?', "Avez-vous d'autres allergies");
-    data.medical.allergieOeufs = normalizeBoolean(allergieOeufsRaw);
-    
-    // Other allergies - these are multi-select options
-    var allergiesRaw = extractBetween("Avez-vous d'autres allergies ?", 'Allergies : Pourriez-vous');
-    // Clean up and format as comma-separated list
-    if (allergiesRaw) {
-        var allergiesList = allergiesRaw.replace(/\s+(Médicamenteuses|Alimentaires|Environnementales|Autre|Aucune)/g, ', $1').replace(/^,\s*/, '');
-        data.medical.autresAllergies = allergiesList;
-    } else {
-        data.medical.autresAllergies = '-';
-    }
-    // Normalize to array
-    data.medical.autresAllergies = normalizeArray(data.medical.autresAllergies);
-    
-    // Allergy details
-    data.medical.allergiesDetails = extractBetween('Allergies : Pourriez-vous donner plus de détails?', 'Avez vous eu la varicelle');
-    
-    // Varicelle - extract and normalize to boolean
-    var varicelleRaw = extractBetween('Avez vous eu la varicelle (maladie) ?', 'Avez vous été vacciné pour la varicelle');
-    data.medical.varicelleContractee = normalizeBoolean(varicelleRaw);
-    
-    var varicelleVaccinRaw = extractBetween('Avez vous été vacciné pour la varicelle ?', 'Avez-vous eu un problème avec une vaccination');
-    data.medical.varicelleVaccine = normalizeBoolean(varicelleVaccinRaw);
-    
-    var problemeVaccRaw = extractBetween('Avez-vous eu un problème avec une vaccination antérieure ?', 'Problème avec vaccination');
-    data.medical.problemeVaccination = normalizeBoolean(problemeVaccRaw);
-    // Extract details text, stopping before the comorbidities list (which starts with "Problème du thymus")
-    data.medical.problemeVaccinationDetails = extractBetween('Problème avec vaccination : Pourriez-vous', 'Problème du thymus');
-    
-    // Comorbidities - extract the selected conditions
-    // Note: The form has 5 comorbidity options (thymus, VIH, Cancer, Diabète, Hypertension) that appear
-    // BEFORE the main "Souffrez vous ou avez vous souffert de" question, so we need to capture both sections
-    var maladiesRaw = extractBetween('Problème du thymus', 'Quel est votre dernier valeur de CD4');
-    if (!maladiesRaw) {
-        maladiesRaw = extractBetween('Problème du thymus', 'Si autre, pourriez-vous donner plus de détails');
-    }
-    if (!maladiesRaw) {
-        maladiesRaw = extractBetween('Problème du thymus', 'Avez-vous subi');
-    }
-    if (maladiesRaw) {
-        // Complete list of conditions from KoBoToolbox form
-        var conditionsList = [
-            'Asthme',
-            'Maladie cardiaque',
-            'Maladie inflammatoire digestive \\(Crohn, Recto-colite ulcéreuse\\)',
-            'Maladie digestive chronique \\(gastrite chronique ou reflux gastro-oesophagien\\)',
-            'Maladie rhumatologique \\(polyarthrite rhumatoïde, lupus\\)',
-            'Maladie hématologique \\(leucémie, lymphome\\)',
-            'Épilepsie',
-            'Opération chirurgicale importante ou immobilisation prolongée au cours des 6 dernières semaines',
-            'Absence de la rate',
-            'Maladie musculaire \\(myasthénie\\)',
-            'Maladie psychiatrique \\/ psychologique',
-            'Problème du thymus \\(thymome, ablation du thymus, syndrome de DiGeorge\\)',
-            'Vih',
-            'VIH\\/SIDA',
-            'Cancer',
-            'Diabète',
-            'Hypertension',
-            'Hypertension artérielle',
-            'BPCO',
-            'Maladie du foie',
-            'Maladie rénale',
-            'Maladie auto-immune',
-            'Trouble de la coagulation',
-            'Splénectomie',
-            'Transplantation',
-            'Grossesse',
-            'Autre',
-            'Aucune',
-            'Aucune de ces maladies'
-        ];
-        var regexPattern = '\\s+(' + conditionsList.join('|') + ')';
-        var conditions = maladiesRaw.replace(new RegExp(regexPattern, 'g'), ', $1').replace(/^,\s*/, '').replace(/\s+/g, ' ').trim();
-        data.medical.maladies = conditions || '-';
-    } else {
-        data.medical.maladies = '-';
-    }
-    
-    // Extract "autre" details for comorbidities
-    var maladiesAutreMatch = text.match(/Si autre, pourriez-vous donner plus de détails\?\s*([^\n]+?)(?=\s*Avez-vous subi)/i);
-    if (maladiesAutreMatch && maladiesAutreMatch[1].trim()) {
-        var autreDetails = cleanValue(maladiesAutreMatch[1]);
-        if (autreDetails && data.medical.maladies !== '-') {
-            data.medical.maladies = data.medical.maladies + ' (Autre: ' + autreDetails + ')';
-        } else if (autreDetails) {
-            data.medical.maladies = autreDetails;
-        }
-    }
-    // Normalize maladies to array
-    data.medical.maladies = normalizeArray(data.medical.maladies);
-    
-    // CD4 count - extract and normalize to number
-    var cd4Match = text.match(/dernier valeur de CD4[\s\S]*?remonte-t-il\s*\?\s*([^\n]+?)(?=\s*Si autre)/i);
-    var cd4Raw = cd4Match && cd4Match[1].trim() ? cleanValue(cd4Match[1]) : '';
-    data.medical.cd4 = normalizeNumber(cd4Raw, true); // true = integer
-    
-    // Chemotherapy - extract and normalize to boolean
-    var chimioRaw = extractBetween('Avez-vous subi une chimiothérapie, une radiothérapie ou un traitement immunomodulateur dans les 6 derniers mois?', 'Problème psychologique');
-    data.medical.chimio = normalizeBoolean(chimioRaw);
-    
-    // Psychological - extract the details
-    var psyMatch = text.match(/psychiatrique : Pourriez-vous[\s\S]*?détails\?\s*([^\n]+?)(?=\s*Prenez-vous des médicaments)/i);
-    data.medical.psychologique = psyMatch && psyMatch[1].trim() ? cleanValue(psyMatch[1]) : '';
-    
-    // Medications - extract and normalize to boolean
-    var drugsAnswer = extractBetween('Prenez-vous des médicaments régulièrement', 'Quels produits prenez-vous');
-    data.medical.medicaments = normalizeBoolean(drugsAnswer);
-    data.medical.medicamentsDetails = extractBetween('Quels produits prenez-vous ?', 'Est-ce que votre carnet');
-    
-    // Vaccination card - look for specific responses
-    var carnetRaw = extractBetween('carnet de vaccination est disponible', 'Téléversez votre carnet');
-    var carnetMatch = carnetRaw.match(/(Oui|Non)/i);
-    if (carnetMatch) {
-        data.medical.carnetVaccination = carnetMatch[1];
-    } else if (carnetRaw.indexOf("n'ai pas") > -1) {
-        data.medical.carnetVaccination = "Je n'ai pas de carnet de vaccination";
-    } else {
-        data.medical.carnetVaccination = '-';
-    }
-    
-    // Extract vaccination card attachment links
-    // Look for KoBoToolbox attachment URLs
-    var linkRegex = /https:\/\/[^\s]+kobotoolbox\.org[^\s]+attachments[^\s]+/gi;
-    var links = text.match(linkRegex) || [];
-    console.log('DEBUG: Extracted vaccination card links:', links);
-    data.medical.vaccination_card_links = links.map(function(link) {
-        // Clean up any trailing characters
-        return link.replace(/[)\]}\s]+$/, '');
-    });
-    
-    return data;
-}
-
-function convertFrenchDateToISO(dateStr) {
-    if (!dateStr) return '';
-    // French months
-    const months = { 'janv': '01', 'jan': '01', 'janvier': '01', 'févr': '02', 'fév': '02', 'février': '02', 'mars': '03', 'mar': '03', 'avr': '04', 'avril': '04', 'mai': '05', 'juin': '06', 'jun': '06', 'juil': '07', 'jul': '07', 'juillet': '07', 'août': '08', 'aou': '08', 'sept': '09', 'sep': '09', 'septembre': '09', 'oct': '10', 'octobre': '10', 'nov': '11', 'novembre': '11', 'déc': '12', 'dec': '12', 'décembre': '12' };
-    // English months
-    const monthsEn = { 'jan': '01', 'january': '01', 'feb': '02', 'february': '02', 'mar': '03', 'march': '03', 'apr': '04', 'april': '04', 'may': '05', 'jun': '06', 'june': '06', 'jul': '07', 'july': '07', 'aug': '08', 'august': '08', 'sep': '09', 'sept': '09', 'september': '09', 'oct': '10', 'october': '10', 'nov': '11', 'november': '11', 'dec': '12', 'december': '12' };
-    
-    // French format: "16 janv. 2026"
-    var match = dateStr.match(/(\d{1,2})\s*([a-zéûô]+)\.?\s*(\d{4})/i);
-    if (match) {
-        var day = match[1].padStart(2, '0');
-        var month = months[match[2].toLowerCase().replace('.', '')] || '01';
-        return match[3] + '-' + month + '-' + day;
-    }
-    
-    // English format: "Jan 23, 2026" or "Sep 6, 1995"
-    var matchEn = dateStr.match(/([a-z]+)\s*(\d{1,2}),?\s*(\d{4})/i);
-    if (matchEn) {
-        var day = matchEn[2].padStart(2, '0');
-        var month = monthsEn[matchEn[1].toLowerCase()] || '01';
-        return matchEn[3] + '-' + month + '-' + day;
-    }
-    
-    return '';
-}
-
-function populateFormFromKobo(data) {
-    if (data.patient.nom) document.getElementById('manualName').value = data.patient.nom;
-    if (data.patient.dobISO) document.getElementById('manualDob').value = data.patient.dobISO;
-    if (data.patient.email) document.getElementById('manualEmail').value = data.patient.email;
-    if (data.patient.telephone) document.getElementById('manualPhone').value = data.patient.telephone;
-    if (data.patient.poids) document.getElementById('weight').value = data.patient.poids;
-    let addressLines = [];
-    if (data.patient.rue) addressLines.push(data.patient.rue);
-    let cityLine = [data.patient.codePostal, data.patient.ville].filter(function(x) { return x; }).join(' ');
-    if (cityLine) addressLines.push(cityLine);
-    if (data.patient.pays && data.patient.pays.toLowerCase() !== 'suisse') addressLines.push(data.patient.pays);
-    if (addressLines.length > 0) document.getElementById('manualAddress').value = addressLines.join('\n');
-    updateCalculatedAge();
-    updatePatientSummary();
-    
-    // Show patient section for new patients
-    document.getElementById('accordionPatient').style.display = 'block';
 }
 
 // ==================== DISPLAY FORMATTING FUNCTIONS ====================
@@ -3106,17 +2967,23 @@ function updateCalculatedAge() {
 }
 
 function updateDossierStatus() {
-    const koboStatus = document.getElementById('statusKobo');
+    const patientStatus = document.getElementById('statusPatient');
     const vaccineStatus = document.getElementById('statusVaccines');
     const boosterStatus = document.getElementById('statusBoosters');
     const notesStatus = document.getElementById('statusNotes');
     const rxStatus = document.getElementById('statusRx');
-    if (uploadedPdfData) {
-        koboStatus.innerHTML = '<span class="file-icon">📕</span> Formulaire KoBoToolbox: <strong>' + uploadedPdfName + '</strong>';
-        koboStatus.className = 'ready';
+
+    const patientName = document.getElementById('manualName').value.trim();
+    const patientDob = document.getElementById('manualDob').value;
+    if (patientName && patientDob) {
+        patientStatus.innerHTML = '<span class="file-icon">👤</span> Patient: <strong>' + patientName + '</strong>';
+        patientStatus.className = 'ready';
+    } else if (patientName) {
+        patientStatus.innerHTML = '<span class="file-icon">👤</span> Patient: <strong>' + patientName + '</strong> <em>(DOB manquante)</em>';
+        patientStatus.className = 'pending';
     } else {
-        koboStatus.innerHTML = '<span class="file-icon">📕</span> Formulaire KoBoToolbox: <em>non uploadé</em>';
-        koboStatus.className = 'pending';
+        patientStatus.innerHTML = '<span class="file-icon">👤</span> Patient: <em>non renseigné</em>';
+        patientStatus.className = 'pending';
     }
     if (administeredVaccines.length > 0) {
         vaccineStatus.innerHTML = '<span class="file-icon">💉</span> Vaccins administrés: <strong>' + administeredVaccines.length + ' vaccin(s)</strong>';
@@ -3339,8 +3206,8 @@ async function generateConsultationDocx(consultationDuration) {
     const paragraphs = [];
 
     // Patient info
-    if (extractedKoboData) {
-        const data = extractedKoboData;
+    if (patientFormData) {
+        const data = patientFormData;
         // Patient section
         paragraphs.push(new Paragraph({ children: [new TextRun({ text: '=== DONNÉES PATIENT ===', bold: true })] }));
         paragraphs.push(new Paragraph({ children: [new TextRun('Nom: ' + (data.patient.nom || '-'))] }));
@@ -3527,10 +3394,6 @@ async function generatePatientFolder() {
 
     const zip = new JSZip();
     const folder = zip.folder(folderName);
-
-    if (uploadedPdfData) {
-        folder.file(uploadedPdfName, uploadedPdfData);
-    }
 
     const docxBlob = await generateConsultationDocx(finalTime);
     folder.file('Consultation_' + lastName + firstName + '_' + consultDate + '.docx', docxBlob);
@@ -3798,12 +3661,12 @@ function generatePatientJson() {
         notes: document.getElementById('consultationNotes').value.trim()
     };
     
-    if (extractedKoboData && extractedKoboData.voyage) {
-        newConsultation.voyage = extractedKoboData.voyage;
+    if (patientFormData && patientFormData.voyage) {
+        newConsultation.voyage = patientFormData.voyage;
     }
     
-    if (extractedKoboData && extractedKoboData.medical) {
-        newConsultation.medical = extractedKoboData.medical;
+    if (patientFormData && patientFormData.medical) {
+        newConsultation.medical = patientFormData.medical;
     }
     
     const patientJson = {
@@ -3957,7 +3820,7 @@ function exportConsultationPdf() {
     y += 5;
     
     // ===== VOYAGE =====
-    if (extractedKoboData && extractedKoboData.voyage) {
+    if (patientFormData && patientFormData.voyage) {
         checkPageBreak(50);
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
@@ -3967,7 +3830,7 @@ function exportConsultationPdf() {
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
         
-        const voyage = extractedKoboData.voyage;
+        const voyage = patientFormData.voyage;
         
         if (voyage.destinations && voyage.destinations.length > 0) {
             const destinations = voyage.destinations.map(d => typeof d === 'object' ? d.pays : d).filter(Boolean).join(', ');
@@ -4028,7 +3891,7 @@ function exportConsultationPdf() {
     }
     
     // ===== ANTÉCÉDENTS MÉDICAUX =====
-    if (extractedKoboData && extractedKoboData.medical) {
+    if (patientFormData && patientFormData.medical) {
         checkPageBreak(50);
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
@@ -4038,7 +3901,7 @@ function exportConsultationPdf() {
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
         
-        const med = extractedKoboData.medical;
+        const med = patientFormData.medical;
         
         if (med.poids) {
             doc.text('Poids : ' + med.poids, margin, y);
@@ -4296,17 +4159,14 @@ function calculateAge(dob) {
 // ==================== CLEAR FORM ====================
 function clearForm() {
     if (!confirm('Nouvelle consultation ? Cela effacera les données actuelles.')) return;
-    
-    // Reset all data
-    document.getElementById('pdfUpload').value = '';
-    document.getElementById('uploadStatus').className = 'upload-status';
-    document.getElementById('uploadStatus').innerHTML = '';
-    document.getElementById('extractedPreview').style.display = 'none';
+
+    // Reset patient data
     document.getElementById('manualName').value = '';
     document.getElementById('manualDob').value = '';
     document.getElementById('manualAddress').value = '';
     document.getElementById('manualEmail').value = '';
     document.getElementById('manualPhone').value = '';
+    document.getElementById('manualAvs').value = '';
     document.getElementById('calculatedAge').textContent = '';
     document.getElementById('consultationNotes').value = '';
     document.getElementById('prescriptionDate').valueAsDate = new Date();
@@ -4315,13 +4175,13 @@ function clearForm() {
     document.getElementById('customMedName').value = '';
     document.getElementById('customMedDosing').value = '';
     document.getElementById('customMedInputs').classList.remove('active');
-    
+
     // Reset conseils checkboxes
     document.querySelectorAll('#conseilsCheckboxList input[type="checkbox"]').forEach(function(checkbox) {
         checkbox.checked = false;
         checkbox.parentElement.classList.remove('selected');
     });
-    
+
     // Reset patient section content (but keep it visible)
     document.getElementById('displayPatientName').textContent = '-';
     document.getElementById('displayPatientInfo').textContent = '-';
@@ -4330,15 +4190,14 @@ function clearForm() {
     document.getElementById('patientEditMode').style.display = 'none';
     document.getElementById('patientCompactView').style.display = 'block';
     document.getElementById('toggleHistoryBtn').textContent = '▼ Voir historique';
-    
+
     selectedMedications = [];
-    uploadedPdfData = null;
-    uploadedPdfName = '';
-    extractedKoboData = null;
+    patientFormData = null;
     administeredVaccines = [];
     plannedBoosters = [];
     loadedPatientJSON = null;
     consultationMode = null;
+    selectedFormData = null;
     
     renderVaccineCheckboxList();
     renderBoosterCheckboxList();
@@ -4351,6 +4210,7 @@ function clearForm() {
     // Return to home screen
     document.getElementById('appContent').style.display = 'none';
     document.getElementById('knownPatientChoice').classList.add('hidden');
+    document.getElementById('pendingFormsScreen').classList.add('hidden');
     document.getElementById('homeScreen').classList.remove('hidden');
     
     // Reset known patient screen
