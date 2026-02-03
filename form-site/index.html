@@ -3,11 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Travel Doctor - Formulaire Patient</title>
+    <title>Travel Doctor - Formulaire Patient (Public)</title>
     <link rel="stylesheet" href="css/form.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+    <style>
+        /* Public form specific styles */
+        .public-notice {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 3px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            border: 1px solid #ffeeba;
+        }
+        .captcha-container {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+    </style>
 </head>
 <body>
     <div class="form-container">
@@ -25,6 +43,11 @@
                 </select>
             </div>
         </header>
+
+        <!-- Public Notice -->
+        <div class="public-notice" data-translate="messages.public_notice">
+            <strong>Formulaire public</strong> - Ce formulaire est destin&eacute; &agrave; &ecirc;tre rempli sur place.
+        </div>
 
         <!-- Progress Steps -->
         <div class="progress-container">
@@ -318,7 +341,7 @@
                 </div>
             </div>
 
-            <!-- Step 3: Health -->
+            <!-- Step 3: Health (same as index.html) -->
             <div class="form-step" data-step="3">
                 <h2 class="step-title" data-translate="steps.health">Sant&eacute;</h2>
 
@@ -332,7 +355,6 @@
                 <div id="reproductive-section" class="conditional-section">
                     <div class="section-title" data-translate="health.reproductive_title">Sant&eacute; reproductive</div>
 
-                    <!-- Show for non-binary/other -->
                     <div id="show-reproductive-question" class="form-group hidden">
                         <label data-translate="health.show_reproductive">Souhaitez-vous r&eacute;pondre aux questions sur la sant&eacute; reproductive ?</label>
                         <div class="radio-group">
@@ -451,8 +473,7 @@
                     </div>
                     <div class="form-group">
                         <label for="allergies_details" data-translate="health.allergies_details">Pr&eacute;cisez vos allergies et type de r&eacute;action *</label>
-                        <textarea id="allergies_details" name="allergies_details" rows="3"
-                                  data-placeholder="health.allergies_details_placeholder"></textarea>
+                        <textarea id="allergies_details" name="allergies_details" rows="3"></textarea>
                         <span class="error-message"></span>
                     </div>
                 </div>
@@ -695,8 +716,7 @@
                 </div>
                 <div id="medication-details" class="form-group hidden">
                     <label for="medication_list" data-translate="health.medication_list">Liste des m&eacute;dicaments *</label>
-                    <textarea id="medication_list" name="medication_list" rows="3"
-                              data-placeholder="health.medication_placeholder"></textarea>
+                    <textarea id="medication_list" name="medication_list" rows="3"></textarea>
                     <span class="error-message"></span>
                 </div>
             </div>
@@ -740,110 +760,27 @@
                             <span data-translate="referral.source_internet">Recherche Internet</span>
                         </label>
                         <label class="checkbox-label">
-                            <input type="checkbox" name="referral_source" value="social" onchange="toggleReferralDetail(this, 'referral-social')">
-                            <span data-translate="referral.source_social">R&eacute;seaux sociaux</span>
-                        </label>
-                        <div id="referral-social" class="inline-field hidden">
-                            <label for="referral_social_platform" data-translate="referral.social_platform">Plateforme:</label>
-                            <input type="text" id="referral_social_platform" name="referral_social_platform">
-                        </div>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="referral_source" value="doctor" onchange="toggleReferralDetail(this, 'referral-doctor')">
+                            <input type="checkbox" name="referral_source" value="doctor">
                             <span data-translate="referral.source_doctor">M&eacute;decin/professionnel de sant&eacute;</span>
                         </label>
-                        <div id="referral-doctor" class="inline-field hidden">
-                            <label for="referral_doctor_name" data-translate="referral.doctor_name">Nom:</label>
-                            <input type="text" id="referral_doctor_name" name="referral_doctor_name">
-                        </div>
                         <label class="checkbox-label">
-                            <input type="checkbox" name="referral_source" value="friend" onchange="toggleReferralDetail(this, 'referral-friend')">
+                            <input type="checkbox" name="referral_source" value="friend">
                             <span data-translate="referral.source_friend">Ami/famille</span>
-                        </label>
-                        <div id="referral-friend" class="inline-field hidden">
-                            <label for="referral_friend_name" data-translate="referral.friend_name">Nom:</label>
-                            <input type="text" id="referral_friend_name" name="referral_friend_name">
-                        </div>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="referral_source" value="pharmacy">
-                            <span data-translate="referral.source_pharmacy">Pharmacie</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="referral_source" value="employer">
-                            <span data-translate="referral.source_employer">Employeur</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="referral_source" value="travel_agency">
-                            <span data-translate="referral.source_travel_agency">Agence de voyage</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="referral_source" value="insurance">
-                            <span data-translate="referral.source_insurance">Assurance</span>
                         </label>
                         <label class="checkbox-label">
                             <input type="checkbox" name="referral_source" value="returning">
                             <span data-translate="referral.source_returning">D&eacute;j&agrave; patient</span>
                         </label>
                         <label class="checkbox-label">
-                            <input type="checkbox" name="referral_source" value="advertising" onchange="toggleReferralDetail(this, 'referral-advertising')">
-                            <span data-translate="referral.source_advertising">Publicit&eacute;</span>
-                        </label>
-                        <div id="referral-advertising" class="inline-field hidden">
-                            <label for="referral_ad_location" data-translate="referral.ad_location">O&ugrave; ?</label>
-                            <input type="text" id="referral_ad_location" name="referral_ad_location">
-                        </div>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="referral_source" value="other" onchange="toggleReferralDetail(this, 'referral-other')">
+                            <input type="checkbox" name="referral_source" value="other">
                             <span data-translate="referral.source_other">Autre</span>
-                        </label>
-                        <div id="referral-other" class="inline-field hidden">
-                            <label for="referral_other_specify" data-translate="referral.other_specify">Pr&eacute;cisez:</label>
-                            <input type="text" id="referral_other_specify" name="referral_other_specify">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label data-translate="referral.choice_factor">Facteur principal de choix</label>
-                    <div class="checkbox-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="choice_factor" value="location">
-                            <span data-translate="referral.factor_location">Emplacement</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="choice_factor" value="price">
-                            <span data-translate="referral.factor_price">Prix</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="choice_factor" value="reputation">
-                            <span data-translate="referral.factor_reputation">R&eacute;putation</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="choice_factor" value="recommendation">
-                            <span data-translate="referral.factor_recommendation">Recommandation</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="choice_factor" value="expertise">
-                            <span data-translate="referral.factor_expertise">Expertise</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="choice_factor" value="availability">
-                            <span data-translate="referral.factor_availability">Disponibilit&eacute;</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="choice_factor" value="languages">
-                            <span data-translate="referral.factor_languages">Langues parl&eacute;es</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="choice_factor" value="other">
-                            <span data-translate="referral.factor_other">Autre</span>
                         </label>
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label for="comment" data-translate="referral.comment">Commentaire</label>
-                    <textarea id="comment" name="comment" rows="3"
-                              data-placeholder="referral.comment_placeholder"></textarea>
+                    <textarea id="comment" name="comment" rows="3"></textarea>
                     <span class="optional-badge" data-translate="buttons.optional">Facultatif</span>
                 </div>
             </div>
@@ -854,7 +791,6 @@
                 <p class="step-subtitle" data-translate="summary.subtitle">V&eacute;rifiez vos informations avant envoi</p>
 
                 <div class="summary-container">
-                    <!-- Identity Summary -->
                     <div class="summary-section">
                         <div class="summary-header">
                             <h3 data-translate="steps.identity">Identit&eacute;</h3>
@@ -863,7 +799,6 @@
                         <div class="summary-content" id="summary-identity"></div>
                     </div>
 
-                    <!-- Travel Summary -->
                     <div class="summary-section">
                         <div class="summary-header">
                             <h3 data-translate="steps.travel">Voyage</h3>
@@ -872,7 +807,6 @@
                         <div class="summary-content" id="summary-travel"></div>
                     </div>
 
-                    <!-- Health Summary -->
                     <div class="summary-section">
                         <div class="summary-header">
                             <h3 data-translate="steps.health">Sant&eacute;</h3>
@@ -881,7 +815,6 @@
                         <div class="summary-content" id="summary-health"></div>
                     </div>
 
-                    <!-- Vaccination Summary -->
                     <div class="summary-section">
                         <div class="summary-header">
                             <h3 data-translate="steps.vaccination">Carnet de vaccination</h3>
@@ -890,7 +823,6 @@
                         <div class="summary-content" id="summary-vaccination"></div>
                     </div>
 
-                    <!-- Referral Summary -->
                     <div class="summary-section">
                         <div class="summary-header">
                             <h3 data-translate="steps.referral">Referral</h3>
@@ -898,6 +830,11 @@
                         </div>
                         <div class="summary-content" id="summary-referral"></div>
                     </div>
+                </div>
+
+                <!-- hCaptcha -->
+                <div class="captcha-container">
+                    <div class="h-captcha" data-sitekey="9706b8ca-59c8-461c-b600-780c525cd7a2"></div>
                 </div>
 
                 <!-- Consent -->
@@ -924,11 +861,6 @@
             </div>
         </form>
 
-        <!-- Draft saved indicator -->
-        <div class="draft-indicator hidden" id="draft-indicator">
-            <span data-translate="messages.draft_saved">Brouillon sauvegard&eacute;</span>
-        </div>
-
         <!-- Footer -->
         <footer class="form-footer">
             <p>En cas de probl&egrave;me technique, <a href="https://www.traveldoctor.ch/whatsapp" target="_blank">contactez-nous via WhatsApp</a></p>
@@ -939,5 +871,121 @@
     <script src="js/translations.js"></script>
     <script src="js/countries.js"></script>
     <script src="js/form.js"></script>
+    <script>
+        // Track if we're editing an existing submitted form
+        let isEditingSubmittedForm = false;
+        let editFormToken = null;
+
+        // Override loadDraft to detect submitted forms
+        const originalLoadDraft = loadDraft;
+        async function loadDraft(editToken) {
+            try {
+                const response = await fetch(API_URL + '/get-draft.php?token=' + editToken);
+                const data = await response.json();
+
+                if (data.success && data.form_data) {
+                    currentToken = editToken;
+
+                    // Check if this is a submitted form (not just a draft)
+                    if (data.is_submitted) {
+                        isEditingSubmittedForm = true;
+                        editFormToken = editToken;
+                    }
+
+                    populateForm(data.form_data);
+
+                    if (data.step_reached) {
+                        goToStep(data.step_reached);
+                    }
+
+                    if (data.language) {
+                        setLanguage(data.language);
+                    }
+
+                    // Clear token from URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            } catch (error) {
+                console.error('Draft load error:', error);
+            }
+        }
+
+        // Override submit for public form with hCaptcha
+        const originalSubmitForm = submitForm;
+
+        async function submitForm() {
+            // Validate captcha first (only for new submissions)
+            const captchaResponse = document.querySelector('[name="h-captcha-response"]')?.value;
+
+            if (!isEditingSubmittedForm && !captchaResponse) {
+                alert(t('errors.captcha_required') || 'Veuillez compléter le CAPTCHA');
+                return;
+            }
+
+            if (!validateCurrentStep()) return;
+
+            const btnSubmit = document.getElementById('btn-submit');
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = '<span class="spinner"></span> ' + t('messages.submitting');
+
+            try {
+                // Upload files if any
+                let fileIds = [];
+                if (uploadedFiles.length > 0) {
+                    fileIds = await uploadFiles();
+                }
+
+                // Collect form data
+                const formData = collectFormData();
+                formData.vaccination_file_ids = fileIds;
+                formData.language = currentLang;
+
+                let response;
+
+                if (isEditingSubmittedForm && editFormToken) {
+                    // Update existing form
+                    response = await fetch('/api/update-form.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            edit_token: editFormToken,
+                            form_data: formData
+                        })
+                    });
+                } else {
+                    // New submission with captcha
+                    response = await fetch('/api/submit-public.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            captcha_token: captchaResponse,
+                            form_data: formData
+                        })
+                    });
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showSuccessScreen(formData.email);
+                } else {
+                    alert(data.error || t('errors.submission_failed'));
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = '<span>' + t('buttons.submit') + '</span>';
+                    if (window.hcaptcha && !isEditingSubmittedForm) {
+                        hcaptcha.reset();
+                    }
+                }
+            } catch (error) {
+                console.error('Submission error:', error);
+                alert(t('errors.connection_error'));
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = '<span>' + t('buttons.submit') + '</span>';
+                if (window.hcaptcha && !isEditingSubmittedForm) {
+                    hcaptcha.reset();
+                }
+            }
+        }
+    </script>
 </body>
 </html>

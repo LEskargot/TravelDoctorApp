@@ -103,64 +103,14 @@ function initAvsField() {
 }
 
 /**
- * Check URL parameters for token or edit mode
+ * Check URL parameters for edit mode
  */
 function checkUrlParams() {
     const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
     const editToken = urlParams.get('edit');
-
-    // Check if this is the authenticated form (not public.html)
-    const isPublicForm = window.location.pathname.includes('public.html');
 
     if (editToken) {
         loadDraft(editToken);
-    } else if (token) {
-        currentToken = token;
-        // Pre-fill email if available
-        verifyToken(token);
-    } else if (!isPublicForm) {
-        // No token on authenticated form - redirect to main site
-        showAccessDenied();
-    }
-}
-
-/**
- * Show access denied message and redirect
- */
-function showAccessDenied() {
-    document.body.innerHTML = `
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: 'Open Sans', sans-serif; text-align: center; padding: 20px;">
-            <h1 style="color: #333; margin-bottom: 20px;">Accès non autorisé</h1>
-            <p style="color: #666; margin-bottom: 30px;">Ce formulaire nécessite un lien d'accès valide.<br>Veuillez utiliser le lien reçu par email.</p>
-            <a href="https://www.traveldoctor.ch" style="background: #2ea3f2; color: white; padding: 12px 24px; border-radius: 3px; text-decoration: none;">Retour au site</a>
-        </div>
-    `;
-}
-
-/**
- * Verify access token
- */
-async function verifyToken(token) {
-    try {
-        const response = await fetch(API_URL + '/verify-token.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            currentToken = token;
-            if (data.email) {
-                document.getElementById('email').value = data.email;
-            }
-            // Clear token from URL
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
-    } catch (error) {
-        console.error('Token verification error:', error);
     }
 }
 

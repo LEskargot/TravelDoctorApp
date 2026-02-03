@@ -23,7 +23,7 @@ define('IMAP_HOST', 'mail.infomaniak.com');
 define('IMAP_PORT', 993);
 define('IMAP_USER', SMTP_USER); // Same as SMTP: contact@traveldoctor.ch
 define('IMAP_PASSWORD', SMTP_PASSWORD);
-define('IMAP_FOLDER', 'INBOX');
+define('IMAP_FOLDER', 'OneDoc');
 
 // OneDoc sender to filter
 define('ONEDOC_SENDER', 'no-reply@onedoc.ch');
@@ -427,7 +427,7 @@ function createPrefilledForm($patientData) {
  * Send form invitation email to patient
  */
 function sendFormInvitation($patientData, $editToken) {
-    $formLink = FORM_URL . '/public.html?edit=' . $editToken;
+    $formLink = FORM_URL . '/?edit=' . $editToken;
 
     $subject = 'Travel Doctor - Votre formulaire patient';
 
