@@ -56,34 +56,24 @@ function main() {
             throw new Exception("Failed to open INBOX");
         }
 
-        // Search for emails matching OneDoc subject patterns (including read, for testing)
-        $allEmails = $folder->query()
+        // Get ALL emails in folder (for testing)
+        $emails = $folder->query()
             ->all()
             ->get();
 
-        // Filter by subject
-        $emails = [];
-        logMessage("Total emails in folder: " . $allEmails->count());
-        foreach ($allEmails as $email) {
-            $subject = $email->getSubject();
-            logMessage("  - Checking: " . $subject);
-            foreach (ONEDOC_SUBJECTS as $pattern) {
-                if (stripos($subject, $pattern) !== false) {
-                    logMessage("    -> MATCH: " . $pattern);
-                    $emails[] = $email;
-                    break;
-                }
-            }
-        }
+        logMessage("Total emails in folder: " . $emails->count());
 
-        if (count($emails) === 0) {
-            logMessage("No new OneDoc emails found.");
+        if ($emails->count() === 0) {
+            logMessage("No emails found in folder.");
             $client->disconnect();
             releaseLock();
             return;
         }
 
-        logMessage("Found " . count($emails) . " new OneDoc email(s).");
+        // Log all subjects
+        foreach ($emails as $email) {
+            logMessage("  - " . $email->getSubject());
+        }
 
         foreach ($emails as $email) {
             try {
