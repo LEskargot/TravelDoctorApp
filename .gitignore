@@ -1,0 +1,18 @@
+# Claude Code settings
+.claude/
+
+# Sample/test files
+*.eml
+kobotoolbox_form.xml
+
+# Planning docs (optional - remove if you want to track)
+PLAN_IMPORT_FORMULAIRES.md
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
