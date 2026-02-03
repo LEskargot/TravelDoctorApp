@@ -66,7 +66,10 @@ const TRANSLATIONS = {
         homme: "Homme",
         non_binaire: "Non-binaire",
         autre: "Autre"
-      }
+      },
+      avs: "Numéro AVS",
+      avs_placeholder: "756.1234.5678.90",
+      avs_hint: "Recommandé pour éviter les confusions d'identité"
     },
 
     // Step 2: Travel
@@ -484,7 +487,10 @@ const TRANSLATIONS = {
         homme: "Male",
         non_binaire: "Non-binary",
         autre: "Other"
-      }
+      },
+      avs: "AVS Number (Swiss Social Security)",
+      avs_placeholder: "756.1234.5678.90",
+      avs_hint: "Recommended to avoid identity confusion"
     },
 
     // Step 2: Travel
@@ -829,7 +835,10 @@ const TRANSLATIONS = {
         homme: "Uomo",
         non_binaire: "Non binario",
         autre: "Altro"
-      }
+      },
+      avs: "Numero AVS",
+      avs_placeholder: "756.1234.5678.90",
+      avs_hint: "Consigliato per evitare confusioni di identità"
     },
 
     // Step 2: Travel
@@ -1236,7 +1245,10 @@ const TRANSLATIONS = {
         homme: "Hombre",
         non_binaire: "No binario",
         autre: "Otro"
-      }
+      },
+      avs: "Número AVS (Seguro Social Suizo)",
+      avs_placeholder: "756.1234.5678.90",
+      avs_hint: "Recomendado para evitar confusiones de identidad"
     },
 
     // Step 2: Travel

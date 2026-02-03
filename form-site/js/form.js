@@ -53,8 +53,53 @@ function initForm() {
         radio.addEventListener('change', handleGenderChange);
     });
 
+    // AVS formatting
+    initAvsField();
+
     // Update placeholders with translations
     updatePlaceholders();
+}
+
+/**
+ * Initialize AVS field with auto-formatting
+ */
+function initAvsField() {
+    const avsField = document.getElementById('avs');
+    if (!avsField) return;
+
+    avsField.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/[^\d]/g, '');
+
+        // Auto-format: 756.XXXX.XXXX.XX
+        if (value.length > 0) {
+            let formatted = '';
+            if (value.length >= 3) {
+                formatted = value.substring(0, 3);
+                if (value.length > 3) {
+                    formatted += '.' + value.substring(3, 7);
+                }
+                if (value.length > 7) {
+                    formatted += '.' + value.substring(7, 11);
+                }
+                if (value.length > 11) {
+                    formatted += '.' + value.substring(11, 13);
+                }
+            } else {
+                formatted = value;
+            }
+            e.target.value = formatted;
+        }
+    });
+
+    // Validate on blur
+    avsField.addEventListener('blur', function(e) {
+        const value = e.target.value;
+        if (value && !/^756\.\d{4}\.\d{4}\.\d{2}$/.test(value)) {
+            e.target.setCustomValidity('Format AVS invalide (756.XXXX.XXXX.XX)');
+        } else {
+            e.target.setCustomValidity('');
+        }
+    });
 }
 
 /**
@@ -927,6 +972,10 @@ function generateIdentitySummary() {
 
     if (data.phone) {
         html += `<p><strong>${t('identity.phone')}:</strong> ${data.phone}</p>`;
+    }
+
+    if (data.avs) {
+        html += `<p><strong>${t('identity.avs')}:</strong> ${data.avs}</p>`;
     }
 
     if (data.street || data.city) {

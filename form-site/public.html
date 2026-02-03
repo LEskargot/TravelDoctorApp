@@ -119,6 +119,16 @@
                     <span class="optional-badge" data-translate="buttons.optional">Facultatif</span>
                 </div>
 
+                <div class="form-group">
+                    <label for="avs" data-translate="identity.avs">Num&eacute;ro AVS</label>
+                    <input type="text" id="avs" name="avs"
+                           pattern="^756\.\d{4}\.\d{4}\.\d{2}$"
+                           data-placeholder="identity.avs_placeholder">
+                    <span class="hint" data-translate="identity.avs_hint">Recommand&eacute; pour &eacute;viter les confusions d'identit&eacute;</span>
+                    <span class="optional-badge" data-translate="buttons.optional">Facultatif</span>
+                    <span class="error-message"></span>
+                </div>
+
                 <div class="form-row">
                     <div class="form-group flex-2">
                         <label for="street" data-translate="identity.street">Rue</label>
@@ -862,14 +872,52 @@
     <script src="js/countries.js"></script>
     <script src="js/form.js"></script>
     <script>
+        // Track if we're editing an existing submitted form
+        let isEditingSubmittedForm = false;
+        let editFormToken = null;
+
+        // Override loadDraft to detect submitted forms
+        const originalLoadDraft = loadDraft;
+        async function loadDraft(editToken) {
+            try {
+                const response = await fetch(API_URL + '/get-draft.php?token=' + editToken);
+                const data = await response.json();
+
+                if (data.success && data.form_data) {
+                    currentToken = editToken;
+
+                    // Check if this is a submitted form (not just a draft)
+                    if (data.is_submitted) {
+                        isEditingSubmittedForm = true;
+                        editFormToken = editToken;
+                    }
+
+                    populateForm(data.form_data);
+
+                    if (data.step_reached) {
+                        goToStep(data.step_reached);
+                    }
+
+                    if (data.language) {
+                        setLanguage(data.language);
+                    }
+
+                    // Clear token from URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            } catch (error) {
+                console.error('Draft load error:', error);
+            }
+        }
+
         // Override submit for public form with hCaptcha
         const originalSubmitForm = submitForm;
 
         async function submitForm() {
-            // Validate captcha first
+            // Validate captcha first (only for new submissions)
             const captchaResponse = document.querySelector('[name="h-captcha-response"]')?.value;
 
-            if (!captchaResponse) {
+            if (!isEditingSubmittedForm && !captchaResponse) {
                 alert(t('errors.captcha_required') || 'Veuillez compléter le CAPTCHA');
                 return;
             }
@@ -887,19 +935,34 @@
                     fileIds = await uploadFiles();
                 }
 
-                // Submit form data with captcha
+                // Collect form data
                 const formData = collectFormData();
                 formData.vaccination_file_ids = fileIds;
                 formData.language = currentLang;
 
-                const response = await fetch('/api/submit-public.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        captcha_token: captchaResponse,
-                        form_data: formData
-                    })
-                });
+                let response;
+
+                if (isEditingSubmittedForm && editFormToken) {
+                    // Update existing form
+                    response = await fetch('/api/update-form.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            edit_token: editFormToken,
+                            form_data: formData
+                        })
+                    });
+                } else {
+                    // New submission with captcha
+                    response = await fetch('/api/submit-public.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            captcha_token: captchaResponse,
+                            form_data: formData
+                        })
+                    });
+                }
 
                 const data = await response.json();
 
@@ -909,7 +972,7 @@
                     alert(data.error || t('errors.submission_failed'));
                     btnSubmit.disabled = false;
                     btnSubmit.innerHTML = '<span>' + t('buttons.submit') + '</span>';
-                    if (window.hcaptcha) {
+                    if (window.hcaptcha && !isEditingSubmittedForm) {
                         hcaptcha.reset();
                     }
                 }
@@ -918,7 +981,7 @@
                 alert(t('errors.connection_error'));
                 btnSubmit.disabled = false;
                 btnSubmit.innerHTML = '<span>' + t('buttons.submit') + '</span>';
-                if (window.hcaptcha) {
+                if (window.hcaptcha && !isEditingSubmittedForm) {
                     hcaptcha.reset();
                 }
             }
