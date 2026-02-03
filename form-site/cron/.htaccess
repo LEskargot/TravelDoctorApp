@@ -1,0 +1,3 @@
+# Block all web access to cron scripts
+# These should only be executed via command line
+Require all denied
