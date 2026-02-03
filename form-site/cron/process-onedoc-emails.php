@@ -56,9 +56,9 @@ function main() {
             throw new Exception("Failed to open INBOX");
         }
 
-        // Search for unread emails matching OneDoc subject patterns
+        // Search for emails matching OneDoc subject patterns (including read, for testing)
         $allEmails = $folder->query()
-            ->unseen()
+            ->all()
             ->get();
 
         // Filter by subject
