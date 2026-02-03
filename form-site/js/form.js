@@ -1384,6 +1384,7 @@ function showSuccessScreen(email) {
     document.querySelector('.progress-container').style.display = 'none';
     document.querySelector('.form-navigation').style.display = 'none';
 
+    const formBaseUrl = window.location.origin + window.location.pathname;
     const container = document.querySelector('.form-container');
     const successHtml = `
         <div class="success-screen">
@@ -1391,11 +1392,30 @@ function showSuccessScreen(email) {
             <h2>${t('messages.success_title')}</h2>
             <p>${t('messages.success_message')}</p>
             <p><strong>${email}</strong></p>
+            <div class="share-section">
+                <p>${t('messages.share_with_travelers')}</p>
+                <div class="share-link-box">
+                    <input type="text" readonly value="${formBaseUrl}" id="share-link-input" onclick="this.select()">
+                    <button type="button" class="btn btn-secondary" onclick="copyShareLink()">${t('buttons.copy_link')}</button>
+                </div>
+            </div>
             <a href="https://www.traveldoctor.ch" class="btn btn-primary">${t('buttons.back_to_site')}</a>
         </div>
     `;
 
     container.insertAdjacentHTML('beforeend', successHtml);
+}
+
+function copyShareLink() {
+    const input = document.getElementById('share-link-input');
+    input.select();
+    input.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(input.value).then(() => {
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = t('messages.link_copied');
+        setTimeout(() => { btn.textContent = originalText; }, 2000);
+    });
 }
 
 /**

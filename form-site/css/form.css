@@ -890,6 +890,41 @@ textarea::placeholder {
   margin-top: 30px;
 }
 
+.success-screen .share-section {
+  background: #f0f7ff;
+  border: 1px solid #cce0ff;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 25px 0;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.success-screen .share-section p {
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.success-screen .share-link-box {
+  display: flex;
+  gap: 10px;
+}
+
+.success-screen .share-link-box input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 13px;
+  background: white;
+}
+
+.success-screen .share-link-box .btn {
+  margin-top: 0;
+  white-space: nowrap;
+}
+
 /* Loading Spinner */
 .spinner {
   display: inline-block;

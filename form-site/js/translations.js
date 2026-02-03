@@ -34,7 +34,8 @@ const TRANSLATIONS = {
       no: "Non",
       not_applicable: "Non applicable",
       optional: "Facultatif",
-      back_to_site: "Retour au site"
+      back_to_site: "Retour au site",
+      copy_link: "Copier le lien"
     },
 
     // Step 1: Identity
@@ -412,6 +413,8 @@ const TRANSLATIONS = {
       connection_error: "Erreur de connexion. Vérifiez votre connexion internet.",
       success_title: "Formulaire envoyé",
       success_message: "Votre formulaire a été envoyé avec succès. Un email de confirmation a été envoyé à:",
+      share_with_travelers: "Vous voyagez avec d'autres personnes ? Partagez ce lien pour qu'elles puissent remplir leur formulaire:",
+      link_copied: "Lien copié !",
       no_results: "Aucun résultat trouvé",
       no_files: "Aucun fichier téléversé",
       no_referral: "Aucune information fournie"
@@ -455,7 +458,8 @@ const TRANSLATIONS = {
       no: "No",
       not_applicable: "Not applicable",
       optional: "Optional",
-      back_to_site: "Back to site"
+      back_to_site: "Back to site",
+      copy_link: "Copy link"
     },
 
     // Step 1: Identity
@@ -762,7 +766,11 @@ const TRANSLATIONS = {
       upload_progress: "Uploading...",
       processing: "Processing...",
       error_occurred: "An error occurred. Please try again.",
-      connection_error: "Connection error. Check your internet connection."
+      connection_error: "Connection error. Check your internet connection.",
+      success_title: "Form submitted",
+      success_message: "Your form has been successfully submitted. A confirmation email has been sent to:",
+      share_with_travelers: "Traveling with others? Share this link so they can fill out their form:",
+      link_copied: "Link copied!"
     },
 
     // Misc
