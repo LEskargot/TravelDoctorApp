@@ -1,3 +1,4 @@
+# Block direct access to PHP include files (not API endpoints)
 <Files "config.php">
     Require all denied
 </Files>
@@ -5,3 +6,16 @@
 <Files "helpers.php">
     Require all denied
 </Files>
+
+<Files "encryption.php">
+    Require all denied
+</Files>
+
+# Prevent directory listing
+Options -Indexes
+
+# Additional security headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+</IfModule>

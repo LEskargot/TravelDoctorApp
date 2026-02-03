@@ -26,11 +26,15 @@ $input = json_decode(file_get_contents('php://input'), true);
 $captchaToken = $input['captcha_token'] ?? '';
 $formData = $input['form_data'] ?? [];
 $patientEmail = filter_var($formData['email'] ?? '', FILTER_VALIDATE_EMAIL);
+$patientAvs = $formData['avs'] ?? '';
+$insuranceCardNumber = $formData['insurance_card_number'] ?? '';
 $vaccinationFileIds = $formData['vaccination_file_ids'] ?? [];
 $language = $formData['language'] ?? 'fr';
 
-// Remove file IDs from form_data to store separately
+// Remove file IDs, AVS, and insurance card from form_data to store separately (encrypted)
 unset($formData['vaccination_file_ids']);
+unset($formData['avs']);
+unset($formData['insurance_card_number']);
 
 // Verify CAPTCHA
 if (empty($captchaToken)) {
@@ -81,6 +85,8 @@ $formRecord = [
     'patient_name_encrypted' => encryptData($patientName),
     'email' => '[encrypted]',
     'email_encrypted' => encryptData($patientEmail),
+    'avs_encrypted' => !empty($patientAvs) ? encryptData($patientAvs) : '',
+    'insurance_card_encrypted' => !empty($insuranceCardNumber) ? encryptData($insuranceCardNumber) : '',
     'form_data' => null,
     'form_data_encrypted' => encryptFormData($formData),
     'vaccination_files' => $vaccinationFileIds,

@@ -1,6 +1,13 @@
 <?php
+/**
+ * Update Form API Endpoint
+ * Updates a previously submitted form using the edit token
+ * All patient data is encrypted before storage
+ */
+
 require_once 'config.php';
 require_once 'helpers.php';
+require_once 'encryption.php';
 
 header('Content-Type: application/json');
 corsHeaders();
@@ -19,6 +26,14 @@ $input = json_decode(file_get_contents('php://input'), true);
 $editToken = $input['edit_token'] ?? '';
 $formData = $input['form_data'] ?? [];
 $patientEmail = filter_var($formData['email'] ?? '', FILTER_VALIDATE_EMAIL);
+$patientAvs = $formData['avs'] ?? '';
+$insuranceCardNumber = $formData['insurance_card_number'] ?? '';
+$vaccinationFileIds = $formData['vaccination_file_ids'] ?? [];
+
+// Remove file IDs, AVS, and insurance card from form_data to store separately (encrypted)
+unset($formData['vaccination_file_ids']);
+unset($formData['avs']);
+unset($formData['insurance_card_number']);
 
 if (empty($editToken) || !preg_match('/^[a-f0-9]{64}$/', $editToken)) {
     http_response_code(400);
@@ -57,14 +72,32 @@ if (!$searchResponse || empty($searchResponse['items'])) {
 
 $formRecord = $searchResponse['items'][0];
 
+// Extract patient name for display
+$patientName = $formData['full_name'] ?? 'Patient';
+
+// Prepare update with encrypted data
+$updateData = [
+    'patient_name' => '[encrypted]',
+    'patient_name_encrypted' => encryptData($patientName),
+    'email' => '[encrypted]',
+    'email_encrypted' => encryptData($patientEmail),
+    'avs_encrypted' => !empty($patientAvs) ? encryptData($patientAvs) : '',
+    'insurance_card_encrypted' => !empty($insuranceCardNumber) ? encryptData($insuranceCardNumber) : '',
+    'form_data' => null,
+    'form_data_encrypted' => encryptFormData($formData),
+    'updated_at' => date('c')
+];
+
+// Include vaccination files if provided
+if (!empty($vaccinationFileIds)) {
+    $updateData['vaccination_files'] = $vaccinationFileIds;
+}
+
 // Update form
 $updateResponse = pbRequest(
     '/api/collections/patient_forms/records/' . $formRecord['id'],
     'PATCH',
-    [
-        'email' => $patientEmail,
-        'form_data' => $formData
-    ],
+    $updateData,
     $adminToken
 );
 
@@ -72,6 +105,18 @@ if (!$updateResponse || isset($updateResponse['code'])) {
     http_response_code(500);
     echo json_encode(['error' => 'Erreur lors de la mise à jour']);
     exit;
+}
+
+// Link new vaccination files to this form
+if (!empty($vaccinationFileIds)) {
+    foreach ($vaccinationFileIds as $fileId) {
+        pbRequest(
+            '/api/collections/vaccination_files/records/' . $fileId,
+            'PATCH',
+            ['form_id' => $formRecord['id']],
+            $adminToken
+        );
+    }
 }
 
 echo json_encode([

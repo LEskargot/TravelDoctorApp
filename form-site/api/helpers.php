@@ -1,6 +1,53 @@
 <?php
 // Shared helper functions
 
+/**
+ * Normalize a string for comparison (remove accents, lowercase, trim)
+ * Used for patient name matching
+ */
+function normalizeString($str) {
+    if (empty($str)) return '';
+
+    // Convert to lowercase
+    $str = mb_strtolower($str, 'UTF-8');
+
+    // Remove accents using transliteration
+    $accents = [
+        'à' => 'a', 'á' => 'a', 'â' => 'a', 'ã' => 'a', 'ä' => 'a', 'å' => 'a', 'æ' => 'ae',
+        'ç' => 'c',
+        'è' => 'e', 'é' => 'e', 'ê' => 'e', 'ë' => 'e',
+        'ì' => 'i', 'í' => 'i', 'î' => 'i', 'ï' => 'i',
+        'ñ' => 'n',
+        'ò' => 'o', 'ó' => 'o', 'ô' => 'o', 'õ' => 'o', 'ö' => 'o', 'ø' => 'o', 'œ' => 'oe',
+        'ù' => 'u', 'ú' => 'u', 'û' => 'u', 'ü' => 'u',
+        'ý' => 'y', 'ÿ' => 'y',
+        'ß' => 'ss'
+    ];
+    $str = strtr($str, $accents);
+
+    // Remove extra whitespace
+    $str = preg_replace('/\s+/', ' ', $str);
+    $str = trim($str);
+
+    return $str;
+}
+
+/**
+ * Compare two strings with normalization
+ * Returns true if they match (ignoring accents, case)
+ */
+function stringsMatch($str1, $str2) {
+    return normalizeString($str1) === normalizeString($str2);
+}
+
+/**
+ * Check if normalized $needle is contained in normalized $haystack
+ */
+function normalizedContains($haystack, $needle) {
+    if (empty($needle)) return true;
+    return strpos(normalizeString($haystack), normalizeString($needle)) !== false;
+}
+
 function corsHeaders() {
     header('Access-Control-Allow-Origin: *');
     header('Access-Control-Allow-Methods: POST, GET, OPTIONS');

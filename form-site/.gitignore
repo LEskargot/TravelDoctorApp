@@ -1,6 +1,13 @@
 # Sensitive files - create manually on server
 api/config.php
 
+# Log files
+cron/*.log
+
 # Development files
 *.md
 generate-key.php
+
+# Environment files (if used)
+.env
+.env.local
