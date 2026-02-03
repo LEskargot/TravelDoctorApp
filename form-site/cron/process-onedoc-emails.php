@@ -63,10 +63,13 @@ function main() {
 
         // Filter by subject
         $emails = [];
+        logMessage("Total emails in folder: " . $allEmails->count());
         foreach ($allEmails as $email) {
             $subject = $email->getSubject();
+            logMessage("  - Checking: " . $subject);
             foreach (ONEDOC_SUBJECTS as $pattern) {
                 if (stripos($subject, $pattern) !== false) {
+                    logMessage("    -> MATCH: " . $pattern);
                     $emails[] = $email;
                     break;
                 }
@@ -149,19 +152,31 @@ function processEmail($email) {
     // Parse patient data from email
     $patientData = parseOnedocEmail($body);
 
+    // Debug: log all extracted data
+    logMessage("Extracted data:");
+    logMessage("  - Name: " . $patientData['name']);
+    logMessage("  - Email: " . $patientData['email']);
+    logMessage("  - Phone: " . $patientData['phone']);
+    logMessage("  - Birthdate: " . $patientData['birthdate']);
+    logMessage("  - Address: " . $patientData['address']);
+    logMessage("  - Insurance: " . $patientData['insurance_card_number']);
+    logMessage("  - AVS: " . $patientData['avs']);
+    logMessage("  - Appointment: " . $patientData['appointment_date'] . " " . $patientData['appointment_time']);
+    logMessage("  - Location: " . $patientData['location']);
+    logMessage("  - Consultation: " . $patientData['consultation_type']);
+    logMessage("  - Travel notes: " . $patientData['travel_notes']);
+
     if (empty($patientData['email'])) {
         throw new Exception("Could not extract patient email");
     }
 
-    logMessage("Extracted patient: " . $patientData['name'] . " <" . $patientData['email'] . ">");
-
-    // Check if we already sent a form for this patient + appointment combination
-    $appointmentKey = $patientData['appointment_date'] . ' ' . $patientData['appointment_time'];
-    if (formAlreadySent($patientData['email'], $appointmentKey)) {
-        logMessage("Form already sent to " . $patientData['email'] . " for appointment $appointmentKey. Skipping.");
-        $email->setFlag('Seen');
-        return;
-    }
+    // DISABLED FOR TESTING: duplicate check
+    // $appointmentKey = $patientData['appointment_date'] . ' ' . $patientData['appointment_time'];
+    // if (formAlreadySent($patientData['email'], $appointmentKey)) {
+    //     logMessage("Form already sent to " . $patientData['email'] . " for appointment $appointmentKey. Skipping.");
+    //     $email->setFlag('Seen');
+    //     return;
+    // }
 
     // Create prefilled form draft
     $editToken = createPrefilledForm($patientData);
