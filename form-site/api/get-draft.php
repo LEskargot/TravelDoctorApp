@@ -84,11 +84,19 @@ if (!empty($form['insurance_card_encrypted'])) {
     $formData['insurance_card_number'] = decryptData($form['insurance_card_encrypted']);
 }
 
+// Determine step_reached: start at 1 for draft forms, otherwise use stored value or default
+$stepReached = 1;
+if ($form['status'] === 'submitted') {
+    $stepReached = 6; // Go to summary for submitted forms
+} elseif (!empty($form['step_reached'])) {
+    $stepReached = intval($form['step_reached']);
+}
+
 // Return decrypted data
 echo json_encode([
     'success' => true,
     'form_data' => $formData,
-    'step_reached' => 5,
+    'step_reached' => $stepReached,
     'language' => $form['language'] ?? 'fr',
     'email' => $email,
     'is_submitted' => ($form['status'] === 'submitted'),

@@ -25,8 +25,8 @@ define('IMAP_USER', SMTP_USER); // Same as SMTP: contact@traveldoctor.ch
 define('IMAP_PASSWORD', SMTP_PASSWORD);
 define('IMAP_FOLDER', 'OneDoc');
 
-// OneDoc sender to filter
-define('ONEDOC_SENDER', 'no-reply@onedoc.ch');
+// OneDoc subject patterns to filter
+define('ONEDOC_SUBJECTS', ['Nouveau RDV en ligne', 'Nouvelle consultation vidéo en ligne']);
 
 // Lock file to prevent concurrent runs
 define('LOCK_FILE', sys_get_temp_dir() . '/onedoc_processor.lock');
@@ -56,20 +56,31 @@ function main() {
             throw new Exception("Failed to open INBOX");
         }
 
-        // Search for unread emails from OneDoc
-        $emails = $folder->query()
+        // Search for unread emails matching OneDoc subject patterns
+        $allEmails = $folder->query()
             ->unseen()
-            ->from(ONEDOC_SENDER)
             ->get();
 
-        if ($emails->count() === 0) {
+        // Filter by subject
+        $emails = [];
+        foreach ($allEmails as $email) {
+            $subject = $email->getSubject();
+            foreach (ONEDOC_SUBJECTS as $pattern) {
+                if (stripos($subject, $pattern) !== false) {
+                    $emails[] = $email;
+                    break;
+                }
+            }
+        }
+
+        if (count($emails) === 0) {
             logMessage("No new OneDoc emails found.");
             $client->disconnect();
             releaseLock();
             return;
         }
 
-        logMessage("Found " . $emails->count() . " new OneDoc email(s).");
+        logMessage("Found " . count($emails) . " new OneDoc email(s).");
 
         foreach ($emails as $email) {
             try {
