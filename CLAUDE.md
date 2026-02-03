@@ -131,19 +131,29 @@ No automated tests. Manual testing required for:
 
 ## Current Work Status (2026-02-03)
 
-### Completed
+### Completed ✓
 
 1. **Removed PDF-related code** from Travel_Doctor_App_v1.0.html (~550 lines)
    - Renamed `extractedKoboData` to `patientFormData`
    - Only online forms are now used
 
-2. **Fixed form edit functionality**
-   - `get-draft.php` now searches both `form_drafts` AND `patient_forms` collections
-   - `update-form.php` rewritten to use encryption properly
-   - Edit links from confirmation emails now work correctly
+2. **Simplified PocketBase schema**
+   - Deleted `email_tokens` collection (unused)
+   - Deleted `form_drafts` collection (unused)
+   - Removed `token_id` field from `patient_forms`
+   - Added `insurance_card_encrypted` field to `patient_forms`
+   - Added `onedoc` to `source` select values
 
-3. **Created OneDoc email processor** (`form-site/cron/process-onedoc-emails.php`)
-   - IMAP monitoring for OneDoc booking notifications
+3. **Simplified form architecture**
+   - Deleted old `index.html` (required email tokens)
+   - Renamed `public.html` → `index.html` (main form)
+   - Deleted unused API files: `send-token.php`, `verify-token.php`, `submit-form.php`, `save-draft.php`
+   - Cleaned up `form.js`: removed token verification code
+   - Simplified `get-draft.php`: only searches `patient_forms`
+
+4. **Created OneDoc email processor** (`form-site/cron/process-onedoc-emails.php`)
+   - Uses `webklex/php-imap` library (no native extension needed)
+   - Monitors `OneDoc` IMAP folder for booking notifications
    - Parses patient data from emails
    - Extracts insurance card number (20-digit) and AVS (756.XXXX.XXXX.XX)
    - Creates prefilled forms with encrypted data
@@ -151,41 +161,66 @@ No automated tests. Manual testing required for:
    - Duplicate prevention (24-hour check)
    - Lock file for cron safety
 
-4. **Security hardening**
+5. **Security hardening**
    - `form-site/.htaccess` - security headers
    - `form-site/api/.htaccess` - blocks config.php, helpers.php, encryption.php
    - `form-site/cron/.htaccess` - blocks all web access
-   - `.gitignore` updated for logs and env files
+   - Root `.gitignore` for logs, .claude/, sample files
 
-### Pending Deployment
+6. **New API endpoints for practitioners**
+   - `decrypt-form.php` - Decrypt form for display
+   - `get-pending-forms.php` - List forms awaiting processing
+   - `get-patient-history.php` - Patient history by AVS/email
+   - `mark-form-processed.php` - Mark form as processed
+   - `match-patient.php` - Match form to existing patient
 
-Deploy these files to **form.traveldoctor.ch** (Jelastic PHP node at `/var/www/webroot/ROOT/`):
-
-- `form-site/.htaccess`
-- `form-site/api/.htaccess`
-- `form-site/api/get-draft.php`
-- `form-site/api/update-form.php`
-- `form-site/api/submit-public.php`
-- `form-site/cron/.htaccess` (new folder)
-- `form-site/cron/process-onedoc-emails.php`
+7. **Deployed to server**
+   - Git pull on form.traveldoctor.ch
+   - Installed `webklex/php-imap` via composer
+   - Added IMAP settings to config.php
 
 ### Pending Tasks
 
-1. **Add PocketBase field**: Add `insurance_card_encrypted` (text) to `patient_forms` collection
-
-2. **Set up cron job** in Jelastic dashboard on form.traveldoctor.ch node:
+1. **Deploy latest changes**
+   ```bash
+   cd /var/www/webroot/repo && git pull origin main
+   cp -r /var/www/webroot/repo/form-site/* /var/www/webroot/ROOT/
    ```
-   */3 * * * * php /var/www/webroot/ROOT/cron/process-onedoc-emails.php
+
+2. **Test IMAP connection**
+   - Run test-imap.php to verify connection to OneDoc folder
+   - Check that emails are visible
+
+3. **Set up cron job** in Jelastic dashboard:
+   ```
+   */3 * * * * php /var/www/webroot/ROOT/cron/process-onedoc-emails.php >> /var/www/webroot/ROOT/cron/logs/cron.log 2>&1
    ```
 
-3. **Test the complete flow**:
-   - Verify IMAP connection works
-   - Send test OneDoc-style email
-   - Check form creation and invitation email
-   - Verify patient can edit prefilled form
+4. **Test complete OneDoc flow**
+   - Mark all old OneDoc emails as read (to prevent processing)
+   - Create a test OneDoc booking
+   - Verify form is created with prefilled data
+   - Verify patient receives invitation email
+   - Verify patient can complete and submit form
+
+5. **Fix 24-hour duplicate check**
+   - Current check blocks multiple bookings for same email within 24h
+   - Should use (email + appointment date) as duplicate key instead
+
+6. **Integrate with Travel Doctor App**
+   - Add UI to view pending forms
+   - Add button to import form data into consultation
+
+### Form Sources
+
+| Source | Description |
+|--------|-------------|
+| `public` | Patient filled form via shared link |
+| `onedoc` | Auto-created from OneDoc booking email |
 
 ### Server Environment
 
-- **form.traveldoctor.ch**: Jelastic PHP node, has `FORM_ENCRYPTION_KEY` env var
+- **form.traveldoctor.ch**: Jelastic PHP 8.5.2, has `FORM_ENCRYPTION_KEY` env var
 - **db.traveldoctor.ch**: PocketBase database
 - **Email**: contact@traveldoctor.ch via Infomaniak (SMTP & IMAP on mail.infomaniak.com)
+- **OneDoc emails**: Filtered to `OneDoc` IMAP folder
