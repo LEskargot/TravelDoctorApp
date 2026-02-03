@@ -9,9 +9,14 @@
  * php /path/to/process-onedoc-emails.php
  */
 
+// Load composer autoload
+require_once __DIR__ . '/../vendor/autoload.php';
+
 require_once __DIR__ . '/../api/config.php';
 require_once __DIR__ . '/../api/helpers.php';
 require_once __DIR__ . '/../api/encryption.php';
+
+use Webklex\PHPIMAP\ClientManager;
 
 // IMAP Configuration (Infomaniak)
 define('IMAP_HOST', 'mail.infomaniak.com');
@@ -40,32 +45,41 @@ function main() {
         logMessage("Starting OneDoc email processor...");
 
         // Connect to IMAP
-        $imap = connectImap();
-        if (!$imap) {
+        $client = connectImap();
+        if (!$client) {
             throw new Exception("Failed to connect to IMAP server");
         }
 
-        // Search for unread emails from OneDoc
-        $emails = imap_search($imap, 'UNSEEN FROM "' . ONEDOC_SENDER . '"');
+        // Get inbox folder
+        $folder = $client->getFolder(IMAP_FOLDER);
+        if (!$folder) {
+            throw new Exception("Failed to open INBOX");
+        }
 
-        if (!$emails) {
+        // Search for unread emails from OneDoc
+        $emails = $folder->query()
+            ->unseen()
+            ->from(ONEDOC_SENDER)
+            ->get();
+
+        if ($emails->count() === 0) {
             logMessage("No new OneDoc emails found.");
-            imap_close($imap);
+            $client->disconnect();
             releaseLock();
             return;
         }
 
-        logMessage("Found " . count($emails) . " new OneDoc email(s).");
+        logMessage("Found " . $emails->count() . " new OneDoc email(s).");
 
-        foreach ($emails as $emailNum) {
+        foreach ($emails as $email) {
             try {
-                processEmail($imap, $emailNum);
+                processEmail($email);
             } catch (Exception $e) {
-                logMessage("Error processing email #$emailNum: " . $e->getMessage());
+                logMessage("Error processing email: " . $e->getMessage());
             }
         }
 
-        imap_close($imap);
+        $client->disconnect();
         logMessage("Processing complete.");
 
     } catch (Exception $e) {
@@ -76,31 +90,50 @@ function main() {
 }
 
 /**
- * Connect to IMAP server
+ * Connect to IMAP server using webklex/php-imap
  */
 function connectImap() {
-    $mailbox = '{' . IMAP_HOST . ':' . IMAP_PORT . '/imap/ssl}' . IMAP_FOLDER;
+    try {
+        $cm = new ClientManager();
 
-    $imap = @imap_open($mailbox, IMAP_USER, IMAP_PASSWORD);
+        $client = $cm->make([
+            'host'          => IMAP_HOST,
+            'port'          => IMAP_PORT,
+            'encryption'    => 'ssl',
+            'validate_cert' => true,
+            'username'      => IMAP_USER,
+            'password'      => IMAP_PASSWORD,
+            'protocol'      => 'imap'
+        ]);
 
-    if (!$imap) {
-        $error = imap_last_error();
-        logMessage("IMAP connection failed: $error");
+        $client->connect();
+
+        if (!$client->isConnected()) {
+            logMessage("IMAP connection failed");
+            return false;
+        }
+
+        logMessage("IMAP connected successfully");
+        return $client;
+
+    } catch (Exception $e) {
+        logMessage("IMAP connection error: " . $e->getMessage());
         return false;
     }
-
-    return $imap;
 }
 
 /**
  * Process a single OneDoc email
  */
-function processEmail($imap, $emailNum) {
-    logMessage("Processing email #$emailNum...");
+function processEmail($email) {
+    $subject = $email->getSubject();
+    logMessage("Processing email: $subject");
 
-    // Get email structure and body
-    $structure = imap_fetchstructure($imap, $emailNum);
-    $body = getEmailBody($imap, $emailNum, $structure);
+    // Get email body (prefer plain text)
+    $body = $email->getTextBody();
+    if (empty($body)) {
+        $body = strip_tags($email->getHTMLBody());
+    }
 
     if (empty($body)) {
         throw new Exception("Could not extract email body");
@@ -118,7 +151,7 @@ function processEmail($imap, $emailNum) {
     // Check if we already sent a form to this patient recently
     if (formAlreadySent($patientData['email'])) {
         logMessage("Form already sent to " . $patientData['email'] . " recently. Skipping.");
-        imap_setflag_full($imap, $emailNum, '\\Seen');
+        $email->setFlag('Seen');
         return;
     }
 
@@ -135,48 +168,10 @@ function processEmail($imap, $emailNum) {
     if ($sent) {
         logMessage("Form invitation sent to " . $patientData['email']);
         // Mark email as read
-        imap_setflag_full($imap, $emailNum, '\\Seen');
+        $email->setFlag('Seen');
     } else {
         throw new Exception("Failed to send invitation email");
     }
-}
-
-/**
- * Get email body (prefer plain text)
- */
-function getEmailBody($imap, $emailNum, $structure) {
-    // Simple case: not multipart
-    if (!isset($structure->parts)) {
-        $body = imap_fetchbody($imap, $emailNum, 1);
-        return decodeBody($body, $structure->encoding ?? 0);
-    }
-
-    // Multipart: look for text/plain
-    foreach ($structure->parts as $partNum => $part) {
-        if ($part->subtype === 'PLAIN') {
-            $body = imap_fetchbody($imap, $emailNum, $partNum + 1);
-            return decodeBody($body, $part->encoding ?? 0);
-        }
-    }
-
-    // Fallback: get first part
-    $body = imap_fetchbody($imap, $emailNum, 1);
-    return decodeBody($body, $structure->parts[0]->encoding ?? 0);
-}
-
-/**
- * Decode email body based on encoding
- */
-function decodeBody($body, $encoding) {
-    switch ($encoding) {
-        case 3: // BASE64
-            $body = base64_decode($body);
-            break;
-        case 4: // QUOTED-PRINTABLE
-            $body = quoted_printable_decode($body);
-            break;
-    }
-    return $body;
 }
 
 /**
@@ -403,18 +398,14 @@ function createPrefilledForm($patientData) {
     // Create form record with encrypted data
     $formRecord = [
         'edit_token' => $editToken,
-        'patient_name' => '[encrypted]',
         'patient_name_encrypted' => encryptData($patientData['name']),
-        'email' => '[encrypted]',
         'email_encrypted' => encryptData($patientData['email']),
         'avs_encrypted' => !empty($patientData['avs']) ? encryptData($patientData['avs']) : '',
         'insurance_card_encrypted' => !empty($patientData['insurance_card_number']) ? encryptData($patientData['insurance_card_number']) : '',
-        'form_data' => null,
         'form_data_encrypted' => encryptFormData($formData),
         'language' => 'fr',
         'source' => 'onedoc',
-        'status' => 'pending', // Not submitted yet, waiting for patient
-        'created' => date('c')
+        'status' => 'draft' // Not submitted yet, waiting for patient
     ];
 
     $response = pbRequest(
@@ -488,7 +479,11 @@ function logMessage($message) {
     echo "[$timestamp] $message\n";
 
     // Also log to file
-    $logFile = __DIR__ . '/onedoc-processor.log';
+    $logDir = __DIR__ . '/logs';
+    if (!is_dir($logDir)) {
+        @mkdir($logDir, 0755, true);
+    }
+    $logFile = $logDir . '/onedoc-processor.log';
     file_put_contents($logFile, "[$timestamp] $message\n", FILE_APPEND);
 }
 
