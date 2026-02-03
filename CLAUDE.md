@@ -129,7 +129,7 @@ No automated tests. Manual testing required for:
 
 ---
 
-## Current Work Status (2026-02-03)
+## Current Work Status (2026-02-04)
 
 ### Completed ✓
 
@@ -151,14 +151,15 @@ No automated tests. Manual testing required for:
    - Cleaned up `form.js`: removed token verification code
    - Simplified `get-draft.php`: only searches `patient_forms`
 
-4. **Created OneDoc email processor** (`form-site/cron/process-onedoc-emails.php`)
+4. **OneDoc email processor** (`form-site/cron/process-onedoc-emails.php`) ✓
    - Uses `webklex/php-imap` library (no native extension needed)
-   - Monitors `OneDoc` IMAP folder for booking notifications
-   - Parses patient data from emails
-   - Extracts insurance card number (20-digit) and AVS (756.XXXX.XXXX.XX)
+   - Monitors `Notifications RDV OneDoc` IMAP folder
+   - Filters by subject: "Nouveau RDV en ligne" or "Nouvelle consultation vidéo en ligne"
+   - Parses HTML body using icon images (fa-user, fa-phone, etc.) for reliable extraction
+   - Extracts: name, birthdate, phone, email, insurance card, AVS, address, appointment info
    - Creates prefilled forms with encrypted data
    - Sends form invitation emails to patients
-   - Duplicate prevention (24-hour check)
+   - Duplicate check: (email + appointment date/time) as unique key
    - Lock file for cron safety
 
 5. **Security hardening**
@@ -167,62 +168,71 @@ No automated tests. Manual testing required for:
    - `form-site/cron/.htaccess` - blocks all web access
    - Root `.gitignore` for logs, .claude/, sample files
 
-6. **New API endpoints for practitioners**
+6. **API endpoints for practitioners**
    - `decrypt-form.php` - Decrypt form for display
    - `get-pending-forms.php` - List forms awaiting processing
    - `get-patient-history.php` - Patient history by AVS/email
    - `mark-form-processed.php` - Mark form as processed
    - `match-patient.php` - Match form to existing patient
 
-7. **Deployed to server**
-   - Git pull on form.traveldoctor.ch
-   - Installed `webklex/php-imap` via composer
-   - Added IMAP settings to config.php
+7. **Travel Doctor App integration** ✓
+   - "NOUVEAU RDV" button → pending forms screen
+   - Forms show patient name, DOB, destination, known/new badge
+   - Click form → populates consultation fields automatically
+   - After save → form marked as processed
+
+8. **Form UX improvements** ✓
+   - Removed "Formulaire public" notice banner
+   - Prefilled forms now open at step 1 (not step 5)
+   - Added share link after form submission for fellow travelers
+   - Copy link button with confirmation
 
 ### Pending Tasks
 
-1. **Deploy latest changes**
-   ```bash
-   cd /var/www/webroot/repo && git pull origin main
-   cp -r /var/www/webroot/repo/form-site/* /var/www/webroot/ROOT/
-   ```
-
-2. **Test IMAP connection**
-   - Run test-imap.php to verify connection to `Notifications RDV OneDoc` folder
-   - Check that emails are visible
-
-3. **Set up cron job** in Jelastic dashboard:
+1. **Set up cron job** in Jelastic dashboard:
    ```
    */3 * * * * php /var/www/webroot/ROOT/cron/process-onedoc-emails.php >> /var/www/webroot/ROOT/cron/logs/cron.log 2>&1
    ```
 
-4. **Test complete OneDoc flow**
-   - Mark all old OneDoc emails as read (to prevent processing)
-   - Create a test OneDoc booking
-   - Verify form is created with prefilled data
-   - Verify patient receives invitation email
-   - Verify patient can complete and submit form
+2. **Re-enable duplicate check** (currently disabled for testing)
+   - In `process-onedoc-emails.php`, uncomment the `formAlreadySent()` check
 
-### Recently Completed
+3. **Production testing**
+   - Test complete OneDoc → form → consultation flow with real booking
+   - Verify all patient data is correctly prefilled
+   - Test share link functionality
 
-8. **Fixed 24-hour duplicate check** ✓
-   - Changed `formAlreadySent()` to check (email + appointment date/time) instead of just email
-   - Same patient can now have multiple appointments
-   - Duplicate key: email + `onedoc_appointment` field
+4. **Optional improvements**
+   - Add Italian/Spanish translations for share link messages
+   - Add email notification to practitioner when form is submitted
 
-9. **Travel Doctor App integration** ✓ (already implemented)
-   - "NOUVEAU RDV" button → pending forms screen
-   - `get-pending-forms.php` → lists submitted forms awaiting processing
-   - `decrypt-form.php` → loads full form data for consultation
-   - `mark-form-processed.php` → marks form as done after saving
-   - Forms show patient name, DOB, destination, known/new badge
-   - Click form → populates consultation fields automatically
+### Data Flow
+
+```
+OneDoc booking → Email to contact@traveldoctor.ch
+                        ↓
+              IMAP folder: "Notifications RDV OneDoc"
+                        ↓
+              Cron: process-onedoc-emails.php
+                        ↓
+              Creates prefilled form in patient_forms (status: draft)
+                        ↓
+              Sends invitation email to patient
+                        ↓
+              Patient completes form (status: submitted)
+                        ↓
+              Practitioner sees in "NOUVEAU RDV" list
+                        ↓
+              Practitioner clicks → consultation starts
+                        ↓
+              Save consultation → patient record created, form marked processed
+```
 
 ### Form Sources
 
 | Source | Description |
 |--------|-------------|
-| `public` | Patient filled form via shared link |
+| `public` | Patient filled form via shared link (or walk-in) |
 | `onedoc` | Auto-created from OneDoc booking email |
 
 ### Server Environment
@@ -231,3 +241,9 @@ No automated tests. Manual testing required for:
 - **db.traveldoctor.ch**: PocketBase database
 - **Email**: contact@traveldoctor.ch via Infomaniak (SMTP & IMAP on mail.infomaniak.com)
 - **OneDoc emails**: Filtered to `Notifications RDV OneDoc` IMAP folder
+
+### Deploy Commands
+
+```bash
+cd /var/www/webroot/ROOT && git pull origin main
+```
