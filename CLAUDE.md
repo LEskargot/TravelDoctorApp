@@ -188,7 +188,7 @@ No automated tests. Manual testing required for:
    ```
 
 2. **Test IMAP connection**
-   - Run test-imap.php to verify connection to OneDoc folder
+   - Run test-imap.php to verify connection to `Notifications RDV OneDoc` folder
    - Check that emails are visible
 
 3. **Set up cron job** in Jelastic dashboard:
@@ -203,13 +203,20 @@ No automated tests. Manual testing required for:
    - Verify patient receives invitation email
    - Verify patient can complete and submit form
 
-5. **Fix 24-hour duplicate check**
-   - Current check blocks multiple bookings for same email within 24h
-   - Should use (email + appointment date) as duplicate key instead
+### Recently Completed
 
-6. **Integrate with Travel Doctor App**
-   - Add UI to view pending forms
-   - Add button to import form data into consultation
+8. **Fixed 24-hour duplicate check** ✓
+   - Changed `formAlreadySent()` to check (email + appointment date/time) instead of just email
+   - Same patient can now have multiple appointments
+   - Duplicate key: email + `onedoc_appointment` field
+
+9. **Travel Doctor App integration** ✓ (already implemented)
+   - "NOUVEAU RDV" button → pending forms screen
+   - `get-pending-forms.php` → lists submitted forms awaiting processing
+   - `decrypt-form.php` → loads full form data for consultation
+   - `mark-form-processed.php` → marks form as done after saving
+   - Forms show patient name, DOB, destination, known/new badge
+   - Click form → populates consultation fields automatically
 
 ### Form Sources
 
@@ -223,4 +230,4 @@ No automated tests. Manual testing required for:
 - **form.traveldoctor.ch**: Jelastic PHP 8.5.2, has `FORM_ENCRYPTION_KEY` env var
 - **db.traveldoctor.ch**: PocketBase database
 - **Email**: contact@traveldoctor.ch via Infomaniak (SMTP & IMAP on mail.infomaniak.com)
-- **OneDoc emails**: Filtered to `OneDoc` IMAP folder
+- **OneDoc emails**: Filtered to `Notifications RDV OneDoc` IMAP folder

@@ -23,7 +23,7 @@ define('IMAP_HOST', 'mail.infomaniak.com');
 define('IMAP_PORT', 993);
 define('IMAP_USER', SMTP_USER); // Same as SMTP: contact@traveldoctor.ch
 define('IMAP_PASSWORD', SMTP_PASSWORD);
-define('IMAP_FOLDER', 'OneDoc');
+define('IMAP_FOLDER', 'Notifications RDV OneDoc');
 
 // OneDoc sender to filter
 define('ONEDOC_SENDER', 'no-reply@onedoc.ch');
@@ -148,9 +148,10 @@ function processEmail($email) {
 
     logMessage("Extracted patient: " . $patientData['name'] . " <" . $patientData['email'] . ">");
 
-    // Check if we already sent a form to this patient recently
-    if (formAlreadySent($patientData['email'])) {
-        logMessage("Form already sent to " . $patientData['email'] . " recently. Skipping.");
+    // Check if we already sent a form for this patient + appointment combination
+    $appointmentKey = $patientData['appointment_date'] . ' ' . $patientData['appointment_time'];
+    if (formAlreadySent($patientData['email'], $appointmentKey)) {
+        logMessage("Form already sent to " . $patientData['email'] . " for appointment $appointmentKey. Skipping.");
         $email->setFlag('Seen');
         return;
     }
@@ -331,18 +332,18 @@ function formatAvs($avs) {
 }
 
 /**
- * Check if we already sent a form to this email recently (within 24 hours)
+ * Check if we already sent a form for this email + appointment combination
+ * This allows the same patient to have multiple appointments
  */
-function formAlreadySent($email) {
+function formAlreadySent($email, $appointmentKey) {
     $adminToken = pbAdminAuth();
     if (!$adminToken) return false;
 
-    // Check for forms created in last 24 hours for this email
-    $since = date('Y-m-d H:i:s', strtotime('-24 hours'));
-    $filter = urlencode("email_encrypted != '' && created >= '$since'");
+    // Check for forms from OneDoc source (no time limit - appointment is the unique key)
+    $filter = urlencode("source = 'onedoc' && email_encrypted != ''");
 
     $response = pbRequest(
-        "/api/collections/patient_forms/records?filter=$filter&perPage=100",
+        "/api/collections/patient_forms/records?filter=$filter&perPage=500&sort=-created",
         'GET',
         null,
         $adminToken
@@ -352,12 +353,19 @@ function formAlreadySent($email) {
         return false;
     }
 
-    // Check each form's decrypted email
+    // Check each form's decrypted email AND appointment
     foreach ($response['items'] as $form) {
         if (!empty($form['email_encrypted'])) {
             $formEmail = decryptData($form['email_encrypted']);
             if (strtolower($formEmail) === strtolower($email)) {
-                return true;
+                // Email matches, now check appointment
+                if (!empty($form['form_data_encrypted'])) {
+                    $formData = decryptFormData($form['form_data_encrypted']);
+                    $formAppointment = $formData['onedoc_appointment'] ?? '';
+                    if ($formAppointment === $appointmentKey) {
+                        return true; // Same email AND same appointment = duplicate
+                    }
+                }
             }
         }
     }
