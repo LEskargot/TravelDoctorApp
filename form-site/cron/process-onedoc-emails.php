@@ -23,7 +23,7 @@ define('IMAP_HOST', 'mail.infomaniak.com');
 define('IMAP_PORT', 993);
 define('IMAP_USER', SMTP_USER); // Same as SMTP: contact@traveldoctor.ch
 define('IMAP_PASSWORD', SMTP_PASSWORD);
-define('IMAP_FOLDER', 'OneDoc');
+define('IMAP_FOLDER', 'Notifications RDV OneDoc');
 
 // OneDoc subject patterns to filter
 define('ONEDOC_SUBJECTS', ['Nouveau RDV en ligne', 'Nouvelle consultation vidéo en ligne']);
