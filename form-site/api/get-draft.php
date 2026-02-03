@@ -1,7 +1,7 @@
 <?php
 /**
  * Get Draft API Endpoint
- * Retrieves saved form draft by edit token
+ * Retrieves saved form by edit token
  * Decrypts patient data before returning
  */
 
@@ -39,63 +39,60 @@ if (!$adminToken) {
     exit;
 }
 
-// Search for draft by edit_token
+// Search for form by edit_token
 $filter = urlencode("edit_token = '{$token}'");
-$draftResponse = pbRequest(
-    '/api/collections/form_drafts/records?filter=' . $filter,
+$formResponse = pbRequest(
+    '/api/collections/patient_forms/records?filter=' . $filter,
     'GET',
     null,
     $adminToken
 );
 
-if (!$draftResponse || empty($draftResponse['items'])) {
+if (!$formResponse || empty($formResponse['items'])) {
     http_response_code(404);
-    echo json_encode(['error' => 'Brouillon non trouvé']);
+    echo json_encode(['error' => 'Formulaire non trouvé']);
     exit;
 }
 
-$draft = $draftResponse['items'][0];
-
-// Check if draft has expired
-if (isset($draft['expires_at']) && time() > strtotime($draft['expires_at'])) {
-    // Delete expired draft
-    pbRequest(
-        '/api/collections/form_drafts/records/' . $draft['id'],
-        'DELETE',
-        null,
-        $adminToken
-    );
-
-    http_response_code(410);
-    echo json_encode(['error' => 'Ce brouillon a expiré']);
-    exit;
-}
+$form = $formResponse['items'][0];
 
 // Decrypt form data
 $formData = [];
-if (!empty($draft['form_data_encrypted'])) {
-    $formData = decryptFormData($draft['form_data_encrypted']);
-} elseif (!empty($draft['form_data'])) {
-    // Fallback for legacy unencrypted data
-    $formData = $draft['form_data'];
+if (!empty($form['form_data_encrypted'])) {
+    $formData = decryptFormData($form['form_data_encrypted']);
 }
 
 // Decrypt email
 $email = '';
-if (!empty($draft['email_encrypted'])) {
-    $email = decryptData($draft['email_encrypted']);
-} elseif (!empty($draft['email']) && $draft['email'] !== '[encrypted]') {
-    // Fallback for legacy unencrypted data
-    $email = $draft['email'];
+if (!empty($form['email_encrypted'])) {
+    $email = decryptData($form['email_encrypted']);
+}
+$formData['email'] = $email;
+
+// Decrypt patient name
+if (!empty($form['patient_name_encrypted'])) {
+    $formData['full_name'] = decryptData($form['patient_name_encrypted']);
 }
 
-// Return decrypted draft data
+// Decrypt AVS
+if (!empty($form['avs_encrypted'])) {
+    $formData['avs'] = decryptData($form['avs_encrypted']);
+}
+
+// Decrypt insurance card number
+if (!empty($form['insurance_card_encrypted'])) {
+    $formData['insurance_card_number'] = decryptData($form['insurance_card_encrypted']);
+}
+
+// Return decrypted data
 echo json_encode([
     'success' => true,
     'form_data' => $formData,
-    'step_reached' => $draft['step_reached'] ?? 1,
-    'language' => $draft['language'] ?? 'fr',
+    'step_reached' => 5,
+    'language' => $form['language'] ?? 'fr',
     'email' => $email,
-    'created' => $draft['created'] ?? null,
-    'updated' => $draft['updated'] ?? null
+    'is_submitted' => ($form['status'] === 'submitted'),
+    'form_id' => $form['id'],
+    'created' => $form['created'] ?? null,
+    'updated' => $form['updated'] ?? null
 ]);
