@@ -140,14 +140,10 @@ function processEmail($email) {
     $subject = $email->getSubject();
     logMessage("Processing email: $subject");
 
-    // Get email body (prefer plain text)
-    $body = $email->getTextBody();
+    // Get email body (prefer HTML for parsing)
+    $body = $email->getHTMLBody();
     if (empty($body)) {
-        $body = strip_tags($email->getHTMLBody());
-    }
-
-    if (empty($body)) {
-        throw new Exception("Could not extract email body");
+        throw new Exception("Could not extract email HTML body");
     }
 
     // Parse patient data from email
@@ -188,6 +184,7 @@ function processEmail($email) {
 
 /**
  * Parse OneDoc email to extract patient data
+ * Uses HTML body and identifies fields by icon images
  */
 function parseOnedocEmail($body) {
     $data = [
@@ -197,8 +194,8 @@ function parseOnedocEmail($body) {
         'birthdate' => '',
         'phone' => '',
         'email' => '',
-        'insurance_card_number' => '', // Full 20-digit insurance card number
-        'avs' => '', // Extracted AVS (756.XXXX.XXXX.XX format)
+        'insurance_card_number' => '',
+        'avs' => '',
         'address' => '',
         'street' => '',
         'postal_code' => '',
@@ -210,99 +207,95 @@ function parseOnedocEmail($body) {
         'travel_notes' => ''
     ];
 
-    // Split into lines
-    $lines = explode("\n", $body);
-    $inPatientSection = false;
-    $patientLines = [];
-    $appointmentLines = [];
+    // Map icon images to field names
+    $iconMap = [
+        'fa-calendar' => 'datetime',
+        'fa-stethoscope' => 'consultation_type',
+        'fa-hospital' => 'location',
+        'fa-info' => 'travel_notes',
+        'fa-user.png' => 'name',
+        'fa-birthday' => 'birthdate',
+        'fa-phone' => 'phone',
+        'fa-envelope' => 'email',
+        'fa-id-card' => 'insurance',
+        'fa-map' => 'address'
+    ];
 
-    foreach ($lines as $line) {
-        $line = trim($line);
+    // Find all table rows with icons
+    preg_match_all('/<img[^>]+src="[^"]*\/([^"\/]+\.png)"[^>]*>.*?<\/td>\s*<td[^>]*>(.*?)<\/td>/is', $body, $matches, PREG_SET_ORDER);
 
-        // Detect sections
-        if (strpos($line, 'Informations sur le patient') !== false) {
-            $inPatientSection = true;
-            continue;
-        }
+    foreach ($matches as $match) {
+        $icon = $match[1];
+        $value = trim(strip_tags(html_entity_decode($match[2], ENT_QUOTES, 'UTF-8')));
+        $value = preg_replace('/\s+/', ' ', $value); // Normalize whitespace
 
-        if (strpos($line, 'nouveau rendez-vous') !== false) {
-            $inPatientSection = false;
-            continue;
-        }
+        // Find which field this icon maps to
+        foreach ($iconMap as $iconPattern => $field) {
+            if (stripos($icon, $iconPattern) !== false || stripos($icon, str_replace('.png', '', $iconPattern)) !== false) {
+                switch ($field) {
+                    case 'datetime':
+                        // Parse "Jeudi 5 février 2026 à 12:35"
+                        if (preg_match('/(\d{1,2})\s+(\w+)\s+(\d{4})\s+[àa]\s*(\d{1,2}:\d{2})/', $value, $m)) {
+                            $data['appointment_date'] = $m[1] . ' ' . $m[2] . ' ' . $m[3];
+                            $data['appointment_time'] = $m[4];
+                        }
+                        break;
 
-        // Collect lines starting with "- "
-        if (strpos($line, '- ') === 0) {
-            $value = trim(substr($line, 2));
-            if ($inPatientSection) {
-                $patientLines[] = $value;
-            } else {
-                $appointmentLines[] = $value;
+                    case 'consultation_type':
+                        $data['consultation_type'] = $value;
+                        break;
+
+                    case 'location':
+                        $data['location'] = $value;
+                        break;
+
+                    case 'travel_notes':
+                        $data['travel_notes'] = $value;
+                        break;
+
+                    case 'name':
+                        $data['name'] = $value;
+                        $nameParts = explode(' ', $value, 2);
+                        $data['firstname'] = $nameParts[0] ?? '';
+                        $data['lastname'] = $nameParts[1] ?? '';
+                        break;
+
+                    case 'birthdate':
+                        $data['birthdate'] = $value;
+                        if (preg_match('/(\d{2})\.(\d{2})\.(\d{4})/', $value, $m)) {
+                            $data['birthdate_iso'] = $m[3] . '-' . $m[2] . '-' . $m[1];
+                        }
+                        break;
+
+                    case 'phone':
+                        $data['phone'] = $value;
+                        break;
+
+                    case 'email':
+                        // Extract email from value (might contain mailto: link text)
+                        if (preg_match('/[\w.+-]+@[\w.-]+\.\w+/', $value, $m)) {
+                            $data['email'] = $m[0];
+                        } else {
+                            $data['email'] = $value;
+                        }
+                        break;
+
+                    case 'insurance':
+                        $data['insurance_card_number'] = preg_replace('/[^\d]/', '', $value);
+                        $data['avs'] = extractAvsFromInsuranceCard($data['insurance_card_number']);
+                        break;
+
+                    case 'address':
+                        $data['address'] = $value;
+                        if (preg_match('/^(.+),\s*(\d{4})\s+(.+)$/', $value, $m)) {
+                            $data['street'] = trim($m[1]);
+                            $data['postal_code'] = $m[2];
+                            $data['city'] = trim($m[3]);
+                        }
+                        break;
+                }
+                break;
             }
-        }
-    }
-
-    // Parse appointment info
-    foreach ($appointmentLines as $index => $line) {
-        // First line is usually date/time: "Jeudi 5 février 2026 à 15:15"
-        if ($index === 0 && preg_match('/(\d{1,2})\s+(\w+)\s+(\d{4})\s+à\s+(\d{1,2}:\d{2})/', $line, $matches)) {
-            $data['appointment_date'] = $matches[1] . ' ' . $matches[2] . ' ' . $matches[3];
-            $data['appointment_time'] = $matches[4];
-        }
-        // Second line is consultation type
-        elseif ($index === 1) {
-            $data['consultation_type'] = $line;
-        }
-        // Third line is location
-        elseif ($index === 2) {
-            $data['location'] = $line;
-        }
-        // Lines after that might be travel notes
-        elseif ($index > 3 && !empty($line)) {
-            $data['travel_notes'] = $line;
-        }
-    }
-
-    // Parse patient info (order: name, birthdate, phone, email, AVS, address)
-    foreach ($patientLines as $index => $line) {
-        switch ($index) {
-            case 0: // Name: "Nina SAGER"
-                $data['name'] = $line;
-                $nameParts = explode(' ', $line, 2);
-                $data['firstname'] = $nameParts[0] ?? '';
-                $data['lastname'] = $nameParts[1] ?? '';
-                break;
-
-            case 1: // Birthdate: "21.08.2002"
-                $data['birthdate'] = $line;
-                // Convert to ISO format
-                if (preg_match('/(\d{2})\.(\d{2})\.(\d{4})/', $line, $matches)) {
-                    $data['birthdate_iso'] = $matches[3] . '-' . $matches[2] . '-' . $matches[1];
-                }
-                break;
-
-            case 2: // Phone: "079 454 97 02"
-                $data['phone'] = $line;
-                break;
-
-            case 3: // Email
-                $data['email'] = $line;
-                break;
-
-            case 4: // Insurance card number: "80756013840033231589"
-                $data['insurance_card_number'] = preg_replace('/[^\d]/', '', $line);
-                // Extract AVS from insurance card number
-                $data['avs'] = extractAvsFromInsuranceCard($data['insurance_card_number']);
-                break;
-
-            case 5: // Address: "Route de Reynet 4, 1615 Bossonnens"
-                $data['address'] = $line;
-                // Try to parse address
-                if (preg_match('/^(.+),\s*(\d{4})\s+(.+)$/', $line, $matches)) {
-                    $data['street'] = trim($matches[1]);
-                    $data['postal_code'] = $matches[2];
-                    $data['city'] = trim($matches[3]);
-                }
-                break;
         }
     }
 
