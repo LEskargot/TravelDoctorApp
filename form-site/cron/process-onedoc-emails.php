@@ -174,13 +174,13 @@ function processEmail($email) {
         throw new Exception("Could not extract patient email");
     }
 
-    // DISABLED FOR TESTING: duplicate check
-    // $appointmentKey = $patientData['appointment_date'] . ' ' . $patientData['appointment_time'];
-    // if (formAlreadySent($patientData['email'], $appointmentKey)) {
-    //     logMessage("Form already sent to " . $patientData['email'] . " for appointment $appointmentKey. Skipping.");
-    //     $email->setFlag('Seen');
-    //     return;
-    // }
+    // Duplicate check: skip if we already sent a form for this email + appointment
+    $appointmentKey = $patientData['appointment_date'] . ' ' . $patientData['appointment_time'];
+    if (formAlreadySent($patientData['email'], $appointmentKey)) {
+        logMessage("Form already sent to " . $patientData['email'] . " for appointment $appointmentKey. Skipping.");
+        $email->setFlag('Seen');
+        return;
+    }
 
     // Create prefilled form draft
     $editToken = createPrefilledForm($patientData);
