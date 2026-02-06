@@ -152,7 +152,6 @@ function processEmail($email) {
     if ($decodedSubject === false) {
         $decodedSubject = $subject;
     }
-    logMessage("Decoded subject: $decodedSubject");
 
     // Get email body (prefer HTML for parsing)
     $body = $email->getHTMLBody();
@@ -164,14 +163,11 @@ function processEmail($email) {
     $patientData = parseOnedocEmail($body);
 
     // Extract appointment from subject if not found in body
-    // Format: "Nouveau RDV en ligne le 09.03.2026 à 11:45" or "Nouvelle consultation vidéo en ligne le 06.02.2026 à 14:00"
+    // Format: "Nouveau RDV en ligne le 09.03.2026 à 11:45"
     if (empty($patientData['appointment_date'])) {
         if (preg_match('/le\s+(\d{2}\.\d{2}\.\d{4})\s+[àa]\s*(\d{1,2}:\d{2})/u', $decodedSubject, $matches)) {
             $patientData['appointment_date'] = $matches[1];
             $patientData['appointment_time'] = $matches[2];
-            logMessage("Extracted appointment from subject: " . $matches[1] . " " . $matches[2]);
-        } else {
-            logMessage("Could not extract appointment from subject");
         }
     }
 
@@ -378,15 +374,10 @@ function formatAvs($avs) {
  * This allows the same patient to have multiple appointments
  */
 function formAlreadySent($email, $appointmentKey) {
-    logMessage("Duplicate check: email=$email, appointmentKey=[$appointmentKey]");
-
     $adminToken = pbAdminAuth();
-    if (!$adminToken) {
-        logMessage("Duplicate check: Failed to auth with PocketBase");
-        return false;
-    }
+    if (!$adminToken) return false;
 
-    // Check for forms from OneDoc source (no time limit - appointment is the unique key)
+    // Check for forms from OneDoc source
     $filter = urlencode("source = 'onedoc' && email_encrypted != ''");
 
     $response = pbRequest(
@@ -397,11 +388,8 @@ function formAlreadySent($email, $appointmentKey) {
     );
 
     if (!$response || empty($response['items'])) {
-        logMessage("Duplicate check: No existing onedoc forms found");
         return false;
     }
-
-    logMessage("Duplicate check: Found " . count($response['items']) . " onedoc forms to check");
 
     // Check each form's decrypted email AND appointment
     foreach ($response['items'] as $form) {
@@ -409,26 +397,20 @@ function formAlreadySent($email, $appointmentKey) {
             try {
                 $formEmail = decryptData($form['email_encrypted']);
                 if (strtolower($formEmail) === strtolower($email)) {
-                    logMessage("Duplicate check: Email match found for $formEmail");
-                    // Email matches, now check appointment
                     if (!empty($form['form_data_encrypted'])) {
                         $formData = decryptFormData($form['form_data_encrypted']);
                         $formAppointment = $formData['onedoc_appointment'] ?? '';
-                        logMessage("Duplicate check: Comparing appointments [$formAppointment] vs [$appointmentKey]");
                         if ($formAppointment === $appointmentKey) {
-                            logMessage("Duplicate check: DUPLICATE FOUND");
-                            return true;
+                            return true; // Duplicate found
                         }
                     }
                 }
             } catch (Exception $e) {
-                logMessage("Duplicate check: Decryption error - " . $e->getMessage());
                 continue;
             }
         }
     }
 
-    logMessage("Duplicate check: No duplicate found");
     return false;
 }
 
