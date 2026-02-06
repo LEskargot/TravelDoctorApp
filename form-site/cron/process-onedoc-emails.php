@@ -359,8 +359,13 @@ function formatAvs($avs) {
  * This allows the same patient to have multiple appointments
  */
 function formAlreadySent($email, $appointmentKey) {
+    logMessage("Duplicate check: email=$email, appointmentKey=[$appointmentKey]");
+
     $adminToken = pbAdminAuth();
-    if (!$adminToken) return false;
+    if (!$adminToken) {
+        logMessage("Duplicate check: Failed to auth with PocketBase");
+        return false;
+    }
 
     // Check for forms from OneDoc source (no time limit - appointment is the unique key)
     $filter = urlencode("source = 'onedoc' && email_encrypted != ''");
@@ -373,26 +378,38 @@ function formAlreadySent($email, $appointmentKey) {
     );
 
     if (!$response || empty($response['items'])) {
+        logMessage("Duplicate check: No existing onedoc forms found");
         return false;
     }
+
+    logMessage("Duplicate check: Found " . count($response['items']) . " onedoc forms to check");
 
     // Check each form's decrypted email AND appointment
     foreach ($response['items'] as $form) {
         if (!empty($form['email_encrypted'])) {
-            $formEmail = decryptData($form['email_encrypted']);
-            if (strtolower($formEmail) === strtolower($email)) {
-                // Email matches, now check appointment
-                if (!empty($form['form_data_encrypted'])) {
-                    $formData = decryptFormData($form['form_data_encrypted']);
-                    $formAppointment = $formData['onedoc_appointment'] ?? '';
-                    if ($formAppointment === $appointmentKey) {
-                        return true; // Same email AND same appointment = duplicate
+            try {
+                $formEmail = decryptData($form['email_encrypted']);
+                if (strtolower($formEmail) === strtolower($email)) {
+                    logMessage("Duplicate check: Email match found for $formEmail");
+                    // Email matches, now check appointment
+                    if (!empty($form['form_data_encrypted'])) {
+                        $formData = decryptFormData($form['form_data_encrypted']);
+                        $formAppointment = $formData['onedoc_appointment'] ?? '';
+                        logMessage("Duplicate check: Comparing appointments [$formAppointment] vs [$appointmentKey]");
+                        if ($formAppointment === $appointmentKey) {
+                            logMessage("Duplicate check: DUPLICATE FOUND");
+                            return true;
+                        }
                     }
                 }
+            } catch (Exception $e) {
+                logMessage("Duplicate check: Decryption error - " . $e->getMessage());
+                continue;
             }
         }
     }
 
+    logMessage("Duplicate check: No duplicate found");
     return false;
 }
 
