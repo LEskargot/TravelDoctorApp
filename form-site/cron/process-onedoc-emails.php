@@ -147,6 +147,12 @@ function processEmail($email) {
     $subject = $email->getSubject();
     logMessage("Processing email: $subject");
 
+    // Decode MIME-encoded subject
+    $decodedSubject = iconv_mime_decode($subject, ICONV_MIME_DECODE_CONTINUE_ON_ERROR, 'UTF-8');
+    if ($decodedSubject === false) {
+        $decodedSubject = $subject;
+    }
+
     // Get email body (prefer HTML for parsing)
     $body = $email->getHTMLBody();
     if (empty($body)) {
@@ -155,6 +161,14 @@ function processEmail($email) {
 
     // Parse patient data from email
     $patientData = parseOnedocEmail($body);
+
+    // Extract appointment from subject if not found in body
+    // Format: "Nouveau RDV en ligne le 09.03.2026 à 11:45" or "Nouvelle consultation vidéo en ligne le 06.02.2026 à 14:00"
+    if (empty($patientData['appointment_date']) && preg_match('/le\s+(\d{2}\.\d{2}\.\d{4})\s+[àa]\s*(\d{1,2}:\d{2})/', $decodedSubject, $matches)) {
+        $patientData['appointment_date'] = $matches[1];
+        $patientData['appointment_time'] = $matches[2];
+        logMessage("Extracted appointment from subject: " . $matches[1] . " " . $matches[2]);
+    }
 
     // Debug: log all extracted data
     logMessage("Extracted data:");
