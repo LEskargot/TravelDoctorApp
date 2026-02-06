@@ -136,7 +136,7 @@ echo json_encode([
  * Send confirmation email in the appropriate language
  */
 function sendPublicConfirmationEmail($email, $editToken, $language) {
-    $editLink = FORM_URL . '/public.html?edit=' . $editToken;
+    $editLink = FORM_URL . '/?edit=' . $editToken;
 
     $subjects = [
         'fr' => 'Travel Doctor - Confirmation de votre formulaire',

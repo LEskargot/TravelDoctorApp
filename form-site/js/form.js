@@ -1328,11 +1328,11 @@ async function submitForm() {
         formData.vaccination_file_ids = fileIds;
         formData.language = currentLang;
 
-        const response = await fetch(API_URL + '/submit-form.php', {
+        const response = await fetch(API_URL + '/submit-public.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                token: currentToken,
+                captcha_token: currentToken,
                 form_data: formData
             })
         });
