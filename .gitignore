@@ -1,3 +1,6 @@
+# Secrets (NEVER commit)
+form-site/api/config-secrets.php
+
 # Claude Code settings
 .claude/
 

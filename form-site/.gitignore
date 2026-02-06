@@ -1,5 +1,6 @@
 # Sensitive files - create manually on server
 api/config.php
+api/config-secrets.php
 
 # Log files
 cron/*.log

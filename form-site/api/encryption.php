@@ -10,11 +10,17 @@
  */
 
 /**
- * Get encryption key from environment
+ * Get encryption key from config or environment
  * Key must be 64 hex characters (32 bytes)
  */
 function getEncryptionKey() {
-    $key = getenv('FORM_ENCRYPTION_KEY');
+    // First try config constant (loaded from config-secrets.php)
+    if (defined('FORM_ENCRYPTION_KEY')) {
+        $key = FORM_ENCRYPTION_KEY;
+    } else {
+        // Fallback to environment variable
+        $key = getenv('FORM_ENCRYPTION_KEY');
+    }
 
     if (!$key || strlen($key) !== 64) {
         error_log('FORM_ENCRYPTION_KEY not set or invalid length');
