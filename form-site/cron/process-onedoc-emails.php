@@ -557,8 +557,7 @@ function sendFormInvitation($patientData, $editToken) {
                                             <strong>Bulle</strong><br>
                                             Cabinet Médical La Tour<br>
                                             Route de l\'Intyamon 113<br>
-                                            1635 La Tour-de-Trême<br>
-                                            <a href="tel:+41263206662" style="color: #2c5282; text-decoration: none;">+41 26 320 66 62</a>
+                                            1635 La Tour-de-Trême
                                         </p>
                                     </td>
                                     <td style="width: 50%; padding: 0 10px; vertical-align: top;">
@@ -566,9 +565,17 @@ function sendFormInvitation($patientData, $editToken) {
                                             <strong>Lausanne</strong><br>
                                             Cabinet Médical S-Santé<br>
                                             Rue du Valentin 32<br>
-                                            1004 Lausanne<br>
-                                            <a href="tel:+41213111555" style="color: #2c5282; text-decoration: none;">+41 21 311 15 55</a>
+                                            1004 Lausanne
                                         </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 20px auto 0 auto;">
+                                <tr>
+                                    <td>
+                                        <a href="https://www.traveldoctor.ch/whatsapp" target="_blank" style="display: inline-block; padding: 10px 20px; background-color: #25d366; color: #ffffff; text-decoration: none; font-size: 13px; border-radius: 20px;">
+                                            💬 Nous contacter sur WhatsApp
+                                        </a>
                                     </td>
                                 </tr>
                             </table>
