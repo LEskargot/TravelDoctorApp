@@ -514,6 +514,27 @@ function sendFormInvitation($patientData, $editToken) {
                             <p style="color: #666666; font-size: 14px; line-height: 1.6; margin: 0 0 20px 0;">
                                 Ce formulaire nous permettra de préparer au mieux votre consultation.
                             </p>
+                            <!-- Group travel notice -->
+                            <div style="background-color: #ebf8ff; border-left: 4px solid #2c5282; padding: 15px 20px; margin: 0 0 20px 0;">
+                                <p style="color: #2c5282; font-size: 14px; line-height: 1.6; margin: 0 0 12px 0;">
+                                    <strong>Vous voyagez à plusieurs ?</strong><br>
+                                    Chaque membre du groupe doit remplir son propre formulaire.
+                                </p>
+                                <table role="presentation" cellspacing="0" cellpadding="0">
+                                    <tr>
+                                        <td style="padding-right: 10px;">
+                                            <a href="https://wa.me/?text=Nous%20avons%20rendez-vous%20chez%20Travel%20Doctor.%20Merci%20de%20remplir%20ce%20formulaire%20avant%20la%20consultation%20%3A%20https%3A%2F%2Fform.traveldoctor.ch" target="_blank" style="display: inline-block; padding: 8px 16px; background-color: #25d366; color: #ffffff; text-decoration: none; font-size: 13px; border-radius: 4px;">
+                                                WhatsApp
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <a href="mailto:?subject=Formulaire%20Travel%20Doctor&body=Nous%20avons%20rendez-vous%20chez%20Travel%20Doctor.%20Merci%20de%20remplir%20ce%20formulaire%20avant%20la%20consultation%20%3A%20https%3A%2F%2Fform.traveldoctor.ch" target="_blank" style="display: inline-block; padding: 8px 16px; background-color: #666666; color: #ffffff; text-decoration: none; font-size: 13px; border-radius: 4px;">
+                                                Email
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
                             <p style="color: #666666; font-size: 12px; line-height: 1.6; margin: 0; padding-top: 20px; border-top: 1px solid #eeeeee;">
                                 Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur&nbsp;:<br>
                                 <a href="' . htmlspecialchars($formLink) . '" style="color: #2c5282; word-break: break-all;">' . htmlspecialchars($formLink) . '</a>
