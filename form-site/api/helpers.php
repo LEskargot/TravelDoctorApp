@@ -93,7 +93,7 @@ function pbRequest($endpoint, $method, $data = null, $authToken = null) {
     return json_decode($response, true);
 }
 
-function smtpMail($to, $subject, $message) {
+function smtpMail($to, $subject, $message, $isHtml = false) {
     $subject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
 
     $socket = @fsockopen(SMTP_HOST, SMTP_PORT, $errno, $errstr, 30);
@@ -161,7 +161,8 @@ function smtpMail($to, $subject, $message) {
     $email .= "To: <" . $to . ">\r\n";
     $email .= "Subject: " . $subject . "\r\n";
     $email .= "MIME-Version: 1.0\r\n";
-    $email .= "Content-Type: text/plain; charset=UTF-8\r\n";
+    $contentType = $isHtml ? "text/html" : "text/plain";
+    $email .= "Content-Type: " . $contentType . "; charset=UTF-8\r\n";
     $email .= "Content-Transfer-Encoding: 8bit\r\n";
     $email .= "\r\n";
     $email .= $message;

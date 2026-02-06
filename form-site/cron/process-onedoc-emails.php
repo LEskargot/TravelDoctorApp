@@ -463,16 +463,80 @@ function sendFormInvitation($patientData, $editToken) {
 
     $subject = 'Travel Doctor - Votre formulaire patient';
 
-    $message = "Bonjour " . $patientData['firstname'] . ",\r\n\r\n";
-    $message .= "Suite à votre prise de rendez-vous, nous vous invitons à compléter votre formulaire patient en ligne.\r\n\r\n";
-    $message .= "Vos informations ont été pré-remplies. Merci de les vérifier et de compléter les sections manquantes.\r\n\r\n";
-    $message .= "Cliquez sur ce lien pour accéder à votre formulaire:\r\n";
-    $message .= $formLink . "\r\n\r\n";
-    $message .= "Ce formulaire nous permettra de préparer au mieux votre consultation.\r\n\r\n";
-    $message .= "Cordialement,\r\n";
-    $message .= "Travel Doctor";
+    $firstName = htmlspecialchars($patientData['firstname']);
+    $appointmentInfo = '';
+    if (!empty($patientData['appointment_date'])) {
+        $appointmentInfo = htmlspecialchars($patientData['appointment_date']);
+        if (!empty($patientData['appointment_time'])) {
+            $appointmentInfo .= ' à ' . htmlspecialchars($patientData['appointment_time']);
+        }
+    }
 
-    return smtpMail($patientData['email'], $subject, $message);
+    $message = '<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f4f4;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f4f4; padding: 20px 0;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background-color: #2c5282; padding: 30px 40px; text-align: center;">
+                            <h1 style="color: #ffffff; margin: 0; font-size: 24px;">Travel Doctor</h1>
+                        </td>
+                    </tr>
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px;">
+                            <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                                Bonjour ' . $firstName . ',
+                            </p>
+                            <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                                Suite à votre prise de rendez-vous' . ($appointmentInfo ? ' du <strong>' . $appointmentInfo . '</strong>' : '') . ', nous vous invitons à compléter votre formulaire patient en ligne.
+                            </p>
+                            <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
+                                Vos informations ont été pré-remplies. Merci de les vérifier et de compléter les sections manquantes.
+                            </p>
+                            <!-- Button -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto 30px auto;">
+                                <tr>
+                                    <td style="background-color: #38a169; border-radius: 6px;">
+                                        <a href="' . htmlspecialchars($formLink) . '" target="_blank" style="display: inline-block; padding: 16px 32px; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: bold;">
+                                            Remplir le formulaire
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="color: #666666; font-size: 14px; line-height: 1.6; margin: 0 0 20px 0;">
+                                Ce formulaire nous permettra de préparer au mieux votre consultation.
+                            </p>
+                            <p style="color: #666666; font-size: 12px; line-height: 1.6; margin: 0; padding-top: 20px; border-top: 1px solid #eeeeee;">
+                                Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur&nbsp;:<br>
+                                <a href="' . htmlspecialchars($formLink) . '" style="color: #2c5282; word-break: break-all;">' . htmlspecialchars($formLink) . '</a>
+                            </p>
+                        </td>
+                    </tr>
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f8f9fa; padding: 20px 40px; text-align: center;">
+                            <p style="color: #888888; font-size: 12px; margin: 0;">
+                                Travel Doctor<br>
+                                Médecine des voyages
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>';
+
+    return smtpMail($patientData['email'], $subject, $message, true);
 }
 
 /**
