@@ -350,12 +350,13 @@ function extractAvsFromInsuranceCard($cardNumber) {
         return formatAvs($avs);
     }
 
-    // Already a 13-digit AVS
-    if (strlen($cardNumber) === 13) {
+    // Already a 13-digit AVS starting with 756
+    if (strlen($cardNumber) === 13 && substr($cardNumber, 0, 3) === '756') {
         return formatAvs($cardNumber);
     }
 
-    return $cardNumber;
+    // Invalid format - return empty (don't duplicate the insurance card number)
+    return '';
 }
 
 /**
