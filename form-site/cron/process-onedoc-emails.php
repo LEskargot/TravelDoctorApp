@@ -152,6 +152,7 @@ function processEmail($email) {
     if ($decodedSubject === false) {
         $decodedSubject = $subject;
     }
+    logMessage("Decoded subject: $decodedSubject");
 
     // Get email body (prefer HTML for parsing)
     $body = $email->getHTMLBody();
@@ -164,10 +165,14 @@ function processEmail($email) {
 
     // Extract appointment from subject if not found in body
     // Format: "Nouveau RDV en ligne le 09.03.2026 à 11:45" or "Nouvelle consultation vidéo en ligne le 06.02.2026 à 14:00"
-    if (empty($patientData['appointment_date']) && preg_match('/le\s+(\d{2}\.\d{2}\.\d{4})\s+[àa]\s*(\d{1,2}:\d{2})/', $decodedSubject, $matches)) {
-        $patientData['appointment_date'] = $matches[1];
-        $patientData['appointment_time'] = $matches[2];
-        logMessage("Extracted appointment from subject: " . $matches[1] . " " . $matches[2]);
+    if (empty($patientData['appointment_date'])) {
+        if (preg_match('/le\s+(\d{2}\.\d{2}\.\d{4})\s+[àa]\s*(\d{1,2}:\d{2})/u', $decodedSubject, $matches)) {
+            $patientData['appointment_date'] = $matches[1];
+            $patientData['appointment_time'] = $matches[2];
+            logMessage("Extracted appointment from subject: " . $matches[1] . " " . $matches[2]);
+        } else {
+            logMessage("Could not extract appointment from subject");
+        }
     }
 
     // Debug: log all extracted data
