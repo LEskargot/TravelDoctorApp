@@ -206,6 +206,20 @@ No automated tests. Manual testing required for:
    - Add Italian/Spanish translations for share link messages
    - Add email notification to practitioner when form is submitted
 
+5. **Switch from KoBoToolbox to internal form** (when app is ready)
+   - In `process-onedoc-emails.php`, function `sendFormInvitation()`:
+   - Change `$formLink = buildKoboUrl($patientData);`
+   - Back to `$formLink = FORM_URL . '/?edit=' . $editToken;`
+   - The `buildKoboUrl()` function can then be deleted
+
+### Temporary Workaround (2026-02-06)
+
+**KoBoToolbox prefilled forms**: While waiting for the internal form app to be finalized, the OneDoc email processor sends patients to a prefilled KoBoToolbox form instead of the internal form.
+
+- KoBoToolbox form URL: `https://ee-eu.kobotoolbox.org/x/Jyi1oJ0F`
+- Prefilled fields: `full_name`, `birthdate`, `street`, `postal_code`, `city`, `phone`, `email`
+- PocketBase still tracks invitations (for duplicate check and future migration)
+
 ### Data Flow
 
 ```

@@ -23,7 +23,7 @@ define('IMAP_HOST', 'mail.infomaniak.com');
 define('IMAP_PORT', 993);
 define('IMAP_USER', SMTP_USER); // Same as SMTP: contact@traveldoctor.ch
 define('IMAP_PASSWORD', SMTP_PASSWORD);
-define('IMAP_FOLDER', 'Notifications RDV OneDoc');
+define('IMAP_FOLDER', 'OneDoc');
 
 // OneDoc subject patterns to filter
 define('ONEDOC_SUBJECTS', ['Nouveau RDV en ligne', 'Nouvelle consultation vidéo en ligne']);
@@ -453,7 +453,8 @@ function createPrefilledForm($patientData) {
  * Send form invitation email to patient
  */
 function sendFormInvitation($patientData, $editToken) {
-    $formLink = FORM_URL . '/?edit=' . $editToken;
+    // Build KoBoToolbox prefilled URL
+    $formLink = buildKoboUrl($patientData);
 
     $subject = 'Travel Doctor - Votre formulaire patient';
 
@@ -467,6 +468,50 @@ function sendFormInvitation($patientData, $editToken) {
     $message .= "Travel Doctor";
 
     return smtpMail($patientData['email'], $subject, $message);
+}
+
+/**
+ * Build KoBoToolbox prefilled URL from patient data
+ */
+function buildKoboUrl($patientData) {
+    $baseUrl = 'https://ee-eu.kobotoolbox.org/x/Jyi1oJ0F';
+
+    // Map patient data to KoBoToolbox field names
+    $prefillData = [];
+
+    if (!empty($patientData['name'])) {
+        $prefillData['full_name'] = $patientData['name'];
+    }
+    if (!empty($patientData['birthdate_iso'])) {
+        $prefillData['birthdate'] = $patientData['birthdate_iso'];
+    }
+    if (!empty($patientData['street'])) {
+        $prefillData['street'] = $patientData['street'];
+    }
+    if (!empty($patientData['postal_code'])) {
+        $prefillData['postal_code'] = $patientData['postal_code'];
+    }
+    if (!empty($patientData['city'])) {
+        $prefillData['city'] = $patientData['city'];
+    }
+    if (!empty($patientData['phone'])) {
+        $prefillData['phone'] = $patientData['phone'];
+    }
+    if (!empty($patientData['email'])) {
+        $prefillData['email'] = $patientData['email'];
+    }
+
+    // Build query string with d[field]=value format
+    $params = [];
+    foreach ($prefillData as $field => $value) {
+        $params[] = 'd[' . $field . ']=' . rawurlencode($value);
+    }
+
+    if (empty($params)) {
+        return $baseUrl;
+    }
+
+    return $baseUrl . '?' . implode('&', $params);
 }
 
 /**
