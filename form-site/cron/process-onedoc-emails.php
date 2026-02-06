@@ -67,8 +67,13 @@ function main() {
         $emails = [];
         foreach ($allEmails as $email) {
             $subject = $email->getSubject();
+            // Decode MIME-encoded subject (=?UTF-8?Q?...?=)
+            $decodedSubject = iconv_mime_decode($subject, ICONV_MIME_DECODE_CONTINUE_ON_ERROR, 'UTF-8');
+            if ($decodedSubject === false) {
+                $decodedSubject = $subject;
+            }
             foreach (ONEDOC_SUBJECTS as $pattern) {
-                if (stripos($subject, $pattern) !== false) {
+                if (stripos($decodedSubject, $pattern) !== false) {
                     $emails[] = $email;
                     break;
                 }
