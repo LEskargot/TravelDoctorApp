@@ -56,12 +56,12 @@ function main() {
             throw new Exception("Failed to open INBOX");
         }
 
-        // Get all emails in folder
+        // Get only unread emails in folder
         $allEmails = $folder->query()
-            ->all()
+            ->unseen()
             ->get();
 
-        logMessage("Total emails in folder: " . $allEmails->count());
+        logMessage("Unread emails in folder: " . $allEmails->count());
 
         // Filter by subject
         $emails = [];
