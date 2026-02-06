@@ -191,16 +191,12 @@ No automated tests. Manual testing required for:
 
 1. **Set up cron job** in Jelastic dashboard:
    ```
-   */3 * * * * php /var/www/webroot/ROOT/cron/process-onedoc-emails.php >> /var/www/webroot/ROOT/cron/logs/cron.log 2>&1
+   */15 * * * * php /var/www/webroot/ROOT/cron/process-onedoc-emails.php >> /var/www/webroot/ROOT/cron/logs/cron.log 2>&1
    ```
 
-2. **Re-enable duplicate check** (currently disabled for testing)
-   - In `process-onedoc-emails.php`, uncomment the `formAlreadySent()` check
+2. ~~**Re-enable duplicate check**~~ ✓ Done (2026-02-06)
 
-3. **Production testing**
-   - Test complete OneDoc → form → consultation flow with real booking
-   - Verify all patient data is correctly prefilled
-   - Test share link functionality
+3. ~~**Production testing**~~ ✓ Done (2026-02-06) - Email template validated
 
 4. **Optional improvements**
    - Add Italian/Spanish translations for share link messages
