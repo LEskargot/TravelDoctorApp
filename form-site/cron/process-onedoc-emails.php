@@ -486,7 +486,7 @@ function sendFormInvitation($patientData, $editToken) {
                     <!-- Header -->
                     <tr>
                         <td style="background-color: #2c5282; padding: 30px 40px; text-align: center;">
-                            <h1 style="color: #ffffff; margin: 0; font-size: 24px;">Travel Doctor</h1>
+                            <img src="https://traveldoctor.ch/wp-content/uploads/2025/06/Travel_Doctor_Logos_Travel-doctor-horizontal.png" alt="Travel Doctor" style="max-width: 250px; height: auto;">
                         </td>
                     </tr>
                     <!-- Content -->
@@ -515,7 +515,7 @@ function sendFormInvitation($patientData, $editToken) {
                                 Ce formulaire nous permettra de préparer au mieux votre consultation.
                             </p>
                             <!-- Group travel notice -->
-                            <div style="background-color: #ebf8ff; border-left: 4px solid #2c5282; padding: 15px 20px; margin: 0 0 20px 0;">
+                            <div style="background-color: #ebf8ff; border-left: 4px solid #2c5282; padding: 15px 20px; margin: 0 0 20px 0; border-radius: 4px;">
                                 <p style="color: #2c5282; font-size: 14px; line-height: 1.6; margin: 0 0 12px 0;">
                                     <strong>Vous voyagez à plusieurs ?</strong><br>
                                     Chaque membre du groupe doit remplir son propre formulaire.
@@ -523,12 +523,12 @@ function sendFormInvitation($patientData, $editToken) {
                                 <table role="presentation" cellspacing="0" cellpadding="0">
                                     <tr>
                                         <td style="padding-right: 10px;">
-                                            <a href="https://wa.me/?text=Nous%20avons%20rendez-vous%20chez%20Travel%20Doctor.%20Merci%20de%20remplir%20ce%20formulaire%20avant%20la%20consultation%20%3A%20https%3A%2F%2Fwww.traveldoctor.ch/form" target="_blank" style="display: inline-block; padding: 8px 16px; background-color: #25d366; color: #ffffff; text-decoration: none; font-size: 13px; border-radius: 4px;">
+                                            <a href="https://wa.me/?text=Nous%20avons%20rendez-vous%20chez%20Travel%20Doctor.%20Merci%20de%20remplir%20ce%20formulaire%20avant%20la%20consultation%20%3A%20https%3A%2F%2Fwww.traveldoctor.ch%2Fform" target="_blank" style="display: inline-block; padding: 8px 16px; background-color: #25d366; color: #ffffff; text-decoration: none; font-size: 13px; border-radius: 4px;">
                                                 WhatsApp
                                             </a>
                                         </td>
                                         <td>
-                                            <a href="mailto:?subject=Formulaire%20Travel%20Doctor&body=Nous%20avons%20rendez-vous%20chez%20Travel%20Doctor.%20Merci%20de%20remplir%20ce%20formulaire%20avant%20la%20consultation%20%3A%20https%3A%2F%2Fwww.traveldoctor.ch/form" target="_blank" style="display: inline-block; padding: 8px 16px; background-color: #666666; color: #ffffff; text-decoration: none; font-size: 13px; border-radius: 4px;">
+                                            <a href="mailto:?subject=Formulaire%20Travel%20Doctor&body=Nous%20avons%20rendez-vous%20chez%20Travel%20Doctor.%20Merci%20de%20remplir%20ce%20formulaire%20avant%20la%20consultation%20%3A%20https%3A%2F%2Fwww.traveldoctor.ch%2Fform" target="_blank" style="display: inline-block; padding: 8px 16px; background-color: #666666; color: #ffffff; text-decoration: none; font-size: 13px; border-radius: 4px;">
                                                 Email
                                             </a>
                                         </td>
@@ -543,11 +543,35 @@ function sendFormInvitation($patientData, $editToken) {
                     </tr>
                     <!-- Footer -->
                     <tr>
-                        <td style="background-color: #f8f9fa; padding: 20px 40px; text-align: center;">
-                            <p style="color: #888888; font-size: 12px; margin: 0;">
-                                Travel Doctor<br>
+                        <td style="background-color: #f8f9fa; padding: 30px 40px; text-align: center; border-top: 1px solid #eeeeee;">
+                            <p style="color: #333333; font-size: 14px; margin: 0 0 15px 0; font-weight: bold;">
+                                Travel Doctor
+                            </p>
+                            <p style="color: #666666; font-size: 12px; line-height: 1.6; margin: 0 0 15px 0;">
                                 Médecine des voyages
                             </p>
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                                <tr>
+                                    <td style="width: 50%; padding: 0 10px; vertical-align: top;">
+                                        <p style="color: #666666; font-size: 11px; line-height: 1.5; margin: 0;">
+                                            <strong>Bulle</strong><br>
+                                            Cabinet Médical La Tour<br>
+                                            Route de l\'Intyamon 113<br>
+                                            1635 La Tour-de-Trême<br>
+                                            <a href="tel:+41263206662" style="color: #2c5282; text-decoration: none;">+41 26 320 66 62</a>
+                                        </p>
+                                    </td>
+                                    <td style="width: 50%; padding: 0 10px; vertical-align: top;">
+                                        <p style="color: #666666; font-size: 11px; line-height: 1.5; margin: 0;">
+                                            <strong>Lausanne</strong><br>
+                                            Cabinet Médical S-Santé<br>
+                                            Rue du Valentin 32<br>
+                                            1004 Lausanne<br>
+                                            <a href="tel:+41213111555" style="color: #2c5282; text-decoration: none;">+41 21 311 15 55</a>
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
                         </td>
                     </tr>
                 </table>
