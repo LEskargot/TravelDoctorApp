@@ -153,14 +153,13 @@ No automated tests. Manual testing required for:
 
 4. **OneDoc email processor** (`form-site/cron/process-onedoc-emails.php`) ✓
    - Uses `webklex/php-imap` library (no native extension needed)
-   - Monitors `Notifications RDV OneDoc` IMAP folder
+   - Monitors `OneDoc` IMAP folder
    - Filters by subject: "Nouveau RDV en ligne" or "Nouvelle consultation vidéo en ligne"
    - Parses HTML body using icon images (fa-user, fa-phone, etc.) for reliable extraction
    - Extracts: name, birthdate, phone, email, insurance card, AVS, address, appointment info
-   - Creates prefilled forms with encrypted data
-   - Sends form invitation emails to patients
+   - Sends HTML email with prefilled KoBoToolbox form link (temporary workaround)
    - Duplicate check: (email + appointment date/time) as unique key
-   - Lock file for cron safety
+   - Cron runs every 15 minutes
 
 5. **Security hardening**
    - `form-site/.htaccess` - security headers
@@ -189,10 +188,7 @@ No automated tests. Manual testing required for:
 
 ### Pending Tasks
 
-1. **Set up cron job** in Jelastic dashboard:
-   ```
-   */15 * * * * php /var/www/webroot/ROOT/cron/process-onedoc-emails.php >> /var/www/webroot/ROOT/cron/logs/cron.log 2>&1
-   ```
+1. ~~**Set up cron job**~~ ✓ Done (2026-02-06) - runs every 15 min
 
 2. ~~**Re-enable duplicate check**~~ ✓ Done (2026-02-06)
 
@@ -250,10 +246,12 @@ OneDoc booking → Email to contact@traveldoctor.ch
 - **form.traveldoctor.ch**: Jelastic PHP 8.5.2, has `FORM_ENCRYPTION_KEY` env var
 - **db.traveldoctor.ch**: PocketBase database
 - **Email**: contact@traveldoctor.ch via Infomaniak (SMTP & IMAP on mail.infomaniak.com)
-- **OneDoc emails**: Filtered to `Notifications RDV OneDoc` IMAP folder
+- **OneDoc emails**: Filtered to `OneDoc` IMAP folder
 
 ### Deploy Commands
 
 ```bash
-cd /var/www/webroot/ROOT && git pull origin main
+cd /var/www/webroot/repo && git pull origin main
+cp form-site/cron/process-onedoc-emails.php /var/www/webroot/ROOT/cron/
+cp form-site/api/helpers.php /var/www/webroot/ROOT/api/
 ```
