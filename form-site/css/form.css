@@ -1,15 +1,15 @@
 /* Travel Doctor Patient Form - Styles */
-/* Matching traveldoctor.ch design */
+/* TravelDoctor.ch brand identity */
 
 :root {
-  --primary-color: #2ea3f2;
-  --primary-hover: #1a8cd8;
+  --primary-color: #12AD98;
+  --primary-hover: #0e9583;
   --text-color: #666;
-  --heading-color: #333;
-  --border-color: #bbb;
-  --border-light: #e2e2e2;
+  --heading-color: #36597A;
+  --border-color: #d0d5dd;
+  --border-light: #e8ecf0;
   --background: #fff;
-  --background-light: #f8f9fa;
+  --background-light: #FDFBF2;
   --error-color: #dc3545;
   --error-bg: #f8d7da;
   --success-color: #28a745;
@@ -17,8 +17,34 @@
   --warning-color: #856404;
   --warning-bg: #fff3cd;
   --font-family: 'Open Sans', Arial, sans-serif;
-  --border-radius: 3px;
+  --font-heading: 'Montserrat', 'Open Sans', Arial, sans-serif;
+  --border-radius: 10px;
   --transition: 0.2s ease;
+
+  /* Brand accents */
+  --accent-yellow: #FAD500;
+  --accent-coral: #FA8E6E;
+  --accent-sky: #89D8FF;
+  --navy: #36597A;
+  --gray: #888888;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(54, 89, 122, 0.08);
+  --shadow-md: 0 4px 12px rgba(54, 89, 122, 0.10);
+  --shadow-lg: 0 8px 24px rgba(54, 89, 122, 0.12);
+  --focus-ring: 0 0 0 3px rgba(18, 173, 152, 0.25);
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
 }
 
 * {
@@ -32,17 +58,20 @@ body {
   font-size: 14px;
   font-weight: 500;
   color: var(--text-color);
-  background: var(--background);
+  background: var(--background-light);
   min-height: 100vh;
   line-height: 1.5;
 }
 
 /* Container */
 .form-container {
-  max-width: 650px;
+  max-width: 680px;
   width: 100%;
-  margin: 0 auto;
-  padding: 20px;
+  margin: 40px auto;
+  padding: var(--spacing-lg);
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
 }
 
 /* Header */
@@ -59,22 +88,21 @@ body {
   margin: 0;
 }
 
-.form-header .logo-text {
-  color: var(--primary-color);
-  text-decoration: none;
-  font-size: 24px;
-  font-weight: 700;
+.form-header .logo-link {
+  display: block;
+  line-height: 0;
 }
 
-.form-header .logo-text:hover {
-  text-decoration: underline;
+.form-header .logo-img {
+  height: 48px;
+  width: auto;
 }
 
 /* Language Selector */
 .language-selector select {
   padding: 8px 12px;
   border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
+  border-radius: var(--radius-sm);
   font-family: var(--font-family);
   font-size: 14px;
   color: var(--text-color);
@@ -85,6 +113,7 @@ body {
 .language-selector select:focus {
   outline: none;
   border-color: var(--primary-color);
+  box-shadow: var(--focus-ring);
 }
 
 /* Progress Container */
@@ -114,13 +143,13 @@ body {
   flex: 1;
   height: 2px;
   background: var(--border-light);
-  margin-top: 15px;
+  margin-top: 17px;
   min-width: 20px;
 }
 
 .step .step-number {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: var(--background);
   border: 2px solid var(--border-color);
@@ -148,14 +177,36 @@ body {
   color: white;
 }
 
+.step.active .step-label {
+  color: var(--navy);
+  font-weight: 600;
+}
+
 .step.completed .step-number {
-  background: var(--success-color);
-  border-color: var(--success-color);
+  background: var(--primary-color);
+  border-color: var(--primary-color);
   color: white;
+  font-size: 0;
+}
+
+.step.completed .step-number::after {
+  content: '\2713';
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.step.completed ~ .step-line,
+.step.active ~ .step-line {
+  /* Lines before completed/active steps stay default */
 }
 
 .step:hover .step-number {
   border-color: var(--primary-color);
+}
+
+/* Completed step lines - teal */
+.step.completed + .step-line {
+  background: var(--primary-color);
 }
 
 /* Mobile: Hide labels */
@@ -169,13 +220,17 @@ body {
   }
 
   .step .step-number {
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
     font-size: 12px;
   }
 
+  .step.completed .step-number::after {
+    font-size: 14px;
+  }
+
   .step-line {
-    margin-top: 13px;
+    margin-top: 14px;
   }
 }
 
@@ -195,14 +250,15 @@ body {
 }
 
 .step-title {
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--heading-color);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--navy);
   margin-bottom: 10px;
+  font-family: var(--font-heading);
 }
 
 .step-subtitle {
-  font-size: 14px;
+  font-size: 15px;
   color: var(--text-color);
   margin-bottom: 25px;
   padding-bottom: 20px;
@@ -212,10 +268,11 @@ body {
 .section-title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--heading-color);
+  color: var(--navy);
   margin: 30px 0 15px;
   padding-top: 20px;
   border-top: 1px solid var(--border-light);
+  font-family: var(--font-heading);
 }
 
 /* Form Groups */
@@ -227,14 +284,14 @@ body {
 .form-group > label {
   display: block;
   margin-bottom: 8px;
-  color: var(--heading-color);
+  color: var(--navy);
   font-weight: 600;
   font-size: 14px;
 }
 
 .form-group .hint {
   font-size: 12px;
-  color: var(--text-color);
+  color: var(--gray);
   margin-top: 5px;
   display: block;
 }
@@ -245,7 +302,7 @@ body {
   font-weight: 400;
   background: var(--background-light);
   padding: 2px 6px;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   margin-left: 5px;
 }
 
@@ -283,9 +340,9 @@ input[type="date"],
 select,
 textarea {
   width: 100%;
-  padding: 12px 14px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
+  padding: 14px 16px;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
   font-size: 14px;
   font-family: var(--font-family);
   color: var(--text-color);
@@ -298,11 +355,12 @@ select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--primary-color);
+  box-shadow: var(--focus-ring);
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: #999;
+  color: #a0a8b4;
 }
 
 .form-group.has-error input,
@@ -356,10 +414,10 @@ textarea::placeholder {
 
 .radio-label input,
 .checkbox-label input {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   margin: 0;
-  margin-top: 2px;
+  margin-top: 1px;
   cursor: pointer;
   accent-color: var(--primary-color);
   flex-shrink: 0;
@@ -385,7 +443,7 @@ textarea::placeholder {
   margin-top: 15px;
   padding: 12px;
   background: var(--background-light);
-  border-radius: var(--border-radius);
+  border-radius: var(--radius-sm);
 }
 
 .comorbidity-group .group-title {
@@ -407,7 +465,7 @@ textarea::placeholder {
   margin: 5px 0 5px 28px;
   padding: 8px 12px;
   background: white;
-  border-radius: var(--border-radius);
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-light);
 }
 
@@ -433,7 +491,7 @@ textarea::placeholder {
   margin: 20px 0;
   padding: 20px;
   background: var(--background-light);
-  border-radius: var(--border-radius);
+  border-radius: var(--radius-sm);
 }
 
 .conditional-section.hidden {
@@ -457,7 +515,8 @@ textarea::placeholder {
 .destination-row {
   padding: 15px;
   background: var(--background-light);
-  border-radius: var(--border-radius);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
 }
 
 .destination-fields {
@@ -481,7 +540,7 @@ textarea::placeholder {
   border: none;
   background: var(--error-color);
   color: white;
-  border-radius: var(--border-radius);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: 20px;
   display: flex;
@@ -502,7 +561,7 @@ textarea::placeholder {
   padding: 12px 20px;
   background: transparent;
   border: 2px dashed var(--border-color);
-  border-radius: var(--border-radius);
+  border-radius: var(--radius-md);
   color: var(--text-color);
   font-family: var(--font-family);
   font-size: 14px;
@@ -540,12 +599,12 @@ textarea::placeholder {
   background: var(--background);
   border: 1px solid var(--border-color);
   border-top: none;
-  border-radius: 0 0 var(--border-radius) var(--border-radius);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
   max-height: 200px;
   overflow-y: auto;
   z-index: 100;
   display: none;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .autocomplete-dropdown.active {
@@ -572,7 +631,7 @@ textarea::placeholder {
 /* File Upload Dropzone */
 .file-dropzone {
   border: 2px dashed var(--border-color);
-  border-radius: var(--border-radius);
+  border-radius: var(--radius-md);
   padding: 40px 20px;
   text-align: center;
   cursor: pointer;
@@ -583,7 +642,7 @@ textarea::placeholder {
 .file-dropzone:hover,
 .file-dropzone.dragover {
   border-color: var(--primary-color);
-  background: rgba(46, 163, 242, 0.05);
+  background: rgba(18, 173, 152, 0.04);
 }
 
 .file-dropzone.disabled {
@@ -635,8 +694,9 @@ textarea::placeholder {
   gap: 10px;
   padding: 12px 15px;
   background: var(--background-light);
-  border-radius: var(--border-radius);
+  border-radius: var(--radius-sm);
   margin-bottom: 8px;
+  box-shadow: var(--shadow-sm);
 }
 
 .file-item .file-icon {
@@ -677,10 +737,12 @@ textarea::placeholder {
 }
 
 .summary-section {
-  background: var(--background-light);
-  border-radius: var(--border-radius);
+  background: white;
+  border-radius: var(--radius-md);
   padding: 20px;
   margin-bottom: 15px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
 }
 
 .summary-header {
@@ -695,8 +757,9 @@ textarea::placeholder {
 .summary-header h3 {
   font-size: 16px;
   font-weight: 600;
-  color: var(--heading-color);
+  color: var(--navy);
   margin: 0;
+  font-family: var(--font-heading);
 }
 
 .btn-edit {
@@ -739,7 +802,7 @@ textarea::placeholder {
 .consent-group {
   background: var(--warning-bg);
   border: 1px solid #ffeeba;
-  border-radius: var(--border-radius);
+  border-radius: var(--radius-md);
   padding: 20px;
   margin-top: 20px;
 }
@@ -769,8 +832,8 @@ textarea::placeholder {
 }
 
 .btn {
-  padding: 14px 28px;
-  border-radius: var(--border-radius);
+  padding: 14px 32px;
+  border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 600;
   font-family: var(--font-family);
@@ -784,18 +847,19 @@ textarea::placeholder {
 }
 
 .btn-primary {
-  background: transparent;
-  color: var(--primary-color);
+  background: var(--primary-color);
+  color: white;
   border: 2px solid var(--primary-color);
 }
 
 .btn-primary:hover {
-  background: rgba(46, 163, 242, 0.1);
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
 }
 
 .btn-secondary {
   background: transparent;
-  color: var(--text-color);
+  color: var(--navy);
   border: 2px solid var(--border-color);
 }
 
@@ -805,18 +869,18 @@ textarea::placeholder {
 }
 
 .btn-success {
-  background: var(--success-color);
+  background: var(--primary-color);
   color: white;
-  border: 2px solid var(--success-color);
+  border: 2px solid var(--primary-color);
 }
 
 .btn-success:hover {
-  background: #218838;
-  border-color: #218838;
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
 }
 
 .btn:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
@@ -836,15 +900,16 @@ textarea::placeholder {
   bottom: 20px;
   right: 20px;
   padding: 12px 20px;
-  background: var(--heading-color);
+  background: var(--navy);
   color: white;
-  border-radius: var(--border-radius);
+  border-radius: var(--radius-md);
   font-size: 13px;
   z-index: 1000;
   animation: slideIn 0.3s ease;
   display: flex;
   align-items: center;
   gap: 8px;
+  box-shadow: var(--shadow-lg);
 }
 
 .draft-indicator.hidden {
@@ -865,7 +930,7 @@ textarea::placeholder {
 .success-screen .success-icon {
   width: 80px;
   height: 80px;
-  background: var(--success-color);
+  background: var(--primary-color);
   color: white;
   border-radius: 50%;
   display: flex;
@@ -877,8 +942,9 @@ textarea::placeholder {
 
 .success-screen h2 {
   font-size: 24px;
-  color: var(--heading-color);
+  color: var(--navy);
   margin-bottom: 15px;
+  font-family: var(--font-heading);
 }
 
 .success-screen p {
@@ -891,14 +957,12 @@ textarea::placeholder {
 }
 
 .success-screen .share-section {
-  background: #f0f7ff;
-  border: 1px solid #cce0ff;
-  border-radius: 8px;
+  background: rgba(18, 173, 152, 0.06);
+  border: 1px solid rgba(18, 173, 152, 0.20);
+  border-radius: var(--radius-md);
   padding: 20px;
-  margin: 25px 0;
+  margin: 25px auto;
   max-width: 500px;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 .success-screen .share-section p {
@@ -914,8 +978,8 @@ textarea::placeholder {
 .success-screen .share-link-box input {
   flex: 1;
   padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
   font-size: 13px;
   background: white;
 }
@@ -937,8 +1001,8 @@ textarea::placeholder {
 }
 
 .btn-primary .spinner {
-  border-color: rgba(46, 163, 242, 0.3);
-  border-top-color: var(--primary-color);
+  border-color: rgba(255, 255, 255, 0.3);
+  border-top-color: white;
 }
 
 @keyframes spin {
@@ -967,7 +1031,7 @@ textarea::placeholder {
 /* Messages */
 .message {
   padding: 15px;
-  border-radius: var(--border-radius);
+  border-radius: var(--radius-md);
   margin-bottom: 20px;
   font-size: 14px;
 }
