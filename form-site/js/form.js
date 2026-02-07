@@ -26,6 +26,20 @@ document.addEventListener('DOMContentLoaded', function() {
     initCountryAutocomplete();
     checkUrlParams();
     startDraftAutoSave();
+
+    // Re-render dynamic content when language changes
+    document.addEventListener('languageChanged', function() {
+        if (currentStep === 6) {
+            generateSummary();
+        }
+        // Re-render success screen if visible
+        const successScreen = document.querySelector('.success-screen');
+        if (successScreen) {
+            const email = successScreen.querySelector('strong')?.textContent || '';
+            successScreen.remove();
+            showSuccessScreen(email);
+        }
+    });
 });
 
 /**
@@ -1013,12 +1027,35 @@ function generateTravelSummary() {
     html += '</ul>';
 
     if (data.travel_reason && data.travel_reason.length > 0) {
-        const reasons = data.travel_reason.map(r => t('travel.reason_' + r) || r).join(', ');
+        const reasonKeyMap = {
+            'tourisme_organise': 'organized',
+            'tourisme_independant': 'independent',
+            'affaires': 'business',
+            'aventure': 'adventure',
+            'visite_famille': 'family',
+            'humanitaire': 'humanitarian',
+            'pelerinage': 'pilgrimage',
+            'expatriation': 'expatriation',
+            'autre': 'other'
+        };
+        const reasons = data.travel_reason.map(r => {
+            const key = reasonKeyMap[r] || r;
+            return t('travel.reason_' + key) || r;
+        }).join(', ');
         html += `<p><strong>${t('travel.reason')}:</strong> ${reasons}</p>`;
     }
 
     if (data.accommodation && data.accommodation.length > 0) {
-        const accommodations = data.accommodation.map(a => t('travel.accommodation_' + a) || a).join(', ');
+        const accommodationKeyMap = {
+            'pas_decide': 'undecided',
+            'habitant': 'local',
+            'hotel': 'hotel',
+            'autre': 'other'
+        };
+        const accommodations = data.accommodation.map(a => {
+            const key = accommodationKeyMap[a] || a;
+            return t('travel.accommodation_' + key) || a;
+        }).join(', ');
         html += `<p><strong>${t('travel.accommodation')}:</strong> ${accommodations}</p>`;
     }
 
@@ -1163,8 +1200,18 @@ function generateReferralSummary() {
     }
 
     if (data.referral_source && data.referral_source.length > 0) {
+        const sourceKeyMap = {
+            'internet': 'internet',
+            'social_media': 'social',
+            'doctor': 'doctor',
+            'friend': 'friend',
+            'pharmacy': 'pharmacy',
+            'travel_agency': 'travel_agency',
+            'other': 'other'
+        };
         const sources = data.referral_source.map(s => {
-            let label = t('referral.source_' + s) || s;
+            const key = sourceKeyMap[s] || s;
+            let label = t('referral.source_' + key) || s;
             if (s === 'doctor' && data.referral_doctor_name) label += ` (${data.referral_doctor_name})`;
             if (s === 'friend' && data.referral_friend_name) label += ` (${data.referral_friend_name})`;
             if (s === 'other' && data.referral_other_specify) label += ` (${data.referral_other_specify})`;
