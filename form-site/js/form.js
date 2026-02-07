@@ -316,17 +316,24 @@ function validateHealth(step) {
         isValid = false;
     }
 
-    // Allergies
-    const hasAllergies = step.querySelector('input[name="has_allergies"]:checked');
-    if (!hasAllergies) {
-        showError(step.querySelector('input[name="has_allergies"]').closest('.form-group'), t('errors.required'));
+    // Allergies - at least one checkbox must be selected
+    const allergyChecked = step.querySelectorAll('input[name="allergy_types"]:checked');
+    if (allergyChecked.length === 0) {
+        showError(step.querySelector('input[name="allergy_types"]').closest('.form-group'), t('errors.required'));
         isValid = false;
-    } else if (hasAllergies.value === 'oui') {
-        const allergiesDetails = step.querySelector('#allergies_details');
-        if (!allergiesDetails.value.trim()) {
-            showError(allergiesDetails, t('errors.required'));
-            isValid = false;
-        }
+    } else {
+        // Validate detail fields for each checked allergy type (except "aucune")
+        const allergyTypes = ['oeufs', 'medicaments', 'aliments', 'environnement', 'autre'];
+        allergyTypes.forEach(type => {
+            const cb = step.querySelector(`input[name="allergy_types"][value="${type}"]`);
+            if (cb && cb.checked) {
+                const textarea = step.querySelector(`textarea[name="allergy_detail_${type}"]`);
+                if (textarea && !textarea.value.trim()) {
+                    showError(textarea.closest('.form-group'), t('errors.required'));
+                    isValid = false;
+                }
+            }
+        });
     }
 
     // Dengue
@@ -460,15 +467,36 @@ function toggleReproductiveQuestions() {
     }
 }
 
-function toggleAllergiesSection() {
-    const hasAllergies = document.querySelector('input[name="has_allergies"]:checked');
-    const allergiesDetails = document.getElementById('allergies-details');
+function handleAllergyChange(isNone) {
+    const checkboxes = document.querySelectorAll('input[name="allergy_types"]');
+    const allergyTypes = ['oeufs', 'medicaments', 'aliments', 'environnement', 'autre'];
 
-    if (hasAllergies && hasAllergies.value === 'oui') {
-        allergiesDetails.classList.remove('hidden');
+    if (isNone) {
+        // "Aucune allergie" clicked - uncheck all others
+        const noneCheckbox = document.querySelector('input[name="allergy_types"][value="aucune"]');
+        if (noneCheckbox.checked) {
+            checkboxes.forEach(cb => {
+                if (cb.value !== 'aucune') cb.checked = false;
+            });
+        }
     } else {
-        allergiesDetails.classList.add('hidden');
+        // Any allergy option clicked - uncheck "aucune"
+        const noneCheckbox = document.querySelector('input[name="allergy_types"][value="aucune"]');
+        if (noneCheckbox) noneCheckbox.checked = false;
     }
+
+    // Show/hide detail textboxes for each checked allergy type
+    allergyTypes.forEach(type => {
+        const detailDiv = document.getElementById('allergy-detail-' + type);
+        const checkbox = document.querySelector(`input[name="allergy_types"][value="${type}"]`);
+        if (detailDiv) {
+            if (checkbox && checkbox.checked) {
+                detailDiv.classList.remove('hidden');
+            } else {
+                detailDiv.classList.add('hidden');
+            }
+        }
+    });
 }
 
 function toggleVaccinationProblem() {
@@ -493,6 +521,21 @@ function toggleMedicationField() {
     }
 }
 
+function toggleComorbidityDetail(checkbox) {
+    const value = checkbox.value;
+    const detailField = document.getElementById('comorbidity-detail-' + value);
+    if (detailField) {
+        if (checkbox.checked) {
+            detailField.classList.remove('hidden');
+        } else {
+            detailField.classList.add('hidden');
+        }
+    }
+    if (checkbox.checked) {
+        uncheckNoneComorbidity();
+    }
+}
+
 function toggleNoneComorbidity(checkbox) {
     if (checkbox.checked) {
         // Uncheck all other comorbidities
@@ -506,6 +549,10 @@ function toggleNoneComorbidity(checkbox) {
         document.getElementById('psychiatric-details-field').classList.add('hidden');
         document.getElementById('comorbidity-other-field').classList.add('hidden');
         document.getElementById('chemotherapy-question').classList.add('hidden');
+        // Hide all comorbidity detail fields
+        document.querySelectorAll('[id^="comorbidity-detail-"]').forEach(el => {
+            el.classList.add('hidden');
+        });
     }
 }
 
@@ -1007,16 +1054,32 @@ function generateHealthSummary() {
 
     // Allergies
     html += `<p><strong>${t('health.allergies_title')}:</strong> `;
-    if (data.has_allergies === 'oui') {
-        html += `${t('buttons.yes')} - ${data.allergies_details || ''}`;
+    if (data.allergy_types && data.allergy_types.includes('aucune')) {
+        html += t('health.allergy_none');
+    } else if (data.allergy_types && data.allergy_types.length > 0) {
+        const allergyLabels = {
+            oeufs: t('health.allergy_eggs'),
+            medicaments: t('health.allergy_medication'),
+            aliments: t('health.allergy_food'),
+            environnement: t('health.allergy_environment'),
+            autre: t('health.allergy_other')
+        };
+        const details = data.allergy_types.map(type => {
+            const label = allergyLabels[type] || type;
+            const detail = data['allergy_detail_' + type];
+            return detail ? `${label} (${detail})` : label;
+        });
+        html += details.join(', ');
     } else {
-        html += t('buttons.no');
+        html += '-';
     }
     html += '</p>';
 
     // Diseases
-    html += `<p><strong>${t('health.dengue')}:</strong> ${data.dengue_history === 'oui' ? t('buttons.yes') : t('buttons.no')}</p>`;
-    html += `<p><strong>${t('health.chickenpox_disease')}:</strong> ${data.chickenpox_disease === 'oui' ? t('buttons.yes') : t('buttons.no')}</p>`;
+    const yesNoDk = (val) => val === 'oui' ? t('buttons.yes') : val === 'ne_sais_pas' ? t('buttons.dont_know') : t('buttons.no');
+    html += `<p><strong>${t('health.dengue')}:</strong> ${yesNoDk(data.dengue_history)}</p>`;
+    html += `<p><strong>${t('health.chickenpox_disease')}:</strong> ${yesNoDk(data.chickenpox_disease)}</p>`;
+    html += `<p><strong>${t('health.chickenpox_vaccine')}:</strong> ${yesNoDk(data.chickenpox_vaccine)}</p>`;
 
     // Comorbidities
     if (data.comorbidities && data.comorbidities.length > 0) {
@@ -1045,7 +1108,9 @@ function generateHealthSummary() {
             };
             const comorbidities = data.comorbidities.map(c => {
                 const key = comorbidityKeyMap[c] || c;
-                return t('health.comorbidity_' + key) || c;
+                const label = t('health.comorbidity_' + key) || c;
+                const detail = data['comorbidity_detail_' + c] || data[c === 'psychiatrique' ? 'psychiatric_details' : ''] || '';
+                return detail ? `${label} (${detail})` : label;
             }).join(', ');
             html += `<p><strong>${t('health.comorbidities_title')}:</strong> ${comorbidities}</p>`;
         }
@@ -1092,8 +1157,19 @@ function generateReferralSummary() {
 
     let html = '';
 
+    if (data.returning_patient) {
+        const val = data.returning_patient === 'oui' ? t('buttons.yes') : t('buttons.no');
+        html += `<p><strong>${t('referral.returning_question')}:</strong> ${val}</p>`;
+    }
+
     if (data.referral_source && data.referral_source.length > 0) {
-        const sources = data.referral_source.map(s => t('referral.source_' + s) || s).join(', ');
+        const sources = data.referral_source.map(s => {
+            let label = t('referral.source_' + s) || s;
+            if (s === 'doctor' && data.referral_doctor_name) label += ` (${data.referral_doctor_name})`;
+            if (s === 'friend' && data.referral_friend_name) label += ` (${data.referral_friend_name})`;
+            if (s === 'other' && data.referral_other_specify) label += ` (${data.referral_other_specify})`;
+            return label;
+        }).join(', ');
         html += `<p><strong>${t('referral.source')}:</strong> ${sources}</p>`;
     }
 
@@ -1125,12 +1201,18 @@ function collectFormData() {
     const simpleFields = [
         'full_name', 'birthdate', 'email', 'phone', 'street', 'postal_code', 'city',
         'residence_country', 'gender', 'weight', 'show_reproductive', 'pregnancy',
-        'contraception', 'breastfeeding', 'last_menses', 'has_allergies', 'allergies_details',
+        'contraception', 'breastfeeding', 'last_menses',
+        'allergy_detail_oeufs', 'allergy_detail_medicaments', 'allergy_detail_aliments',
+        'allergy_detail_environnement', 'allergy_detail_autre',
         'dengue_history', 'chickenpox_disease', 'chickenpox_vaccine', 'vaccination_problem',
         'vaccination_problem_details', 'hiv_cd4', 'psychiatric_details', 'comorbidity_other',
+        'comorbidity_detail_thymus', 'comorbidity_detail_rate', 'comorbidity_detail_cancer',
+        'comorbidity_detail_hematologie', 'comorbidity_detail_cardiaque', 'comorbidity_detail_diabete',
+        'comorbidity_detail_inflammatoire', 'comorbidity_detail_digestive',
+        'comorbidity_detail_rhumatologie', 'comorbidity_detail_musculaire', 'comorbidity_detail_chirurgie',
         'recent_chemotherapy', 'takes_medication', 'medication_list', 'no_vaccination_card',
-        'referral_social_platform', 'referral_doctor_name', 'referral_friend_name',
-        'referral_ad_location', 'referral_other_specify', 'comment', 'consent',
+        'returning_patient', 'referral_doctor_name', 'referral_friend_name',
+        'referral_other_specify', 'comment', 'consent',
         'travel_reason_other', 'accommodation_other', 'activities_other', 'rural_stay'
     ];
 
@@ -1291,10 +1373,25 @@ function populateForm(data) {
     const gender = document.querySelector('input[name="gender"]:checked');
     if (gender) handleGenderChange({ target: gender });
 
-    toggleAllergiesSection();
+    handleAllergyChange();
     toggleVaccinationProblem();
     toggleMedicationField();
     toggleChemoQuestion();
+
+    // Trigger comorbidity detail fields
+    document.querySelectorAll('input[name="comorbidities"]:checked').forEach(cb => {
+        toggleComorbidityDetail(cb);
+        if (cb.value === 'vih') toggleHivField(cb);
+        if (cb.value === 'psychiatrique') togglePsychiatricField(cb);
+        if (cb.value === 'autre') toggleOtherComorbidity(cb);
+    });
+
+    // Trigger referral detail fields
+    document.querySelectorAll('input[name="referral_source"]:checked').forEach(cb => {
+        if (cb.value === 'doctor') toggleReferralDetail(cb, 'referral-doctor-detail');
+        if (cb.value === 'friend') toggleReferralDetail(cb, 'referral-friend-detail');
+        if (cb.value === 'other') toggleReferralDetail(cb, 'referral-other-detail');
+    });
 }
 
 function showDraftIndicator() {
