@@ -380,6 +380,36 @@ textarea::placeholder {
   display: block;
 }
 
+/* Warning messages (soft, non-blocking) */
+.warning-message {
+  color: var(--warning-color);
+  font-size: 12px;
+  margin-top: 5px;
+  display: block;
+  padding: 4px 8px;
+  background: var(--warning-bg);
+  border-radius: var(--radius-sm);
+  border: 1px solid #ffeeba;
+}
+
+.form-group.has-warning input,
+.form-group.has-warning select,
+.destination-row.has-warning input {
+  border-color: #ffc107;
+}
+
+/* Inline field error state */
+.inline-field.has-error input {
+  border-color: var(--error-color);
+}
+
+.inline-field .error-message {
+  color: var(--error-color);
+  font-size: 12px;
+  margin-top: 5px;
+  width: 100%;
+}
+
 /* Other Field (conditional text input) */
 .other-field {
   margin-top: 10px;

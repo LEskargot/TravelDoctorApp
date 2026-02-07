@@ -422,7 +422,17 @@ const TRANSLATIONS = {
       invalid_file_type: "Type de fichier {name} non autorisé",
       vaccination_required: "Ajoutez au moins un fichier ou cochez la case",
       consent_required: "Vous devez accepter la déclaration",
-      submission_failed: "L'envoi a échoué. Veuillez réessayer."
+      submission_failed: "L'envoi a échoué. Veuillez réessayer.",
+      weight_range: "Le poids doit être entre 2 et 400 kg",
+      date_not_future: "Cette date ne peut pas être dans le futur",
+      other_required: "Veuillez préciser votre choix",
+      cd4_range: "La valeur CD4 doit être entre 0 et 5000"
+    },
+
+    // Warnings (soft, non-blocking)
+    warnings: {
+      date_in_past: "Cette date est dans le passé",
+      long_duration: "Ce voyage dure plus de 2 ans"
     },
 
     // Messages
@@ -857,7 +867,17 @@ const TRANSLATIONS = {
       file_too_large: "File too large (max 10 MB)",
       too_many_files: "Maximum 10 files allowed",
       invalid_file_type: "File type not allowed",
-      consent_required: "You must accept the declaration"
+      consent_required: "You must accept the declaration",
+      weight_range: "Weight must be between 2 and 400 kg",
+      date_not_future: "This date cannot be in the future",
+      other_required: "Please specify your choice",
+      cd4_range: "CD4 value must be between 0 and 5000"
+    },
+
+    // Warnings (soft, non-blocking)
+    warnings: {
+      date_in_past: "This date is in the past",
+      long_duration: "This trip is longer than 2 years"
     },
 
     // Messages
@@ -1295,7 +1315,17 @@ const TRANSLATIONS = {
       vaccination_required: "Aggiunga almeno un file o selezioni la casella",
       consent_required: "Deve accettare la dichiarazione",
       submission_failed: "L'invio non è riuscito. Riprovi.",
-      captcha_required: "Si prega di completare il CAPTCHA"
+      captcha_required: "Si prega di completare il CAPTCHA",
+      weight_range: "Il peso deve essere tra 2 e 400 kg",
+      date_not_future: "Questa data non può essere nel futuro",
+      other_required: "Si prega di specificare la scelta",
+      cd4_range: "Il valore CD4 deve essere tra 0 e 5000"
+    },
+
+    // Warnings (soft, non-blocking)
+    warnings: {
+      date_in_past: "Questa data è nel passato",
+      long_duration: "Questo viaggio dura più di 2 anni"
     },
 
     // Messages
@@ -1737,7 +1767,17 @@ const TRANSLATIONS = {
       vaccination_required: "Añada al menos un archivo o marque la casilla",
       consent_required: "Debe aceptar la declaración",
       submission_failed: "El envío ha fallado. Inténtelo de nuevo.",
-      captcha_required: "Por favor complete el CAPTCHA"
+      captcha_required: "Por favor complete el CAPTCHA",
+      weight_range: "El peso debe ser entre 2 y 400 kg",
+      date_not_future: "Esta fecha no puede ser en el futuro",
+      other_required: "Por favor especifique su elección",
+      cd4_range: "El valor CD4 debe estar entre 0 y 5000"
+    },
+
+    // Warnings (soft, non-blocking)
+    warnings: {
+      date_in_past: "Esta fecha es en el pasado",
+      long_duration: "Este viaje dura más de 2 años"
     },
 
     // Messages

@@ -70,6 +70,14 @@ function initForm() {
     // AVS formatting
     initAvsField();
 
+    // Set dynamic date max attributes (today)
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('birthdate').setAttribute('max', today);
+    const lastMenses = document.getElementById('last_menses');
+    if (lastMenses) lastMenses.setAttribute('max', today);
+    const hivDate = document.getElementById('hiv_cd4_date');
+    if (hivDate) hivDate.setAttribute('max', today);
+
     // Update placeholders with translations
     updatePlaceholders();
 }
@@ -239,6 +247,9 @@ function validateIdentity(step) {
     } else if (new Date(birthdate.value) > new Date()) {
         showError(birthdate, t('errors.invalid_date'));
         isValid = false;
+    } else if (new Date(birthdate.value) < new Date('1900-01-01')) {
+        showError(birthdate, t('errors.invalid_date'));
+        isValid = false;
     }
 
     // Email
@@ -269,6 +280,9 @@ function validateTravel(step) {
     const destinations = step.querySelectorAll('.destination-row');
     let hasValidDestination = false;
 
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
     destinations.forEach(row => {
         const country = row.querySelector('.destination-country').value;
         const departure = row.querySelector('.destination-departure').value;
@@ -280,6 +294,17 @@ function validateTravel(step) {
                 isValid = false;
             } else {
                 hasValidDestination = true;
+
+                // Soft warning: departure in the past
+                if (new Date(departure) < now) {
+                    showWarning(row.querySelector('.destination-departure'), t('warnings.date_in_past'));
+                }
+
+                // Soft warning: trip longer than 2 years
+                const durationDays = (new Date(returnDate) - new Date(departure)) / (1000 * 60 * 60 * 24);
+                if (durationDays > 730) {
+                    showWarning(row.querySelector('.destination-return'), t('warnings.long_duration'));
+                }
             }
         }
     });
@@ -294,6 +319,15 @@ function validateTravel(step) {
     if (reasons.length === 0) {
         showError(step.querySelector('input[name="travel_reason"]').closest('.form-group'), t('errors.required'));
         isValid = false;
+    } else {
+        const autreReason = step.querySelector('input[name="travel_reason"][value="autre"]');
+        if (autreReason && autreReason.checked) {
+            const otherText = step.querySelector('#travel_reason_other');
+            if (!otherText.value.trim()) {
+                showError(otherText, t('errors.other_required'));
+                isValid = false;
+            }
+        }
     }
 
     // Accommodation
@@ -301,6 +335,15 @@ function validateTravel(step) {
     if (accommodations.length === 0) {
         showError(step.querySelector('input[name="accommodation"]').closest('.form-group'), t('errors.required'));
         isValid = false;
+    } else {
+        const autreAccom = step.querySelector('input[name="accommodation"][value="autre"]');
+        if (autreAccom && autreAccom.checked) {
+            const otherText = step.querySelector('#accommodation_other');
+            if (!otherText.value.trim()) {
+                showError(otherText, t('errors.other_required'));
+                isValid = false;
+            }
+        }
     }
 
     // Activities
@@ -308,6 +351,15 @@ function validateTravel(step) {
     if (activities.length === 0) {
         showError(step.querySelector('input[name="activities"]').closest('.form-group'), t('errors.required'));
         isValid = false;
+    } else {
+        const autreActivity = step.querySelector('input[name="activities"][value="autre"]');
+        if (autreActivity && autreActivity.checked) {
+            const otherText = step.querySelector('#activities_other');
+            if (!otherText.value.trim()) {
+                showError(otherText, t('errors.other_required'));
+                isValid = false;
+            }
+        }
     }
 
     // Rural stay
@@ -325,9 +377,38 @@ function validateHealth(step) {
 
     // Weight
     const weight = step.querySelector('#weight');
-    if (!weight.value || weight.value <= 0) {
-        showError(weight, t('errors.required'));
+    const w = parseFloat(weight.value);
+    if (!weight.value || isNaN(w) || w < 2 || w > 400) {
+        showError(weight, t('errors.weight_range'));
         isValid = false;
+    }
+
+    // Last menses - not in future (only when visible)
+    const lastMenses = step.querySelector('#last_menses');
+    if (lastMenses && lastMenses.value && !lastMenses.closest('.hidden')) {
+        if (new Date(lastMenses.value) > new Date()) {
+            showError(lastMenses.closest('.form-group') || lastMenses, t('errors.date_not_future'));
+            isValid = false;
+        }
+    }
+
+    // HIV CD4 date - not in future (only when visible)
+    const hivDateField = step.querySelector('#hiv_cd4_date');
+    if (hivDateField && hivDateField.value && !hivDateField.closest('.hidden')) {
+        if (new Date(hivDateField.value) > new Date()) {
+            showInlineError(hivDateField, t('errors.date_not_future'));
+            isValid = false;
+        }
+    }
+
+    // HIV CD4 range (only when visible)
+    const hivCd4 = step.querySelector('#hiv_cd4');
+    if (hivCd4 && hivCd4.value && !hivCd4.closest('.hidden')) {
+        const cd4 = parseInt(hivCd4.value);
+        if (cd4 < 0 || cd4 > 5000) {
+            showInlineError(hivCd4, t('errors.cd4_range'));
+            isValid = false;
+        }
     }
 
     // Allergies - at least one checkbox must be selected
@@ -438,12 +519,48 @@ function showError(element, message) {
     }
 }
 
+function showInlineError(element, message) {
+    const container = element.closest('.inline-field') || element;
+    container.classList.add('has-error');
+    let errorSpan = container.querySelector('.error-message');
+    if (!errorSpan) {
+        errorSpan = document.createElement('span');
+        errorSpan.className = 'error-message';
+        errorSpan.style.display = 'block';
+        container.appendChild(errorSpan);
+    }
+    errorSpan.textContent = message;
+    errorSpan.style.display = 'block';
+}
+
+function showWarning(element, message) {
+    const formGroup = element.closest('.form-group') || element.closest('.destination-row') || element;
+    formGroup.classList.add('has-warning');
+    let warningSpan = formGroup.querySelector('.warning-message');
+    if (!warningSpan) {
+        warningSpan = document.createElement('span');
+        warningSpan.className = 'warning-message';
+        formGroup.appendChild(warningSpan);
+    }
+    warningSpan.textContent = message;
+}
+
 function clearErrors() {
     document.querySelectorAll('.has-error').forEach(el => {
         el.classList.remove('has-error');
     });
-    document.querySelectorAll('.error-message').forEach(el => {
+    document.querySelectorAll('.form-group .error-message').forEach(el => {
         el.textContent = '';
+    });
+    // Remove dynamically-created error messages in inline fields
+    document.querySelectorAll('.inline-field .error-message').forEach(el => {
+        el.remove();
+    });
+    document.querySelectorAll('.has-warning').forEach(el => {
+        el.classList.remove('has-warning');
+    });
+    document.querySelectorAll('.warning-message').forEach(el => {
+        el.remove();
     });
 }
 
