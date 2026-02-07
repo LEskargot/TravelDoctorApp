@@ -970,6 +970,35 @@ textarea::placeholder {
   font-size: 14px;
 }
 
+.success-screen .share-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.btn-whatsapp {
+  background: #25d366;
+  color: white;
+  border: 2px solid #25d366;
+}
+
+.btn-whatsapp:hover {
+  background: #1da851;
+  border-color: #1da851;
+}
+
+.btn-email {
+  background: var(--navy);
+  color: white;
+  border: 2px solid var(--navy);
+}
+
+.btn-email:hover {
+  background: #2a4760;
+  border-color: #2a4760;
+}
+
 .success-screen .share-link-box {
   display: flex;
   gap: 10px;

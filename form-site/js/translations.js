@@ -438,7 +438,9 @@ const TRANSLATIONS = {
       connection_error: "Erreur de connexion. Vérifiez votre connexion internet.",
       success_title: "Formulaire envoyé",
       success_message: "Votre formulaire a été envoyé avec succès. Un email de confirmation a été envoyé à:",
-      share_with_travelers: "Vous voyagez avec d'autres personnes ? Partagez ce lien pour qu'elles puissent remplir leur formulaire:",
+      share_with_travelers: "Vous voyagez avec d'autres personnes ? Chacun doit remplir son propre formulaire.",
+      share_message: "On a rendez-vous chez Travel Doctor. Remplis ce formulaire avant la consultation :",
+      share_email_subject: "Formulaire Travel Doctor à remplir",
       link_copied: "Lien copié !",
       no_results: "Aucun résultat trouvé",
       no_files: "Aucun fichier téléversé",
@@ -870,7 +872,9 @@ const TRANSLATIONS = {
       connection_error: "Connection error. Check your internet connection.",
       success_title: "Form submitted",
       success_message: "Your form has been successfully submitted. A confirmation email has been sent to:",
-      share_with_travelers: "Traveling with others? Share this link so they can fill out their form:",
+      share_with_travelers: "Traveling with others? Everyone needs to fill out their own form.",
+      share_message: "We have an appointment at Travel Doctor. Fill out this form before we go:",
+      share_email_subject: "Travel Doctor form to fill out",
       link_copied: "Link copied!"
     },
 
@@ -913,7 +917,8 @@ const TRANSLATIONS = {
       not_applicable: "Non applicabile",
       optional: "Facoltativo",
       dont_know: "Non so",
-      back_to_site: "Torna al sito"
+      back_to_site: "Torna al sito",
+      copy_link: "Copia link"
     },
 
     // Step 1: Identity
@@ -1306,6 +1311,10 @@ const TRANSLATIONS = {
       connection_error: "Errore di connessione. Verifichi la connessione internet.",
       success_title: "Modulo inviato",
       success_message: "Il modulo è stato inviato con successo. Un'email di conferma è stata inviata a:",
+      share_with_travelers: "Viaggia con altre persone? Ognuno deve compilare il proprio modulo.",
+      share_message: "Abbiamo un appuntamento da Travel Doctor. Compila questo modulo prima della consultazione:",
+      share_email_subject: "Modulo Travel Doctor da compilare",
+      link_copied: "Link copiato!",
       no_results: "Nessun risultato trovato",
       no_files: "Nessun file caricato",
       no_referral: "Nessuna informazione fornita"
@@ -1350,7 +1359,8 @@ const TRANSLATIONS = {
       not_applicable: "No aplica",
       optional: "Opcional",
       dont_know: "No sé",
-      back_to_site: "Volver al sitio"
+      back_to_site: "Volver al sitio",
+      copy_link: "Copiar enlace"
     },
 
     // Step 1: Identity
@@ -1743,6 +1753,10 @@ const TRANSLATIONS = {
       connection_error: "Error de conexión. Verifique su conexión a internet.",
       success_title: "Formulario enviado",
       success_message: "Su formulario ha sido enviado con éxito. Se ha enviado un email de confirmación a:",
+      share_with_travelers: "¿Viaja con otras personas? Cada uno debe completar su propio formulario.",
+      share_message: "Tenemos cita en Travel Doctor. Completa este formulario antes de la consulta:",
+      share_email_subject: "Formulario Travel Doctor para completar",
+      link_copied: "¡Enlace copiado!",
       no_results: "No se encontraron resultados",
       no_files: "No se han subido archivos",
       no_referral: "No se proporcionó información"
