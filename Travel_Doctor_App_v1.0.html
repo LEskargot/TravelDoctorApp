@@ -206,6 +206,10 @@
         .no-forms-message { text-align: center; padding: 40px; color: #666; }
         .refresh-btn { background: #f5f5f5; border: 1px solid #ddd; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; }
         .refresh-btn:hover { background: #e0e0e0; }
+        .send-form-btn { background: #1565C0; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; margin-top: 4px; display: inline-flex; align-items: center; gap: 4px; }
+        .send-form-btn:hover { background: #0d47a1; }
+        .send-form-btn:disabled { background: #a5d6a7; color: #2e7d32; cursor: default; }
+        .send-form-btn.sending { background: #90a4ae; cursor: wait; }
 
         /* PATIENT HISTORY TIMELINE MODAL */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: flex; align-items: center; justify-content: center; }
@@ -1872,7 +1876,8 @@ function renderAppointmentCard(item) {
         const evtIdx = _calendarEventDataStore.push(item) - 1;
         clickAction = `onclick="selectCalendarEvent(_calendarEventDataStore[${evtIdx}])"`;
 
-        statusBadge = '<span class="form-card-badge badge-awaiting-form">⏳ EN ATTENTE DU FORMULAIRE</span>';
+        const sendBtn1b = item.email ? `<button class="send-form-btn" onclick="event.stopPropagation(); sendFormInvitation(this, _calendarEventDataStore[${evtIdx}])">📧 Envoyer le formulaire</button>` : '';
+        statusBadge = '<span class="form-card-badge badge-awaiting-form">⏳ EN ATTENTE DU FORMULAIRE</span>' + sendBtn1b;
         const dob = item.dob ? formatDateDisplay(item.dob) : '';
         details = `
             ${dob ? `<span>📅 ${dob}</span>` : ''}
@@ -1884,7 +1889,8 @@ function renderAppointmentCard(item) {
         const evtIdx = _calendarEventDataStore.push(item) - 1;
         clickAction = `onclick="selectCalendarEvent(_calendarEventDataStore[${evtIdx}])"`;
 
-        statusBadge = '<span class="form-card-badge badge-awaiting-form">⏳ EN ATTENTE DU FORMULAIRE</span>';
+        const sendBtn2 = item.email ? `<button class="send-form-btn" onclick="event.stopPropagation(); sendFormInvitation(this, _calendarEventDataStore[${evtIdx}])">📧 Envoyer le formulaire</button>` : '';
+        statusBadge = '<span class="form-card-badge badge-awaiting-form">⏳ EN ATTENTE DU FORMULAIRE</span>' + sendBtn2;
         const dob = item.dob ? formatDateDisplay(item.dob) : '';
         details = `
             ${dob ? `<span>📅 ${dob}</span>` : ''}
@@ -1929,6 +1935,44 @@ function renderAppointmentCard(item) {
             </div>
         </div>
     `;
+}
+
+async function sendFormInvitation(btn, eventData) {
+    if (btn.disabled) return;
+
+    btn.disabled = true;
+    btn.classList.add('sending');
+    btn.textContent = '⏳ Envoi...';
+
+    try {
+        const response = await fetch(`${FORM_API_URL}/send-form-invitation.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: eventData.email,
+                patient_name: eventData.patient_name,
+                dob: eventData.dob || '',
+                phone: eventData.phone || '',
+                appointment_date: eventData.appointment_date || '',
+                appointment_time: eventData.appointment_time || '',
+                form_id: eventData.form_id || ''
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            btn.classList.remove('sending');
+            btn.textContent = '✅ Envoyé';
+        } else {
+            throw new Error(data.error || 'Erreur');
+        }
+    } catch (error) {
+        console.error('Error sending invitation:', error);
+        btn.classList.remove('sending');
+        btn.disabled = false;
+        btn.textContent = '❌ Erreur - Réessayer';
+    }
 }
 
 async function selectPendingForm(formId) {
