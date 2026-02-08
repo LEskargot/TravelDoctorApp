@@ -96,6 +96,7 @@ $formsResponse = pbRequest(
 // Build lookup of forms by email and by normalized name
 $formsByEmail = [];
 $formsByName = [];
+$formsByNameDob = []; // "normalized_name|YYYY-MM-DD" => formInfo
 $formsData = []; // form_id => decrypted data
 
 if ($formsResponse && !empty($formsResponse['items'])) {
@@ -112,11 +113,21 @@ if ($formsResponse && !empty($formsResponse['items'])) {
             $email = $formData['email'] ?? '';
         }
 
+        // Extract DOB from form data
+        $birthdate = $formData['birthdate'] ?? '';
+        $dobIso = '';
+        if (!empty($birthdate)) {
+            $ts = strtotime($birthdate);
+            if ($ts) $dobIso = date('Y-m-d', $ts);
+        }
+
         $formInfo = [
             'id' => $item['id'],
             'patient_name' => $patientName,
             'status' => $item['status'],
-            'source' => $item['source']
+            'source' => $item['source'],
+            'dob' => $dobIso,
+            'email' => $email
         ];
 
         $formsData[$item['id']] = $formInfo;
@@ -129,6 +140,12 @@ if ($formsResponse && !empty($formsResponse['items'])) {
         if (!empty($patientName)) {
             $nameKey = normalizeString($patientName);
             $formsByName[$nameKey] = $formInfo;
+        }
+
+        // Composite name+DOB lookup for stronger matching
+        if (!empty($patientName) && !empty($dobIso)) {
+            $nameKey = normalizeString($patientName);
+            $formsByNameDob[$nameKey . '|' . $dobIso] = $formInfo;
         }
     }
 }
@@ -152,9 +169,20 @@ foreach ($calendarEvents as $event) {
         }
     }
 
-    // If no email match, try name match
+    // If no email match, try name + DOB composite match (strong)
+    if (!$formId && !empty($event['patient_name']) && !empty($event['dob'])) {
+        $cleanName = preg_replace('/^\[OD\]\s*-?\s*/i', '', $event['patient_name']);
+        $compositeKey = normalizeString($cleanName) . '|' . $event['dob'];
+        if (isset($formsByNameDob[$compositeKey])) {
+            $match = $formsByNameDob[$compositeKey];
+            $formId = $match['id'];
+            $formStatus = $match['status'];
+            $matchedFormIds[] = $formId;
+        }
+    }
+
+    // Fallback: name-only match
     if (!$formId && !empty($event['patient_name'])) {
-        // Strip common prefixes like "[OD] - " from calendar event titles
         $cleanName = preg_replace('/^\[OD\]\s*-?\s*/i', '', $event['patient_name']);
         $nameKey = normalizeString($cleanName);
         if (isset($formsByName[$nameKey])) {

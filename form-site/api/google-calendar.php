@@ -192,8 +192,11 @@ function parseCalendarEvent($item) {
     // Parse description for patient details
     $parsed = parseEventDescription($description);
 
-    // Patient name from event summary (title), strip [OD] prefix
-    $patientName = trim(preg_replace('/^\[OD\]\s*-?\s*/i', '', $summary));
+    // Patient name from description (structured OneDoc block), fall back to title
+    $patientName = $parsed['patient_name'];
+    if (empty($patientName)) {
+        $patientName = trim(preg_replace('/^\[OD\]\s*-?\s*/i', '', $summary));
+    }
 
     return [
         'patient_name' => $patientName,
@@ -214,6 +217,7 @@ function parseCalendarEvent($item) {
  */
 function parseEventDescription($text) {
     $result = [
+        'patient_name' => '',
         'sex' => '',
         'dob' => '',
         'email' => '',
@@ -228,6 +232,28 @@ function parseEventDescription($text) {
     $text = strip_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $text));
     // Decode HTML entities
     $text = html_entity_decode($text, ENT_QUOTES, 'UTF-8');
+
+    // Parse structured [OneDoc] block:
+    // [OneDoc]\nAppointment type\n----------\nFirstName\nLastName\nsex\nDOB\nemail\nphone\n[/OneDoc]
+    if (preg_match('/\[OneDoc\](.*?)\[\/OneDoc\]/si', $text, $block)) {
+        $lines = array_values(array_filter(array_map('trim', explode("\n", $block[1])), function($l) {
+            return $l !== '';
+        }));
+        // Find separator line position
+        $sepIndex = -1;
+        foreach ($lines as $i => $line) {
+            if (preg_match('/^-{3,}$/', $line)) {
+                $sepIndex = $i;
+                break;
+            }
+        }
+        // After separator: firstName, lastName, sex, DOB, email, phone
+        if ($sepIndex >= 0 && isset($lines[$sepIndex + 1], $lines[$sepIndex + 2])) {
+            $firstName = $lines[$sepIndex + 1];
+            $lastName = $lines[$sepIndex + 2];
+            $result['patient_name'] = trim($firstName . ' ' . $lastName);
+        }
+    }
 
     // Email: standard email pattern
     if (preg_match('/[\w.+-]+@[\w.-]+\.\w{2,}/', $text, $m)) {
