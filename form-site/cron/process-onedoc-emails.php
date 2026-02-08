@@ -185,6 +185,17 @@ function processEmail($email) {
     logMessage("  - Consultation: " . $patientData['consultation_type']);
     logMessage("  - Travel notes: " . $patientData['travel_notes']);
 
+    // Skip vaccine administration / booster-only appointments (patient already has a file)
+    $skipTypes = ['vaccine administration', 'administration vaccins'];
+    $consultType = strtolower(trim($patientData['consultation_type']));
+    foreach ($skipTypes as $skipType) {
+        if (stripos($consultType, $skipType) !== false) {
+            logMessage("Skipping booster/vaccine administration appointment: " . $patientData['consultation_type']);
+            $email->setFlag('Seen');
+            return;
+        }
+    }
+
     if (empty($patientData['email'])) {
         throw new Exception("Could not extract patient email");
     }
