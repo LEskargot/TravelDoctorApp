@@ -155,6 +155,12 @@ function fetchCalendarEvents($calendarId, $dateFrom, $dateTo = null) {
             continue;
         }
 
+        // Only include OneDoc events (title starts with [OD])
+        $summary = $item['summary'] ?? '';
+        if (stripos($summary, '[OD]') !== 0) {
+            continue;
+        }
+
         $parsed = parseCalendarEvent($item);
         if ($parsed) {
             $events[] = $parsed;
