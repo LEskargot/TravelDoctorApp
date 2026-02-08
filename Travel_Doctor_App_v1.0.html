@@ -1638,6 +1638,8 @@ async function showPendingForms() {
 }
 
 let calendarEvents = [];
+let calendarMatchedFormIds = []; // Form IDs matched to current location's calendar
+let calendarConfigured = false;
 
 async function loadPendingForms() {
     const listContainer = document.getElementById('pendingFormsList');
@@ -1659,11 +1661,15 @@ async function loadPendingForms() {
 
         // Parse calendar data (non-blocking — graceful fallback)
         calendarEvents = [];
+        calendarMatchedFormIds = [];
+        calendarConfigured = false;
         if (calRes && calRes.ok) {
             try {
                 const calData = await calRes.json();
                 if (calData.success && calData.events) {
                     calendarEvents = calData.events;
+                    calendarMatchedFormIds = calData.matched_form_ids || [];
+                    calendarConfigured = calData.calendar_configured || false;
                 }
             } catch (e) {
                 console.warn('Calendar parse error:', e);
@@ -1798,9 +1804,18 @@ function buildMergedAppointmentList(forms, calEvents) {
         merged.push(item);
     });
 
-    // Add unmatched forms as "walk-ins" (Sans RDV)
+    // Add unmatched forms
+    // When calendar is configured, only show forms that are:
+    //   - matched to THIS location's calendar (already added above)
+    //   - NOT matched to any calendar event AND have no appointment date (true walk-ins)
+    // Forms with appointment dates but no calendar match likely belong to another location
     forms.forEach(form => {
         if (!matchedFormIds.has(form.id)) {
+            // Skip forms that have an appointment date when calendar is active
+            // (they likely belong to another location's calendar)
+            if (calendarConfigured && form.appointment_date) {
+                return;
+            }
             merged.push({
                 type: 'form_only',
                 patient_name: form.patient_name,

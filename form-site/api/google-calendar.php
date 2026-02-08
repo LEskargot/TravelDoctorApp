@@ -91,28 +91,33 @@ function getGoogleAccessToken() {
 }
 
 /**
- * Fetch calendar events for a specific date
+ * Fetch calendar events for a date range
  * @param string $calendarId Google Calendar ID
- * @param string $date Date in Y-m-d format
+ * @param string $dateFrom Start date in Y-m-d format
+ * @param string|null $dateTo End date in Y-m-d format (defaults to same as dateFrom)
  * @return array|null Array of parsed events, or null on error
  */
-function fetchCalendarEvents($calendarId, $date) {
+function fetchCalendarEvents($calendarId, $dateFrom, $dateTo = null) {
     $token = getGoogleAccessToken();
     if (!$token) {
         return null;
     }
 
-    // Build time range for the requested date in Europe/Zurich timezone
+    if (!$dateTo) {
+        $dateTo = $dateFrom;
+    }
+
+    // Build time range in Europe/Zurich timezone
     $tz = new DateTimeZone('Europe/Zurich');
-    $dayStart = new DateTime("$date 00:00:00", $tz);
-    $dayEnd = new DateTime("$date 23:59:59", $tz);
+    $dayStart = new DateTime("$dateFrom 00:00:00", $tz);
+    $dayEnd = new DateTime("$dateTo 23:59:59", $tz);
 
     $params = http_build_query([
         'timeMin' => $dayStart->format('c'),
         'timeMax' => $dayEnd->format('c'),
         'singleEvents' => 'true',
         'orderBy' => 'startTime',
-        'maxResults' => 50
+        'maxResults' => 250
     ]);
 
     $url = 'https://www.googleapis.com/calendar/v3/calendars/' . urlencode($calendarId) . "/events?$params";
@@ -181,8 +186,8 @@ function parseCalendarEvent($item) {
     // Parse description for patient details
     $parsed = parseEventDescription($description);
 
-    // Patient name from event summary (title)
-    $patientName = trim($summary);
+    // Patient name from event summary (title), strip [OD] prefix
+    $patientName = trim(preg_replace('/^\[OD\]\s*-?\s*/i', '', $summary));
 
     return [
         'patient_name' => $patientName,

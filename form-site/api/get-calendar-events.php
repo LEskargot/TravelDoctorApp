@@ -34,11 +34,14 @@ if (empty($locationId)) {
     exit;
 }
 
-// Default to today in Europe/Zurich timezone
-$date = $_GET['date'] ?? (new DateTime('now', new DateTimeZone('Europe/Zurich')))->format('Y-m-d');
+// Date range: defaults to today → +30 days (Europe/Zurich)
+$tz = new DateTimeZone('Europe/Zurich');
+$today = (new DateTime('now', $tz))->format('Y-m-d');
+$dateFrom = $_GET['date_from'] ?? $today;
+$dateTo = $_GET['date_to'] ?? (new DateTime('+30 days', $tz))->format('Y-m-d');
 
 // Validate date format
-if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo)) {
     http_response_code(400);
     echo json_encode(['error' => 'Invalid date format. Use YYYY-MM-DD']);
     exit;
@@ -73,8 +76,8 @@ if (empty($calendarId)) {
     exit;
 }
 
-// Fetch calendar events
-$calendarEvents = fetchCalendarEvents($calendarId, $date);
+// Fetch calendar events for the date range
+$calendarEvents = fetchCalendarEvents($calendarId, $dateFrom, $dateTo);
 if ($calendarEvents === null) {
     // Calendar API error — return gracefully so the UI can fall back to forms-only
     echo json_encode(['success' => true, 'events' => [], 'calendar_error' => true]);
@@ -151,7 +154,9 @@ foreach ($calendarEvents as $event) {
 
     // If no email match, try name match
     if (!$formId && !empty($event['patient_name'])) {
-        $nameKey = normalizeString($event['patient_name']);
+        // Strip common prefixes like "[OD] - " from calendar event titles
+        $cleanName = preg_replace('/^\[OD\]\s*-?\s*/i', '', $event['patient_name']);
+        $nameKey = normalizeString($cleanName);
         if (isset($formsByName[$nameKey])) {
             $match = $formsByName[$nameKey];
             $formId = $match['id'];
