@@ -193,7 +193,14 @@
         .form-card-badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
         .badge-known { background: #e3f2fd; color: #1565C0; }
         .badge-new { background: #fff3e0; color: #e65100; }
+        .badge-draft { background: #fce4ec; color: #c62828; }
+        .badge-form-received { background: #e8f5e9; color: #2e7d32; }
+        .badge-awaiting-form { background: #fff3e0; color: #e65100; }
+        .form-card.draft-card { border-left: 3px solid #ef9a9a; opacity: 0.85; }
+        .form-card.awaiting-card { border-left: 3px solid #ffb74d; opacity: 0.9; cursor: pointer; }
+        .form-card.awaiting-card:hover { border-color: #ff9800; }
         .form-card-date { font-size: 12px; color: #999; }
+        .form-date-header { font-size: 15px; font-weight: 600; color: #36597A; padding: 10px 0 6px; margin-top: 8px; border-bottom: 2px solid #e0e0e0; margin-bottom: 10px; }
         .manual-entry-btn { background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%); color: white; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
         .manual-entry-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(67,160,71,0.3); }
         .no-forms-message { text-align: center; padding: 40px; color: #666; }
@@ -1630,19 +1637,39 @@ async function showPendingForms() {
     await loadPendingForms();
 }
 
+let calendarEvents = [];
+
 async function loadPendingForms() {
     const listContainer = document.getElementById('pendingFormsList');
     listContainer.innerHTML = '<div class="no-forms-message"><p>⏳ Chargement des formulaires...</p></div>';
 
     try {
-        const response = await fetch(`${FORM_API_URL}/get-pending-forms.php`);
-        const data = await response.json();
+        // Fetch pending forms and calendar events in parallel
+        const [formsRes, calRes] = await Promise.all([
+            fetch(`${FORM_API_URL}/get-pending-forms.php`),
+            fetch(`${FORM_API_URL}/get-calendar-events.php?location_id=${currentLocation}`)
+                .catch(err => { console.warn('Calendar fetch failed:', err); return null; })
+        ]);
 
-        if (!data.success) {
-            throw new Error(data.error || 'Erreur lors du chargement');
+        const formsData = await formsRes.json();
+        if (!formsData.success) {
+            throw new Error(formsData.error || 'Erreur lors du chargement');
+        }
+        pendingForms = formsData.forms || [];
+
+        // Parse calendar data (non-blocking — graceful fallback)
+        calendarEvents = [];
+        if (calRes && calRes.ok) {
+            try {
+                const calData = await calRes.json();
+                if (calData.success && calData.events) {
+                    calendarEvents = calData.events;
+                }
+            } catch (e) {
+                console.warn('Calendar parse error:', e);
+            }
         }
 
-        pendingForms = data.forms || [];
         renderPendingForms();
     } catch (error) {
         console.error('Error loading pending forms:', error);
@@ -1658,12 +1685,19 @@ function renderPendingForms() {
     const listContainer = document.getElementById('pendingFormsList');
     const searchTerm = (document.getElementById('formSearchInput').value || '').toLowerCase();
 
-    let filtered = pendingForms;
+    // Reset calendar event data store for onclick handlers
+    _calendarEventDataStore = [];
+
+    // Merge calendar events with pending forms
+    // Calendar events are the schedule backbone; forms without calendar match are "walk-ins"
+    const mergedItems = buildMergedAppointmentList(pendingForms, calendarEvents);
+
+    let filtered = mergedItems;
     if (searchTerm) {
-        filtered = pendingForms.filter(form =>
-            (form.patient_name || '').toLowerCase().includes(searchTerm) ||
-            (form.birthdate || '').includes(searchTerm) ||
-            (form.avs || '').includes(searchTerm)
+        filtered = mergedItems.filter(item =>
+            (item.patient_name || '').toLowerCase().includes(searchTerm) ||
+            (item.birthdate || item.dob || '').includes(searchTerm) ||
+            (item.avs || '').includes(searchTerm)
         );
     }
 
@@ -1672,32 +1706,214 @@ function renderPendingForms() {
         return;
     }
 
-    let html = '';
-    filtered.forEach(form => {
-        const submittedDate = form.submitted_at ? new Date(form.submitted_at).toLocaleDateString('fr-CH') : '-';
-        const birthdate = form.birthdate ? formatDateDisplay(form.birthdate) : '-';
-        const badgeClass = form.is_known_patient ? 'badge-known' : 'badge-new';
-        const badgeText = form.is_known_patient ? '⚡ CONNU' : '🆕 NOUVEAU';
+    // Group by appointment date
+    const groups = {};
+    const noDateKey = '__no_date__';
+    filtered.forEach(item => {
+        const key = item.appointment_date || noDateKey;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(item);
+    });
 
-        html += `
-            <div class="form-card" onclick="selectPendingForm('${form.id}')">
-                <div class="form-card-info">
-                    <div class="form-card-name">${escapeHtml(form.patient_name || 'Sans nom')}</div>
-                    <div class="form-card-details">
-                        <span>📅 ${birthdate}</span>
-                        <span>🌍 ${escapeHtml(form.destination || '-')}</span>
-                        ${form.avs ? `<span>🆔 ${escapeHtml(form.avs)}</span>` : ''}
-                    </div>
-                </div>
-                <div style="text-align: right;">
-                    <span class="form-card-badge ${badgeClass}">${badgeText}</span>
-                    <div class="form-card-date">Reçu le ${submittedDate}</div>
-                </div>
-            </div>
-        `;
+    // Sort date keys chronologically, no-date last
+    const sortedKeys = Object.keys(groups).sort((a, b) => {
+        if (a === noDateKey) return 1;
+        if (b === noDateKey) return -1;
+        return a.localeCompare(b);
+    });
+
+    const today = new Date().toISOString().slice(0, 10);
+
+    let html = '';
+    sortedKeys.forEach(dateKey => {
+        // Date group header
+        let headerLabel;
+        if (dateKey === noDateKey) {
+            headerLabel = 'Sans RDV (walk-in)';
+        } else {
+            const [y, m, d] = dateKey.split('-');
+            const dateStr = `${d}.${m}.${y}`;
+            if (dateKey === today) {
+                headerLabel = `📌 Aujourd'hui — ${dateStr}`;
+            } else if (dateKey < today) {
+                headerLabel = `⚠️ ${dateStr} (passé)`;
+            } else {
+                headerLabel = `📅 ${dateStr}`;
+            }
+        }
+        html += `<div class="form-date-header">${headerLabel}</div>`;
+
+        // Sort items within group by appointment time
+        groups[dateKey].sort((a, b) => (a.appointment_time || '99:99').localeCompare(b.appointment_time || '99:99'));
+
+        groups[dateKey].forEach(item => {
+            html += renderAppointmentCard(item);
+        });
     });
 
     listContainer.innerHTML = html;
+}
+
+/**
+ * Merge calendar events with pending forms into a unified list
+ * Calendar events matched to forms get enriched; unmatched forms become "walk-ins"
+ */
+function buildMergedAppointmentList(forms, calEvents) {
+    const merged = [];
+    const matchedFormIds = new Set();
+
+    // Process calendar events first (they define the schedule)
+    calEvents.forEach(evt => {
+        const item = {
+            type: 'calendar',
+            patient_name: evt.patient_name,
+            appointment_date: evt.appointment_date,
+            appointment_time: evt.appointment_time,
+            dob: evt.dob || '',
+            sex: evt.sex || '',
+            email: evt.email || '',
+            phone: evt.phone || '',
+            form_id: evt.form_id || null,
+            form_status: evt.form_status || null,
+            is_known_patient: evt.is_known_patient || false,
+            existing_patient_id: evt.existing_patient_id || null,
+            calendar_event_id: evt.calendar_event_id || ''
+        };
+
+        if (evt.form_id) {
+            matchedFormIds.add(evt.form_id);
+            // Enrich with form data (destination, AVS, birthdate)
+            const form = forms.find(f => f.id === evt.form_id);
+            if (form) {
+                item.birthdate = form.birthdate || item.dob;
+                item.destination = form.destination || '';
+                item.avs = form.avs || '';
+                item.source = form.source;
+                // Prefer form's known-patient info (more reliable, uses AVS match)
+                item.is_known_patient = form.is_known_patient;
+                item.existing_patient_id = form.existing_patient_id || item.existing_patient_id;
+            }
+        }
+
+        merged.push(item);
+    });
+
+    // Add unmatched forms as "walk-ins" (Sans RDV)
+    forms.forEach(form => {
+        if (!matchedFormIds.has(form.id)) {
+            merged.push({
+                type: 'form_only',
+                patient_name: form.patient_name,
+                appointment_date: form.appointment_date || '',
+                appointment_time: form.appointment_time || '',
+                birthdate: form.birthdate || '',
+                destination: form.destination || '',
+                avs: form.avs || '',
+                form_id: form.id,
+                form_status: form.status,
+                is_known_patient: form.is_known_patient,
+                existing_patient_id: form.existing_patient_id,
+                source: form.source
+            });
+        }
+    });
+
+    return merged;
+}
+
+// Temporary storage for calendar event data (used by onclick handlers)
+let _calendarEventDataStore = [];
+
+/**
+ * Render a single appointment card (calendar event, matched form, or walk-in)
+ */
+function renderAppointmentCard(item) {
+    const apptTime = item.appointment_time ? `🕐 ${item.appointment_time}` : '';
+    const name = escapeHtml(item.patient_name || 'Sans nom');
+
+    // Determine visual state
+    let cardClass, clickAction, statusBadge, details;
+
+    if (item.form_id && item.form_status === 'submitted') {
+        // STATE 1: Calendar + submitted form → green, clickable
+        cardClass = 'form-card';
+        clickAction = `onclick="selectPendingForm('${item.form_id}')"`;
+        if (item.is_known_patient) {
+            statusBadge = '<span class="form-card-badge badge-form-received">✅ FORMULAIRE REÇU</span>' +
+                          ' <span class="form-card-badge badge-known">⚡ CONNU</span>';
+        } else {
+            statusBadge = '<span class="form-card-badge badge-form-received">✅ FORMULAIRE REÇU</span>' +
+                          ' <span class="form-card-badge badge-new">🆕 NOUVEAU</span>';
+        }
+        const birthdate = item.birthdate ? formatDateDisplay(item.birthdate) : '';
+        details = `
+            ${birthdate ? `<span>📅 ${birthdate}</span>` : ''}
+            ${item.destination ? `<span>🌍 ${escapeHtml(item.destination)}</span>` : ''}
+            ${item.avs ? `<span>🆔 ${escapeHtml(item.avs)}</span>` : ''}
+        `;
+    } else if (item.form_id && item.form_status === 'draft') {
+        // STATE 1b: Calendar + draft form → orange, clickable to start from calendar data
+        cardClass = 'form-card awaiting-card';
+        const evtIdx = _calendarEventDataStore.push(item) - 1;
+        clickAction = `onclick="selectCalendarEvent(_calendarEventDataStore[${evtIdx}])"`;
+
+        statusBadge = '<span class="form-card-badge badge-awaiting-form">⏳ EN ATTENTE DU FORMULAIRE</span>';
+        const dob = item.dob ? formatDateDisplay(item.dob) : '';
+        details = `
+            ${dob ? `<span>📅 ${dob}</span>` : ''}
+            ${item.email ? `<span>📧 ${escapeHtml(item.email)}</span>` : ''}
+        `;
+    } else if (item.type === 'calendar' && !item.form_id) {
+        // STATE 2: Calendar event only, no form at all → orange, clickable
+        cardClass = 'form-card awaiting-card';
+        const evtIdx = _calendarEventDataStore.push(item) - 1;
+        clickAction = `onclick="selectCalendarEvent(_calendarEventDataStore[${evtIdx}])"`;
+
+        statusBadge = '<span class="form-card-badge badge-awaiting-form">⏳ EN ATTENTE DU FORMULAIRE</span>';
+        const dob = item.dob ? formatDateDisplay(item.dob) : '';
+        details = `
+            ${dob ? `<span>📅 ${dob}</span>` : ''}
+            ${item.email ? `<span>📧 ${escapeHtml(item.email)}</span>` : ''}
+        `;
+    } else if (item.type === 'form_only' && item.form_status === 'draft') {
+        // Form-only draft (no calendar match) — existing behavior
+        cardClass = 'form-card draft-card';
+        clickAction = '';
+        statusBadge = '<span class="form-card-badge badge-draft">📝 EN ATTENTE</span>';
+        const birthdate = item.birthdate ? formatDateDisplay(item.birthdate) : '';
+        details = `
+            ${birthdate ? `<span>📅 ${birthdate}</span>` : ''}
+            ${item.destination ? `<span>🌍 ${escapeHtml(item.destination)}</span>` : ''}
+        `;
+    } else {
+        // STATE 3: Form-only submitted (walk-in, sans RDV) — existing behavior
+        cardClass = 'form-card';
+        clickAction = item.form_id ? `onclick="selectPendingForm('${item.form_id}')"` : '';
+        if (item.is_known_patient) {
+            statusBadge = '<span class="form-card-badge badge-known">⚡ CONNU</span>';
+        } else {
+            statusBadge = '<span class="form-card-badge badge-new">🆕 NOUVEAU</span>';
+        }
+        const birthdate = item.birthdate ? formatDateDisplay(item.birthdate) : '';
+        details = `
+            ${birthdate ? `<span>📅 ${birthdate}</span>` : ''}
+            ${item.destination ? `<span>🌍 ${escapeHtml(item.destination)}</span>` : ''}
+            ${item.avs ? `<span>🆔 ${escapeHtml(item.avs)}</span>` : ''}
+        `;
+    }
+
+    return `
+        <div class="${cardClass}" ${clickAction}>
+            <div class="form-card-info">
+                <div class="form-card-name">${name}</div>
+                <div class="form-card-details">${details}</div>
+            </div>
+            <div style="text-align: right;">
+                ${statusBadge}
+                ${apptTime ? `<div class="form-card-date">${apptTime}</div>` : ''}
+            </div>
+        </div>
+    `;
 }
 
 async function selectPendingForm(formId) {
@@ -1743,6 +1959,48 @@ async function selectPendingForm(formId) {
         console.error('Error loading form:', error);
         alert('Erreur lors du chargement du formulaire: ' + error.message);
     }
+}
+
+/**
+ * Handle click on a calendar event without a submitted form
+ * Pre-populates patient fields from calendar data and starts manual-entry mode
+ */
+function selectCalendarEvent(eventData) {
+    consultationMode = 'new_patient';
+    selectedFormData = null;
+    selectedPatientId = eventData.existing_patient_id || null;
+    selectedPatientData = null;
+    loadedPatientJSON = null;
+
+    if (eventData.is_known_patient && eventData.existing_patient_id) {
+        consultationMode = 'known_patient_new_voyage';
+        // Load patient history in the background
+        loadPatientHistoryFromDb(eventData.existing_patient_id);
+    }
+
+    // Hide pending forms, show app
+    document.getElementById('pendingFormsScreen').classList.add('hidden');
+    document.getElementById('appContent').style.display = 'block';
+    document.getElementById('appUserName').textContent = currentUser || '';
+    document.getElementById('appLocationBadge').textContent = currentLocationName || '';
+
+    // Pre-populate fields from calendar data
+    document.getElementById('manualName').value = eventData.patient_name || '';
+    document.getElementById('manualDob').value = eventData.dob || '';
+    document.getElementById('manualEmail').value = eventData.email || '';
+    document.getElementById('manualPhone').value = eventData.phone || '';
+
+    // Set sex if available
+    if (eventData.sex) {
+        const sexSelect = document.getElementById('manualSex');
+        if (sexSelect) {
+            const sexValue = eventData.sex === 'Homme' ? 'male' : eventData.sex === 'Femme' ? 'female' : '';
+            if (sexValue) sexSelect.value = sexValue;
+        }
+    }
+
+    updateCalculatedAge();
+    startChronometer();
 }
 
 function populateFromOnlineForm(formData) {
@@ -1816,9 +2074,13 @@ function populateFromOnlineForm(formData) {
             grossesse: fd.pregnancy === 'yes' ? true : (fd.pregnancy === 'no' ? false : null),
             contraception: null,
             allaitement: fd.breastfeeding === 'yes' ? true : (fd.breastfeeding === 'no' ? false : null),
-            allergieOeufs: null,
-            autresAllergies: fd.allergies === 'yes' ? ['Oui'] : [],
-            allergiesDetails: fd.allergies_details || '',
+            allergieOeufs: fd.allergy_types && fd.allergy_types.includes('oeufs') ? (fd.allergy_detail_oeufs || 'Oui') : null,
+            autresAllergies: fd.allergy_types ? fd.allergy_types.filter(t => t !== 'oeufs' && t !== 'aucune') : [],
+            allergiesDetails: fd.allergy_types ? fd.allergy_types.filter(t => t !== 'oeufs' && t !== 'aucune').map(t => {
+                const label = {medicaments: 'Médicaments', aliments: 'Aliments', environnement: 'Environnement', autre: 'Autre'}[t] || t;
+                const detail = fd['allergy_detail_' + t];
+                return detail ? label + ': ' + detail : label;
+            }).join('; ') : '',
             varicelleContractee: null,
             varicelleVaccine: null,
             problemeVaccination: null,

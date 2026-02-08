@@ -1,7 +1,9 @@
 <?php
 /**
  * Get Pending Forms API
- * Returns list of submitted forms awaiting processing
+ * Returns list of forms awaiting processing:
+ * - Submitted forms (patient has filled in the form)
+ * - OneDoc draft forms (patient has appointment but hasn't filled form yet)
  * Decrypts patient name and basic info for display
  */
 
@@ -32,13 +34,11 @@ if (!$adminToken) {
 
 // Get query parameters
 $search = $_GET['search'] ?? '';
-$page = max(1, intval($_GET['page'] ?? 1));
-$perPage = min(50, max(10, intval($_GET['perPage'] ?? 20)));
 
-// Fetch submitted forms (not yet processed)
-$filter = urlencode("status = 'submitted'");
+// Fetch submitted forms + onedoc drafts (not yet processed)
+$filter = urlencode("status = 'submitted' || (source = 'onedoc' && status = 'draft')");
 $response = pbRequest(
-    "/api/collections/patient_forms/records?filter={$filter}&sort=-submitted_at&page={$page}&perPage={$perPage}",
+    "/api/collections/patient_forms/records?filter={$filter}&sort=-created&perPage=50",
     'GET',
     null,
     $adminToken
@@ -49,6 +49,12 @@ if (!$response || isset($response['code'])) {
     echo json_encode(['error' => 'Erreur lors de la récupération des formulaires']);
     exit;
 }
+
+// French month names for parsing appointment dates
+$frenchMonths = [
+    'janvier'=>1,'février'=>2,'mars'=>3,'avril'=>4,'mai'=>5,'juin'=>6,
+    'juillet'=>7,'août'=>8,'septembre'=>9,'octobre'=>10,'novembre'=>11,'décembre'=>12
+];
 
 $forms = [];
 
@@ -78,6 +84,26 @@ foreach ($response['items'] as $item) {
     // Decrypt AVS if present
     if (!empty($item['avs_encrypted'])) {
         $avs = decryptData($item['avs_encrypted']);
+    }
+
+    // Extract appointment date/time from OneDoc data
+    $appointmentDate = '';
+    $appointmentTime = '';
+    if (!empty($formData['onedoc_appointment'])) {
+        $appt = $formData['onedoc_appointment'];
+        // Format 1: "5 février 2026 12:35" (from email body)
+        if (preg_match('/(\d{1,2})\s+(\w+)\s+(\d{4})\s+(\d{1,2}:\d{2})/', $appt, $am)) {
+            $monthNum = $frenchMonths[strtolower($am[2])] ?? null;
+            if ($monthNum) {
+                $appointmentDate = sprintf('%04d-%02d-%02d', $am[3], $monthNum, $am[1]);
+                $appointmentTime = $am[4];
+            }
+        }
+        // Format 2: "09.03.2026 11:45" (from email subject)
+        elseif (preg_match('/(\d{2})\.(\d{2})\.(\d{4})\s+(\d{1,2}:\d{2})/', $appt, $am)) {
+            $appointmentDate = $am[3] . '-' . $am[2] . '-' . $am[1];
+            $appointmentTime = $am[4];
+        }
     }
 
     // Check if patient exists in patients collection
@@ -156,15 +182,24 @@ foreach ($response['items'] as $item) {
         'avs' => $avs ? substr($avs, 0, 8) . '...' : '', // Partial AVS for display
         'submitted_at' => $item['submitted_at'],
         'source' => $item['source'],
+        'status' => $item['status'],
         'is_known_patient' => $isKnownPatient,
-        'existing_patient_id' => $existingPatientId
+        'existing_patient_id' => $existingPatientId,
+        'appointment_date' => $appointmentDate,
+        'appointment_time' => $appointmentTime
     ];
 }
 
+// Sort by appointment date (chronological), forms without appointment go last
+usort($forms, function($a, $b) {
+    $aDate = $a['appointment_date'] ?: '9999-99-99';
+    $bDate = $b['appointment_date'] ?: '9999-99-99';
+    $aKey = $aDate . ' ' . ($a['appointment_time'] ?: '99:99');
+    $bKey = $bDate . ' ' . ($b['appointment_time'] ?: '99:99');
+    return strcmp($aKey, $bKey);
+});
+
 echo json_encode([
     'success' => true,
-    'forms' => $forms,
-    'total' => $response['totalItems'],
-    'page' => $response['page'],
-    'totalPages' => $response['totalPages']
+    'forms' => $forms
 ]);

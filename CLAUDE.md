@@ -186,6 +186,16 @@ No automated tests. Manual testing required for:
    - Added share link after form submission for fellow travelers
    - Copy link button with confirmation
 
+9. **Form validation feedback UX** ✓ (2026-02-08)
+   - Scroll to first error + focus input on validation failure
+   - Destination date column headers (Country/Departure/Return) with responsive mobile labels
+   - aria-label attributes on date inputs for accessibility
+   - Field hints: birthdate ("past date"), last menses ("past only"), weight ("2-400 kg")
+   - Real-time blur validation for birthdate, weight, last menses, travel dates
+   - "Autre" text fields show required indicator (*) when checkbox is checked
+   - Character counters on all textareas with maxlength (amber near limit)
+   - All hints translated in 4 languages (FR/EN/IT/ES)
+
 ### Pending Tasks
 
 1. ~~**Set up cron job**~~ ✓ Done (2026-02-06) - runs every 15 min
@@ -198,11 +208,31 @@ No automated tests. Manual testing required for:
    - Add Italian/Spanish translations for share link messages
    - Add email notification to practitioner when form is submitted
 
-5. **Switch from KoBoToolbox to internal form** (when app is ready)
+5. **Add 2FA for practitioner login** (Travel Doctor App)
+   - Two-factor authentication required for users logging into the practitioner app
+   - PocketBase supports OTP (one-time password) MFA - investigate built-in support
+
+6. **Switch from KoBoToolbox to internal form** (when app is ready)
    - In `process-onedoc-emails.php`, function `sendFormInvitation()`:
    - Change `$formLink = buildKoboUrl($patientData);`
    - Back to `$formLink = FORM_URL . '/?edit=' . $editToken;`
    - The `buildKoboUrl()` function can then be deleted
+
+7. **Google Calendar integration for appointment schedule** ✓ (code ready, 2026-02-08)
+   - OneDoc pushes bookings to Google Calendar (one per location: Lausanne, Bulle)
+   - Read calendar events via Google Calendar API (service account + JWT, no google/apiclient)
+   - Display today's appointments in "Formulaires en attente" view, grouped by time
+   - Match calendar events with PocketBase forms (by email or name)
+   - 3 visual states: Formulaire reçu (green), En attente du formulaire (orange), Sans RDV
+   - Calendar = real-time schedule, email processing = kept for form invitations (richer data)
+   - **New files**: `form-site/api/google-calendar.php` (JWT auth helper), `form-site/api/get-calendar-events.php` (endpoint)
+   - **Modified files**: `config.php`, `.htaccess`, `Travel_Doctor_App_v1.0.html`
+   - **Setup required before going live**:
+     - Google Cloud project + Calendar API enabled + service account
+     - Share each calendar with service account email (read-only)
+     - Add `google_calendar_id` text field to PocketBase `locations` collection
+     - Service account JSON key file on server (outside web root)
+     - Add `GOOGLE_SERVICE_ACCOUNT_KEY_PATH` to `config-secrets.php`
 
 ### Temporary Workaround (2026-02-06)
 

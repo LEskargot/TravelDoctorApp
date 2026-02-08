@@ -11,6 +11,10 @@
     Require all denied
 </Files>
 
+<Files "google-calendar.php">
+    Require all denied
+</Files>
+
 # Prevent directory listing
 Options -Indexes
 
