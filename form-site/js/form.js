@@ -80,6 +80,12 @@ function initForm() {
 
     // Update placeholders with translations
     updatePlaceholders();
+
+    // Real-time blur validation for key fields
+    initBlurValidation();
+
+    // Character counters on textareas
+    initCharCounters();
 }
 
 /**
@@ -179,6 +185,17 @@ function goToStep(step) {
 function nextStep() {
     if (validateCurrentStep()) {
         goToStep(currentStep + 1);
+    } else {
+        scrollToFirstError();
+    }
+}
+
+function scrollToFirstError() {
+    const firstError = document.querySelector('.form-step.active .has-error');
+    if (firstError) {
+        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const input = firstError.querySelector('input, select, textarea');
+        if (input) input.focus();
     }
 }
 
@@ -767,9 +784,20 @@ function toggleOtherField(checkbox, fieldId) {
     const field = document.getElementById(fieldId);
     if (checkbox.checked) {
         field.classList.remove('hidden');
+        field.setAttribute('required', '');
+        // Add asterisk to placeholder if not already present
+        const placeholder = field.getAttribute('placeholder') || field.dataset.placeholder && t(field.dataset.placeholder) || '';
+        if (placeholder && !placeholder.endsWith(' *')) {
+            field.placeholder = placeholder + ' *';
+        }
     } else {
         field.classList.add('hidden');
         field.value = '';
+        field.removeAttribute('required');
+        // Remove asterisk from placeholder
+        if (field.placeholder && field.placeholder.endsWith(' *')) {
+            field.placeholder = field.placeholder.slice(0, -2);
+        }
     }
 }
 
@@ -814,10 +842,16 @@ function addDestination() {
                 <input type="hidden" class="destination-country" name="destinations[${destinationIndex}][country]">
                 <div class="autocomplete-dropdown"></div>
             </div>
-            <input type="date" class="destination-departure" name="destinations[${destinationIndex}][departure]"
-                   title="${t('travel.departure')}">
-            <input type="date" class="destination-return" name="destinations[${destinationIndex}][return]"
-                   title="${t('travel.return')}">
+            <div class="date-field-wrapper">
+                <label class="mobile-label">${t('travel.departure')}</label>
+                <input type="date" class="destination-departure" name="destinations[${destinationIndex}][departure]"
+                       aria-label="${t('travel.departure')}">
+            </div>
+            <div class="date-field-wrapper">
+                <label class="mobile-label">${t('travel.return')}</label>
+                <input type="date" class="destination-return" name="destinations[${destinationIndex}][return]"
+                       aria-label="${t('travel.return')}">
+            </div>
             <button type="button" class="btn-remove-destination" onclick="removeDestination(this)">
                 &times;
             </button>
@@ -1726,4 +1760,116 @@ if (originalSetLanguage) {
         originalSetLanguage(lang);
         updatePlaceholders();
     };
+}
+
+/**
+ * Real-time blur validation for key fields
+ */
+function initBlurValidation() {
+    // Birthdate blur validation
+    const birthdate = document.getElementById('birthdate');
+    if (birthdate) {
+        birthdate.addEventListener('blur', function() {
+            clearFieldError(this);
+            if (!this.value) return;
+            if (new Date(this.value) > new Date()) {
+                showError(this, t('errors.date_not_future'));
+            } else if (new Date(this.value) < new Date('1900-01-01')) {
+                showError(this, t('errors.invalid_date'));
+            }
+        });
+    }
+
+    // Weight blur validation
+    const weight = document.getElementById('weight');
+    if (weight) {
+        weight.addEventListener('blur', function() {
+            clearFieldError(this);
+            if (!this.value) return;
+            const w = parseFloat(this.value);
+            if (isNaN(w) || w < 2 || w > 400) {
+                showError(this, t('errors.weight_range'));
+            }
+        });
+    }
+
+    // Last menses blur validation
+    const lastMenses = document.getElementById('last_menses');
+    if (lastMenses) {
+        lastMenses.addEventListener('blur', function() {
+            clearFieldError(this);
+            if (!this.value) return;
+            if (new Date(this.value) > new Date()) {
+                showError(this.closest('.form-group') || this, t('errors.date_not_future'));
+            }
+        });
+    }
+
+    // Travel dates blur validation (event delegation)
+    document.addEventListener('blur', function(e) {
+        if (e.target.classList.contains('destination-departure') || e.target.classList.contains('destination-return')) {
+            const row = e.target.closest('.destination-row');
+            if (!row) return;
+
+            // Clear previous warnings/errors on this row
+            row.classList.remove('has-warning');
+            const existingWarning = row.querySelector('.warning-message');
+            if (existingWarning) existingWarning.remove();
+
+            const departure = row.querySelector('.destination-departure');
+            const returnDate = row.querySelector('.destination-return');
+
+            if (departure.value && returnDate.value) {
+                const depDate = new Date(departure.value);
+                const retDate = new Date(returnDate.value);
+
+                if (depDate > retDate) {
+                    showWarning(departure, t('errors.departure_after_return'));
+                    return;
+                }
+
+                const durationDays = (retDate - depDate) / (1000 * 60 * 60 * 24);
+                if (durationDays > 730) {
+                    showWarning(returnDate, t('warnings.long_duration'));
+                }
+            }
+
+            if (departure.value) {
+                const now = new Date();
+                now.setHours(0, 0, 0, 0);
+                if (new Date(departure.value) < now) {
+                    showWarning(departure, t('warnings.date_in_past'));
+                }
+            }
+        }
+    }, true);
+}
+
+/**
+ * Clear error state for a specific field
+ */
+function clearFieldError(element) {
+    const formGroup = element.closest('.form-group');
+    if (formGroup) {
+        formGroup.classList.remove('has-error');
+        const errorSpan = formGroup.querySelector('.error-message');
+        if (errorSpan) errorSpan.textContent = '';
+    }
+}
+
+/**
+ * Character counters for textareas with maxlength
+ */
+function initCharCounters() {
+    document.querySelectorAll('textarea[maxlength]').forEach(textarea => {
+        const max = textarea.getAttribute('maxlength');
+        const counter = document.createElement('span');
+        counter.className = 'char-counter';
+        counter.textContent = `0 / ${max}`;
+        textarea.parentNode.appendChild(counter);
+        textarea.addEventListener('input', () => {
+            counter.textContent = `${textarea.value.length} / ${max}`;
+            counter.classList.toggle('near-limit', textarea.value.length > max * 0.9);
+        });
+    });
 }

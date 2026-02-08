@@ -457,6 +457,13 @@ const TRANSLATIONS = {
       no_referral: "Aucune information fournie"
     },
 
+    // Hints
+    hints: {
+      birthdate_max: "Date dans le passé",
+      date_past_only: "Date dans le passé uniquement",
+      weight_range: "Entre 2 et 400 kg"
+    },
+
     // Misc
     optional: "facultatif",
     loading: "Chargement...",
@@ -896,6 +903,13 @@ const TRANSLATIONS = {
       share_message: "We have an appointment at Travel Doctor. Fill out this form before we go:",
       share_email_subject: "Travel Doctor form to fill out",
       link_copied: "Link copied!"
+    },
+
+    // Hints
+    hints: {
+      birthdate_max: "Date in the past",
+      date_past_only: "Past date only",
+      weight_range: "Between 2 and 400 kg"
     },
 
     // Misc
@@ -1350,6 +1364,13 @@ const TRANSLATIONS = {
       no_referral: "Nessuna informazione fornita"
     },
 
+    // Hints
+    hints: {
+      birthdate_max: "Data nel passato",
+      date_past_only: "Solo data nel passato",
+      weight_range: "Tra 2 e 400 kg"
+    },
+
     // Misc
     optional: "facoltativo",
     loading: "Caricamento...",
@@ -1800,6 +1821,13 @@ const TRANSLATIONS = {
       no_results: "No se encontraron resultados",
       no_files: "No se han subido archivos",
       no_referral: "No se proporcionó información"
+    },
+
+    // Hints
+    hints: {
+      birthdate_max: "Fecha en el pasado",
+      date_past_only: "Solo fecha en el pasado",
+      weight_range: "Entre 2 y 400 kg"
     },
 
     // Misc

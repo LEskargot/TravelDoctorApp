@@ -89,6 +89,7 @@
                 <div class="form-group">
                     <label for="birthdate" data-translate="identity.birthdate">Date de naissance *</label>
                     <input type="date" id="birthdate" name="birthdate" required>
+                    <span class="field-hint" data-translate="hints.birthdate_max">Date dans le pass&eacute;</span>
                     <span class="error-message"></span>
                 </div>
 
@@ -170,6 +171,12 @@
                 <div class="form-group">
                     <label data-translate="travel.destinations">Pays de destination *</label>
                     <div id="destinations-container">
+                        <div class="destination-header" id="destination-header">
+                            <span data-translate="travel.country">Pays</span>
+                            <span data-translate="travel.departure">D&eacute;part</span>
+                            <span data-translate="travel.return">Retour</span>
+                            <span></span>
+                        </div>
                         <div class="destination-row" data-index="0">
                             <div class="destination-fields">
                                 <div class="country-autocomplete destination-country-wrapper">
@@ -179,10 +186,16 @@
                                     <input type="hidden" class="destination-country" name="destinations[0][country]">
                                     <div class="autocomplete-dropdown"></div>
                                 </div>
-                                <input type="date" class="destination-departure" name="destinations[0][departure]"
-                                       title="Date de d&eacute;part">
-                                <input type="date" class="destination-return" name="destinations[0][return]"
-                                       title="Date de retour">
+                                <div class="date-field-wrapper">
+                                    <label class="mobile-label" data-translate="travel.departure">D&eacute;part</label>
+                                    <input type="date" class="destination-departure" name="destinations[0][departure]"
+                                           aria-label="Date de d&eacute;part">
+                                </div>
+                                <div class="date-field-wrapper">
+                                    <label class="mobile-label" data-translate="travel.return">Retour</label>
+                                    <input type="date" class="destination-return" name="destinations[0][return]"
+                                           aria-label="Date de retour">
+                                </div>
                                 <button type="button" class="btn-remove-destination" onclick="removeDestination(this)" style="display:none;">
                                     &times;
                                 </button>
@@ -331,6 +344,7 @@
                     <label for="weight" data-translate="health.weight">Poids (kg) *</label>
                     <input type="number" id="weight" name="weight" min="2" max="400" step="0.5" required>
                     <span class="hint" data-translate="health.weight_hint">Pour les enfants, indiquez le poids actuel</span>
+                    <span class="field-hint" data-translate="hints.weight_range">Entre 2 et 400 kg</span>
                     <span class="error-message"></span>
                 </div>
 
@@ -406,6 +420,7 @@
                         <div class="form-group">
                             <label for="last_menses" data-translate="health.last_menses">Derni&egrave;res r&egrave;gles</label>
                             <input type="date" id="last_menses" name="last_menses">
+                            <span class="field-hint" data-translate="hints.date_past_only">Date dans le pass&eacute; uniquement</span>
                             <span class="optional-badge" data-translate="buttons.optional">Facultatif</span>
                             <span class="error-message"></span>
                         </div>

@@ -560,7 +560,8 @@ textarea::placeholder {
   min-width: 0;
 }
 
-.destination-fields input[type="date"] {
+.destination-fields input[type="date"],
+.date-field-wrapper input[type="date"] {
   padding: 10px;
 }
 
@@ -605,7 +606,62 @@ textarea::placeholder {
   color: var(--primary-color);
 }
 
+/* Destination Header Row */
+.destination-header {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr auto;
+  gap: 10px;
+  padding: 0 15px 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+/* Date field wrapper for mobile labels */
+.date-field-wrapper {
+  min-width: 0;
+}
+
+/* Mobile labels (hidden on desktop, shown on mobile) */
+.mobile-label {
+  display: none;
+}
+
+/* Field hints */
+.field-hint {
+  display: block;
+  font-size: 11px;
+  color: var(--text-color);
+  margin-top: 3px;
+  font-style: italic;
+}
+
+/* Character counters */
+.char-counter {
+  display: block;
+  text-align: right;
+  font-size: 11px;
+  color: var(--text-color);
+  margin-top: 2px;
+}
+
+.char-counter.near-limit {
+  color: var(--warning-color);
+}
+
 @media (max-width: 600px) {
+  .destination-header {
+    display: none;
+  }
+
+  .mobile-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 2px;
+  }
+
   .destination-fields {
     grid-template-columns: 1fr;
     gap: 10px;
