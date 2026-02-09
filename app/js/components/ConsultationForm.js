@@ -1,0 +1,244 @@
+/**
+ * Consultation Form Component
+ * Main consultation wrapper with accordion sections
+ *
+ * Composes: PatientEditForm, NotesSection, VaccinePanel, PrescriptionPanel, DossierStatus
+ * This replaces the entire #appContent div (lines 442-709)
+ */
+import { useAuth } from '../composables/useAuth.js';
+import { usePatient } from '../composables/usePatient.js';
+import { useCase } from '../composables/useCase.js';
+import { useChronometer } from '../composables/useChronometer.js';
+import { useVaccines } from '../composables/useVaccines.js';
+import { usePrescription } from '../composables/usePrescription.js';
+import * as secureApi from '../api/secure-api.js';
+import * as pbApi from '../api/pocketbase.js';
+import { generatePrescriptionPdf } from '../utils/pdf-generator.js';
+import { downloadJson, makeBackupFilename } from '../utils/export-helpers.js';
+
+import Chronometer from './Chronometer.js';
+import PatientEditForm from './PatientEditForm.js';
+import NotesSection from './NotesSection.js';
+import VaccinePanel from './VaccinePanel.js';
+import PrescriptionPanel from './PrescriptionPanel.js';
+import DossierStatus from './DossierStatus.js';
+
+export default {
+    name: 'ConsultationForm',
+
+    components: { Chronometer, PatientEditForm, NotesSection, VaccinePanel, PrescriptionPanel, DossierStatus },
+
+    props: {
+        consultationType: { type: String, default: 'teleconsultation' }
+    },
+
+    emits: ['saved', 'back'],
+
+    setup(props, { emit }) {
+        const { userName, location, locationName } = useAuth();
+        const { currentPatient, patientName, savePatient } = usePatient();
+        const { currentCase, addConsultation } = useCase();
+        const chrono = useChronometer();
+        const vaccines = useVaccines();
+        const prescription = usePrescription();
+
+        const notes = Vue.ref('');
+        const saving = Vue.ref(false);
+        const activeAccordion = Vue.ref('patient');
+
+        const patientEditRef = Vue.ref(null);
+
+        // Start chronometer on mount
+        Vue.onMounted(() => {
+            chrono.start();
+        });
+
+        function toggleAccordion(section) {
+            activeAccordion.value = activeAccordion.value === section ? null : section;
+        }
+
+        // ==================== Save ====================
+
+        async function saveConsultation() {
+            const editForm = patientEditRef.value;
+            if (!editForm) return;
+
+            const formData = editForm.getFormData();
+            if (!formData.nom) {
+                alert('Veuillez saisir le nom du patient.');
+                return;
+            }
+            if (!formData.dob) {
+                alert('La date de naissance est obligatoire.');
+                return;
+            }
+
+            saving.value = true;
+            chrono.stop();
+
+            try {
+                // Save patient (non-sensitive + sensitive via PHP)
+                const patientId = await savePatient({
+                    nom: formData.nom,
+                    prenom: formData.prenom,
+                    dob: formData.dob,
+                    poids: parseFloat(document.querySelector('.weight-notice input')?.value) || null,
+                    // Sensitive fields (routed through PHP)
+                    email: formData.email,
+                    telephone: formData.telephone,
+                    adresse: formData.adresse,
+                    avs: formData.avs
+                });
+
+                // Create consultation
+                const consultation = await addConsultation({
+                    location: location.value,
+                    date: new Date().toISOString().split('T')[0],
+                    consultation_type: props.consultationType,
+                    duration_minutes: chrono.elapsedMinutes.value,
+                    notes: notes.value || null,
+                    status: 'termine'
+                });
+
+                // Save vaccines
+                await vaccines.saveAdministeredVaccines(patientId, consultation.id);
+
+                // Save boosters
+                await vaccines.saveScheduledBoosters(patientId, currentCase.value?.id);
+
+                // Save prescription (via PHP, encrypted)
+                await prescription.savePrescription(patientId, consultation.id);
+
+                // Offer backup
+                if (confirm('Consultation sauvegardee!\n\nVoulez-vous telecharger une copie de sauvegarde (JSON) ?')) {
+                    const backupData = {
+                        patient: formData,
+                        consultation: {
+                            date: new Date().toISOString().split('T')[0],
+                            type: props.consultationType,
+                            duration: chrono.finalTime.value,
+                            notes: notes.value
+                        },
+                        vaccines: vaccines.administeredVaccines.value.map(v => ({ vaccine: v.vaccine, lot: v.lot })),
+                        boosters: vaccines.plannedBoosters.value.map(b => ({ vaccine: b.vaccine, date1: b.booster1Date, date2: b.booster2Date })),
+                        medications: prescription.selectedMedications.value.map(m => ({ name: m.name, dosing: m.dosing }))
+                    };
+                    downloadJson(backupData, makeBackupFilename(`${formData.nom} ${formData.prenom}`, formData.dob));
+                }
+
+                emit('saved');
+
+            } catch (error) {
+                alert('Erreur lors de la sauvegarde: ' + error.message);
+            } finally {
+                saving.value = false;
+            }
+        }
+
+        // ==================== PDF export ====================
+
+        function exportPrescriptionPdf() {
+            const editForm = patientEditRef.value;
+            if (!editForm) return;
+            const formData = editForm.getFormData();
+
+            const doc = generatePrescriptionPdf({
+                patientName: `${formData.nom} ${formData.prenom}`.trim(),
+                patientDob: formData.dob,
+                patientAddress: formData.adresse,
+                medications: prescription.selectedMedications.value,
+                date: prescription.prescriptionDate.value,
+                pageFormat: prescription.pageFormat.value,
+                practitionerName: userName.value
+            });
+
+            if (doc) {
+                const name = `${formData.nom}${formData.prenom}`;
+                const date = prescription.prescriptionDate.value.replace(/-/g, '');
+                doc.save(`RX_${name}_${date}.pdf`);
+            }
+        }
+
+        return {
+            userName, locationName, currentPatient, patientName,
+            notes, saving, activeAccordion, patientEditRef,
+            toggleAccordion, saveConsultation, exportPrescriptionPdf,
+            emit
+        };
+    },
+
+    template: `
+    <div class="consultation-form">
+        <Chronometer />
+
+        <div class="consultation-header">
+            <div>
+                <h1>Travel Doctor App</h1>
+                <div class="practitioner-info">
+                    {{ userName }} <span class="location-badge">{{ locationName }}</span>
+                </div>
+            </div>
+            <button class="btn-secondary btn-small" @click="emit('back')">Retour</button>
+        </div>
+
+        <!-- ACCORDION: Patient -->
+        <div class="accordion-section" :class="{ active: activeAccordion === 'patient' }">
+            <div class="accordion-header" @click="toggleAccordion('patient')">
+                <span class="accordion-icon">{{ activeAccordion === 'patient' ? '▼' : '▶' }}</span>
+                <span>Dossier Patient</span>
+            </div>
+            <div class="accordion-content" v-show="activeAccordion === 'patient'">
+                <PatientEditForm ref="patientEditRef" />
+            </div>
+        </div>
+
+        <!-- ACCORDION: Notes -->
+        <div class="accordion-section" :class="{ active: activeAccordion === 'notes' }">
+            <div class="accordion-header" @click="toggleAccordion('notes')">
+                <span class="accordion-icon">{{ activeAccordion === 'notes' ? '▼' : '▶' }}</span>
+                <span>Notes de consultation</span>
+            </div>
+            <div class="accordion-content" v-show="activeAccordion === 'notes'">
+                <NotesSection v-model="notes" />
+            </div>
+        </div>
+
+        <!-- ACCORDION: Vaccines -->
+        <div class="accordion-section" :class="{ active: activeAccordion === 'vaccines' }">
+            <div class="accordion-header" @click="toggleAccordion('vaccines')">
+                <span class="accordion-icon">{{ activeAccordion === 'vaccines' ? '▼' : '▶' }}</span>
+                <span>Vaccins & Rappels</span>
+            </div>
+            <div class="accordion-content" v-show="activeAccordion === 'vaccines'">
+                <VaccinePanel />
+            </div>
+        </div>
+
+        <!-- ACCORDION: Prescription -->
+        <div class="accordion-section" :class="{ active: activeAccordion === 'prescription' }">
+            <div class="accordion-header" @click="toggleAccordion('prescription')">
+                <span class="accordion-icon">{{ activeAccordion === 'prescription' ? '▼' : '▶' }}</span>
+                <span>Ordonnance</span>
+            </div>
+            <div class="accordion-content" v-show="activeAccordion === 'prescription'">
+                <PrescriptionPanel />
+            </div>
+        </div>
+
+        <!-- Dossier status -->
+        <DossierStatus
+            :patient-name="patientName"
+            :patient-dob="currentPatient?.dob || ''"
+            :notes="notes" />
+
+        <!-- Action buttons -->
+        <div class="button-group">
+            <button class="btn-success" @click="saveConsultation" :disabled="saving">
+                {{ saving ? 'Sauvegarde...' : 'Sauvegarder consultation' }}
+            </button>
+            <button class="btn-teal" @click="exportPrescriptionPdf">Generer ordonnance PDF</button>
+            <button class="btn-secondary" @click="emit('back')">Nouvelle consultation</button>
+        </div>
+    </div>
+    `
+};

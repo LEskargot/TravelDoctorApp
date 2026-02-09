@@ -4,36 +4,56 @@
  * Simple screen-based routing using reactive state.
  * No vue-router needed for this scale of app.
  *
- * Screens: login → location → home → (patient search + case view)
+ * Screens: login → location → home → (pending_forms | consultation)
  */
 import { initPocketBase, checkConnection } from './api/pocketbase.js';
 import { useAuth } from './composables/useAuth.js';
 import { usePatient } from './composables/usePatient.js';
 import { useCase } from './composables/useCase.js';
+import { useVaccines } from './composables/useVaccines.js';
+import { usePrescription } from './composables/usePrescription.js';
+import { useChronometer } from './composables/useChronometer.js';
 
 import LoginScreen from './components/LoginScreen.js';
 import PatientSearch from './components/PatientSearch.js';
 import CaseView from './components/CaseView.js';
+import ConsultationForm from './components/ConsultationForm.js';
+import PendingForms from './components/PendingForms.js';
+import TimelineModal from './components/TimelineModal.js';
 
-const { createApp, ref, computed, onMounted } = Vue;
+const { createApp, ref, computed, watch, onMounted } = Vue;
 
 const App = {
-    components: { LoginScreen, PatientSearch, CaseView },
+    components: { LoginScreen, PatientSearch, CaseView, ConsultationForm, PendingForms, TimelineModal },
 
     setup() {
         const {
-            isLoggedIn, userName, location, locationName, locations, isOnline,
+            isLoggedIn, userName, isAdmin, location, locationName, locations, isOnline,
             loadLocations, selectLocation, restoreSession, logout
         } = useAuth();
 
         const { currentPatient, clearPatient } = usePatient();
         const { clearCases } = useCase();
+        const vaccines = useVaccines();
+        const prescription = usePrescription();
+        const chrono = useChronometer();
 
         // Screen routing
-        const screen = ref('login'); // login | location | home | consultation
+        const screen = ref('login'); // login | location | home | pending_forms | consultation
         const selectedLocationId = ref('');
-
+        const consultationType = ref('teleconsultation');
+        const showTimeline = ref(false);
         const connectionStatus = ref('connecting');
+
+        // Watch login state for auto-transition
+        watch(isLoggedIn, (loggedIn) => {
+            if (loggedIn && screen.value === 'login') {
+                screen.value = 'location';
+            }
+            if (!loggedIn) {
+                screen.value = 'login';
+            }
+        });
 
         // Initialize
         onMounted(async () => {
@@ -49,10 +69,7 @@ const App = {
             }
         });
 
-        // Watch login state to advance screens
-        function onLoginSuccess() {
-            screen.value = 'location';
-        }
+        // ==================== Navigation ====================
 
         function onConfirmLocation() {
             if (!selectedLocationId.value) return;
@@ -64,37 +81,90 @@ const App = {
             logout();
             clearPatient();
             clearCases();
+            vaccines.clearAll();
+            prescription.clearAll();
+            chrono.reset();
             screen.value = 'login';
         }
 
-        function goToConsultation() {
+        function goToPendingForms() {
+            screen.value = 'pending_forms';
+        }
+
+        function startNewPatient() {
+            clearPatient();
+            clearCases();
+            consultationType.value = 'consultation_voyage';
             screen.value = 'consultation';
         }
 
         function returnToHome() {
             clearPatient();
             clearCases();
+            vaccines.clearAll();
+            prescription.clearAll();
+            chrono.reset();
             screen.value = 'home';
         }
 
+        // ==================== Patient/Case events ====================
+
         function onPatientSelected() {
-            // Patient loaded — stay on same screen, CaseView will appear
+            // Patient loaded — CaseView will appear with their cases
         }
 
         function onStartConsultation(details) {
-            // This would open the full consultation form
-            // (vaccines, prescription, notes — to be built as separate components)
-            console.log('Start consultation:', details);
-            alert(`Demarrer une ${details.type} pour le dossier ${details.caseId}\n\n(Les composants vaccins, ordonnance et notes seraient charges ici)`);
+            consultationType.value = details.type;
+            screen.value = 'consultation';
+        }
+
+        // ==================== Pending forms events ====================
+
+        function onFormSelected(form) {
+            // Load form data into patient context and start consultation
+            consultationType.value = 'consultation_voyage';
+            screen.value = 'consultation';
+        }
+
+        function onCalendarSelected(event) {
+            // Start consultation from calendar event
+            consultationType.value = 'consultation_voyage';
+            screen.value = 'consultation';
+        }
+
+        function onManualEntry() {
+            clearPatient();
+            clearCases();
+            consultationType.value = 'consultation_voyage';
+            screen.value = 'consultation';
+        }
+
+        // ==================== Consultation events ====================
+
+        function onConsultationSaved() {
+            returnToHome();
+        }
+
+        function onConsultationBack() {
+            returnToHome();
+        }
+
+        // ==================== Timeline ====================
+
+        function toggleTimeline() {
+            showTimeline.value = !showTimeline.value;
         }
 
         return {
-            screen, connectionStatus, isLoggedIn, userName,
+            screen, connectionStatus, isLoggedIn, userName, isAdmin,
             location, locationName, locations, selectedLocationId,
-            currentPatient,
-            onLoginSuccess, onConfirmLocation, onLogout,
-            goToConsultation, returnToHome,
-            onPatientSelected, onStartConsultation
+            currentPatient, consultationType, showTimeline,
+            onConfirmLocation, onLogout,
+            goToPendingForms, startNewPatient, returnToHome,
+            onPatientSelected, onStartConsultation,
+            onFormSelected, onCalendarSelected, onManualEntry,
+            onConsultationSaved, onConsultationBack,
+            toggleTimeline
         };
     },
 
@@ -137,18 +207,46 @@ const App = {
 
             <h1>Travel Doctor App</h1>
 
-            <!-- Patient search + case view side by side -->
+            <!-- Home action buttons -->
+            <div class="home-actions">
+                <button class="home-action-btn home-action-rdv" @click="goToPendingForms">
+                    <span class="home-action-icon">&#128197;</span>
+                    <span class="home-action-label">NOUVEAU RDV</span>
+                </button>
+                <button class="home-action-btn home-action-new" @click="startNewPatient">
+                    <span class="home-action-icon">&#10133;</span>
+                    <span class="home-action-label">NOUVEAU VOYAGEUR</span>
+                </button>
+            </div>
+
+            <!-- Patient search + case view -->
             <PatientSearch @patient-selected="onPatientSelected" />
 
-            <CaseView v-if="currentPatient"
-                      @start-consultation="onStartConsultation" />
+            <template v-if="currentPatient">
+                <div class="patient-actions-bar">
+                    <button class="btn-secondary btn-small" @click="toggleTimeline">
+                        Timeline
+                    </button>
+                </div>
+
+                <CaseView @start-consultation="onStartConsultation" />
+            </template>
+
+            <TimelineModal :visible="showTimeline" @close="showTimeline = false" />
         </div>
 
-        <!-- CONSULTATION (placeholder) -->
-        <div v-else-if="screen === 'consultation'">
-            <button class="btn-secondary btn-small" @click="returnToHome">Retour</button>
-            <p>Consultation form components would go here (vaccines, prescription, notes...)</p>
-        </div>
+        <!-- PENDING FORMS -->
+        <PendingForms v-else-if="screen === 'pending_forms'"
+                      @form-selected="onFormSelected"
+                      @calendar-selected="onCalendarSelected"
+                      @manual-entry="onManualEntry"
+                      @back="returnToHome" />
+
+        <!-- CONSULTATION -->
+        <ConsultationForm v-else-if="screen === 'consultation'"
+                          :consultation-type="consultationType"
+                          @saved="onConsultationSaved"
+                          @back="onConsultationBack" />
     </div>
     `
 };
