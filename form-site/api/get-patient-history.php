@@ -1,11 +1,13 @@
 <?php
 /**
  * Get Patient History API
- * Returns consultation history, vaccines administered, and scheduled boosters
+ * Returns consultation history with cases (voyage + medical), vaccines, boosters, prescriptions.
+ * Handles decryption of medical_encrypted and medications_encrypted server-side.
  */
 
 require_once 'config.php';
 require_once 'helpers.php';
+require_once 'encryption.php';
 
 header('Content-Type: application/json');
 corsHeaders();
@@ -50,10 +52,58 @@ if (!$patientResponse || isset($patientResponse['code'])) {
     exit;
 }
 
+// Decrypt patient medical data
+$patientMedical = null;
+if (!empty($patientResponse['medical_encrypted'])) {
+    try {
+        $patientMedical = decryptFormData($patientResponse['medical_encrypted']);
+    } catch (Exception $e) {
+        error_log('Failed to decrypt patient medical: ' . $e->getMessage());
+    }
+}
+
+// Fetch cases for this patient
+$caseFilter = urlencode("patient = '{$patientId}'");
+$casesResponse = pbRequest(
+    "/api/collections/cases/records?filter={$caseFilter}&sort=-opened_at",
+    'GET',
+    null,
+    $adminToken
+);
+
+$casesList = [];
+$casesById = [];
+if ($casesResponse && !empty($casesResponse['items'])) {
+    foreach ($casesResponse['items'] as $caseItem) {
+        $caseMedical = null;
+        if (!empty($caseItem['medical_encrypted'])) {
+            try {
+                $caseMedical = decryptFormData($caseItem['medical_encrypted']);
+            } catch (Exception $e) {
+                error_log('Failed to decrypt case medical: ' . $e->getMessage());
+            }
+        }
+
+        $caseData = [
+            'id' => $caseItem['id'],
+            'type' => $caseItem['type'] ?? null,
+            'status' => $caseItem['status'] ?? null,
+            'voyage' => $caseItem['voyage'] ?? null,
+            'medical' => $caseMedical,
+            'opened_at' => $caseItem['opened_at'] ?? null,
+            'closed_at' => $caseItem['closed_at'] ?? null,
+            'notes' => $caseItem['notes'] ?? ''
+        ];
+
+        $casesList[] = $caseData;
+        $casesById[$caseItem['id']] = $caseData;
+    }
+}
+
 // Fetch consultations
 $consultFilter = urlencode("patient = '{$patientId}'");
 $consultations = pbRequest(
-    "/api/collections/consultations/records?filter={$consultFilter}&sort=-date_consultation&expand=location,practitioner",
+    "/api/collections/consultations/records?filter={$consultFilter}&sort=-date&expand=location,practitioner",
     'GET',
     null,
     $adminToken
@@ -76,21 +126,21 @@ if ($consultations && !empty($consultations['items'])) {
             $practitionerName = $consult['expand']['practitioner']['name'];
         }
 
-        // Parse destinations from notes or dedicated field
-        $destinations = [];
-        if (!empty($consult['destinations'])) {
-            $destinations = is_array($consult['destinations'])
-                ? $consult['destinations']
-                : json_decode($consult['destinations'], true);
+        // Attach case data (voyage + medical) to consultation
+        $caseData = null;
+        if (!empty($consult['case']) && isset($casesById[$consult['case']])) {
+            $caseData = $casesById[$consult['case']];
         }
 
         $consultationList[] = [
             'id' => $consult['id'],
-            'date' => $consult['date_consultation'],
-            'destinations' => $destinations,
+            'date' => $consult['date'],
+            'type' => $consult['consultation_type'] ?? null,
+            'duration_minutes' => $consult['duration_minutes'] ?? 0,
             'notes' => $consult['notes'] ?? '',
             'location' => $locationName,
-            'practitioner' => $practitionerName
+            'practitioner' => $practitionerName,
+            'case' => $caseData
         ];
     }
 }
@@ -100,7 +150,7 @@ $vaccinesList = [];
 if (!empty($consultationIds)) {
     $vaccineFilter = urlencode("consultation IN ('" . implode("','", $consultationIds) . "')");
     $vaccines = pbRequest(
-        "/api/collections/vaccines_administered/records?filter={$vaccineFilter}&sort=-date_administration",
+        "/api/collections/vaccines_administered/records?filter={$vaccineFilter}&sort=-date",
         'GET',
         null,
         $adminToken
@@ -112,8 +162,8 @@ if (!empty($consultationIds)) {
                 'id' => $vaccine['id'],
                 'consultation_id' => $vaccine['consultation'],
                 'name' => $vaccine['vaccine_name'],
-                'lot' => $vaccine['lot_number'] ?? '',
-                'date' => $vaccine['date_administration'],
+                'lot' => $vaccine['lot'] ?? '',
+                'date' => $vaccine['date'],
                 'dose' => $vaccine['dose_number'] ?? null
             ];
         }
@@ -123,14 +173,14 @@ if (!empty($consultationIds)) {
 // Fetch scheduled boosters
 $boosterFilter = urlencode("patient = '{$patientId}'");
 $boosters = pbRequest(
-    "/api/collections/boosters_scheduled/records?filter={$boosterFilter}&sort=date_rappel",
+    "/api/collections/boosters_scheduled/records?filter={$boosterFilter}&sort=due_date",
     'GET',
     null,
     $adminToken
 );
 
 $boostersList = [];
-$overdueBooters = [];
+$overdueBoosters = [];
 $today = date('Y-m-d');
 
 if ($boosters && !empty($boosters['items'])) {
@@ -139,68 +189,53 @@ if ($boosters && !empty($boosters['items'])) {
             'id' => $booster['id'],
             'vaccine_name' => $booster['vaccine_name'],
             'dose_number' => $booster['dose_number'] ?? null,
-            'date_rappel' => $booster['date_rappel'],
-            'completed' => $booster['completed'] ?? false
+            'due_date' => $booster['due_date'],
+            'status' => $booster['status'] ?? 'planifie',
+            'case' => $booster['case'] ?? null
         ];
 
         // Check if overdue
-        if (!$booster['completed'] && $booster['date_rappel'] < $today) {
+        $isCompleted = ($booster['status'] ?? '') === 'complete';
+        if (!$isCompleted && $booster['due_date'] < $today) {
             $boosterData['overdue'] = true;
-            $overdueBooters[] = $boosterData;
+            $overdueBoosters[] = $boosterData;
         }
 
         $boostersList[] = $boosterData;
     }
 }
 
-// Fetch prescriptions
-$prescriptionFilter = urlencode("consultation IN ('" . implode("','", $consultationIds) . "')");
-$prescriptions = pbRequest(
-    "/api/collections/prescriptions/records?filter={$prescriptionFilter}&sort=-created",
-    'GET',
-    null,
-    $adminToken
-);
-
+// Fetch prescriptions with decrypted medications
 $prescriptionsList = [];
-if ($prescriptions && !empty($prescriptions['items'])) {
-    foreach ($prescriptions['items'] as $prescription) {
-        $prescriptionsList[] = [
-            'id' => $prescription['id'],
-            'consultation_id' => $prescription['consultation'],
-            'medication' => $prescription['medication_name'],
-            'dosage' => $prescription['dosage'] ?? '',
-            'quantity' => $prescription['quantity'] ?? '',
-            'instructions' => $prescription['instructions'] ?? ''
-        ];
+if (!empty($consultationIds)) {
+    $prescriptionFilter = urlencode("consultation IN ('" . implode("','", $consultationIds) . "')");
+    $prescriptions = pbRequest(
+        "/api/collections/prescriptions/records?filter={$prescriptionFilter}&sort=-created",
+        'GET',
+        null,
+        $adminToken
+    );
+
+    if ($prescriptions && !empty($prescriptions['items'])) {
+        foreach ($prescriptions['items'] as $prescription) {
+            $medications = [];
+            if (!empty($prescription['medications_encrypted'])) {
+                try {
+                    $medications = decryptFormData($prescription['medications_encrypted']);
+                } catch (Exception $e) {
+                    error_log('Failed to decrypt prescription: ' . $e->getMessage());
+                }
+            }
+
+            $prescriptionsList[] = [
+                'id' => $prescription['id'],
+                'consultation_id' => $prescription['consultation'],
+                'date' => $prescription['date'],
+                'medications' => $medications
+            ];
+        }
     }
 }
-
-// Build timeline (combines all events chronologically)
-$timeline = [];
-
-// Add consultations to timeline
-foreach ($consultationList as $consult) {
-    $timeline[] = [
-        'type' => 'consultation',
-        'date' => $consult['date'],
-        'data' => $consult
-    ];
-}
-
-// Add boosters to timeline
-foreach ($boostersList as $booster) {
-    $timeline[] = [
-        'type' => 'booster',
-        'date' => $booster['date_rappel'],
-        'data' => $booster
-    ];
-}
-
-// Sort timeline by date (newest first)
-usort($timeline, function($a, $b) {
-    return strtotime($b['date']) - strtotime($a['date']);
-});
 
 echo json_encode([
     'success' => true,
@@ -211,15 +246,19 @@ echo json_encode([
         'dob' => $patientResponse['dob'],
         'avs' => $patientResponse['avs'] ?? '',
         'email' => $patientResponse['email'] ?? '',
-        'phone' => $patientResponse['phone'] ?? '',
+        'telephone' => $patientResponse['telephone'] ?? '',
+        'adresse' => $patientResponse['adresse'] ?? '',
+        'poids' => $patientResponse['poids'] ?? null,
+        'sexe' => $patientResponse['sexe'] ?? null,
+        'medical' => $patientMedical,
         'first_consultation' => !empty($consultationList)
             ? end($consultationList)['date']
             : null
     ],
+    'cases' => $casesList,
     'consultations' => $consultationList,
     'vaccines' => $vaccinesList,
     'boosters' => $boostersList,
-    'overdue_boosters' => $overdueBooters,
-    'prescriptions' => $prescriptionsList,
-    'timeline' => $timeline
+    'overdue_boosters' => $overdueBoosters,
+    'prescriptions' => $prescriptionsList
 ]);

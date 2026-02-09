@@ -106,60 +106,34 @@ foreach ($response['items'] as $item) {
         }
     }
 
-    // Check if patient exists in patients collection
+    // Check linked patient (created at form submission)
     $isKnownPatient = false;
     $existingPatientId = null;
+    $caseId = null;
 
-    // First try to match by AVS
-    if (!empty($avs)) {
-        $avsFilter = urlencode("avs = '{$avs}'");
-        $patientSearch = pbRequest(
-            "/api/collections/patients/records?filter={$avsFilter}&perPage=1",
+    if (!empty($item['linked_patient'])) {
+        $existingPatientId = $item['linked_patient'];
+        // Check if this patient has prior consultations (= truly "known")
+        $consultFilter = urlencode("patient = '{$existingPatientId}'");
+        $consultCheck = pbRequest(
+            "/api/collections/consultations/records?filter={$consultFilter}&perPage=1",
             'GET',
             null,
             $adminToken
         );
-
-        if ($patientSearch && !empty($patientSearch['items'])) {
-            $isKnownPatient = true;
-            $existingPatientId = $patientSearch['items'][0]['id'];
-        }
+        $isKnownPatient = $consultCheck && !empty($consultCheck['items']);
     }
 
-    // If no AVS match, try DOB + name with normalization
-    if (!$isKnownPatient && !empty($birthdate) && !empty($patientName)) {
-        // Parse name (assumes "Prénom Nom" format)
-        $nameParts = explode(' ', trim($patientName), 2);
-        $prenomForm = $nameParts[0] ?? '';
-        $nomForm = $nameParts[1] ?? $nameParts[0] ?? '';
-
-        // Format birthdate for PocketBase (expects ISO format)
-        $dobFormatted = date('Y-m-d', strtotime($birthdate));
-
-        // Fetch all patients with same DOB, then compare names with normalization
-        $dobFilter = urlencode("dob = '{$dobFormatted}'");
-        $patientSearch = pbRequest(
-            "/api/collections/patients/records?filter={$dobFilter}&perPage=50",
-            'GET',
-            null,
-            $adminToken
-        );
-
-        if ($patientSearch && !empty($patientSearch['items'])) {
-            foreach ($patientSearch['items'] as $patient) {
-                // Compare with accent/case normalization
-                $prenomMatch = normalizedContains($patient['prenom'], $prenomForm) ||
-                               normalizedContains($prenomForm, $patient['prenom']);
-                $nomMatch = normalizedContains($patient['nom'], $nomForm) ||
-                            normalizedContains($nomForm, $patient['nom']);
-
-                if ($prenomMatch && $nomMatch) {
-                    $isKnownPatient = true;
-                    $existingPatientId = $patient['id'];
-                    break;
-                }
-            }
-        }
+    // Get linked case
+    $caseFilter = urlencode("patient_form = '{$item['id']}'");
+    $caseSearch = pbRequest(
+        "/api/collections/cases/records?filter={$caseFilter}&perPage=1",
+        'GET',
+        null,
+        $adminToken
+    );
+    if ($caseSearch && !empty($caseSearch['items'])) {
+        $caseId = $caseSearch['items'][0]['id'];
     }
 
     // Apply search filter (client-side for encrypted data)
@@ -185,6 +159,7 @@ foreach ($response['items'] as $item) {
         'status' => $item['status'],
         'is_known_patient' => $isKnownPatient,
         'existing_patient_id' => $existingPatientId,
+        'case_id' => $caseId,
         'appointment_date' => $appointmentDate,
         'appointment_time' => $appointmentTime
     ];

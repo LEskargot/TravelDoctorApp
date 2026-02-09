@@ -94,54 +94,31 @@ if (!empty($response['vaccination_files'])) {
     }
 }
 
-// Check if patient exists
+// Get linked patient (created at form submission)
 $existingPatient = null;
-
-// First try AVS match
-if (!empty($avs)) {
-    $avsFilter = urlencode("avs = '{$avs}'");
-    $patientSearch = pbRequest(
-        "/api/collections/patients/records?filter={$avsFilter}&perPage=1",
+if (!empty($response['linked_patient'])) {
+    $patientResponse = pbRequest(
+        "/api/collections/patients/records/{$response['linked_patient']}",
         'GET',
         null,
         $adminToken
     );
-
-    if ($patientSearch && !empty($patientSearch['items'])) {
-        $existingPatient = $patientSearch['items'][0];
+    if ($patientResponse && !isset($patientResponse['code'])) {
+        $existingPatient = $patientResponse;
     }
 }
 
-// If no AVS match, try DOB + name with normalization
-if (!$existingPatient && !empty($formData['birthdate']) && !empty($patientName)) {
-    $nameParts = explode(' ', trim($patientName), 2);
-    $prenomForm = $nameParts[0] ?? '';
-    $nomForm = $nameParts[1] ?? $nameParts[0] ?? '';
-    $dobFormatted = date('Y-m-d', strtotime($formData['birthdate']));
-
-    // Fetch all patients with same DOB, then compare names with normalization
-    $dobFilter = urlencode("dob = '{$dobFormatted}'");
-    $patientSearch = pbRequest(
-        "/api/collections/patients/records?filter={$dobFilter}&perPage=50",
-        'GET',
-        null,
-        $adminToken
-    );
-
-    if ($patientSearch && !empty($patientSearch['items'])) {
-        foreach ($patientSearch['items'] as $patient) {
-            // Compare with accent/case normalization
-            $prenomMatch = normalizedContains($patient['prenom'], $prenomForm) ||
-                           normalizedContains($prenomForm, $patient['prenom']);
-            $nomMatch = normalizedContains($patient['nom'], $nomForm) ||
-                        normalizedContains($nomForm, $patient['nom']);
-
-            if ($prenomMatch && $nomMatch) {
-                $existingPatient = $patient;
-                break;
-            }
-        }
-    }
+// Get linked case
+$caseId = null;
+$caseFilter = urlencode("patient_form = '{$formId}'");
+$casesResponse = pbRequest(
+    "/api/collections/cases/records?filter={$caseFilter}&perPage=1",
+    'GET',
+    null,
+    $adminToken
+);
+if ($casesResponse && !empty($casesResponse['items'])) {
+    $caseId = $casesResponse['items'][0]['id'];
 }
 
 echo json_encode([
@@ -157,5 +134,6 @@ echo json_encode([
         'source' => $response['source'],
         'submitted_at' => $response['submitted_at']
     ],
-    'existing_patient' => $existingPatient
+    'existing_patient' => $existingPatient,
+    'case_id' => $caseId
 ]);

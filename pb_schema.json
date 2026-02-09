@@ -855,6 +855,19 @@
       },
       {
         "cascadeDelete": false,
+        "collectionId": "cases_travel_001",
+        "hidden": false,
+        "id": "bs_case",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "name": "case",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "cascadeDelete": false,
         "collectionId": "va_travel_001",
         "hidden": false,
         "id": "uyqlbpxl",
@@ -1006,6 +1019,19 @@
         "type": "relation"
       },
       {
+        "cascadeDelete": false,
+        "collectionId": "_pb_users_auth_",
+        "hidden": false,
+        "id": "cons_practitioner",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "name": "practitioner",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "relation"
+      },
+      {
         "hidden": false,
         "id": "eounekl0",
         "max": "",
@@ -1017,6 +1043,19 @@
         "type": "date"
       },
       {
+        "cascadeDelete": false,
+        "collectionId": "cases_travel_001",
+        "hidden": false,
+        "id": "cons_case",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "name": "case",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "relation"
+      },
+      {
         "hidden": false,
         "id": "swalhbt4",
         "maxSelect": 1,
@@ -1026,10 +1065,10 @@
         "system": false,
         "type": "select",
         "values": [
-          "consultation_voyage",
+          "teleconsultation",
+          "vaccination",
           "rappel",
-          "suivi",
-          "urgence"
+          "suivi"
         ]
       },
       {
@@ -1057,26 +1096,6 @@
         "required": false,
         "system": false,
         "type": "text"
-      },
-      {
-        "hidden": false,
-        "id": "fw9itb33",
-        "maxSize": 2000000,
-        "name": "voyage",
-        "presentable": false,
-        "required": false,
-        "system": false,
-        "type": "json"
-      },
-      {
-        "hidden": false,
-        "id": "9ivy7ho1",
-        "maxSize": 2000000,
-        "name": "medical",
-        "presentable": false,
-        "required": false,
-        "system": false,
-        "type": "json"
       },
       {
         "hidden": false,
@@ -1631,6 +1650,20 @@
         "type": "text"
       },
       {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "pat_medical_encrypted",
+        "max": 0,
+        "min": 0,
+        "name": "medical_encrypted",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
         "hidden": false,
         "id": "autodate2990389176",
         "name": "created",
@@ -1718,14 +1751,18 @@
         "type": "date"
       },
       {
+        "autogeneratePattern": "",
         "hidden": false,
-        "id": "a7tqvfh7",
-        "maxSize": 2000000,
-        "name": "medications",
+        "id": "presc_medications_enc",
+        "max": 0,
+        "min": 0,
+        "name": "medications_encrypted",
+        "pattern": "",
         "presentable": false,
+        "primaryKey": false,
         "required": false,
         "system": false,
-        "type": "json"
+        "type": "text"
       },
       {
         "hidden": false,
@@ -2087,6 +2124,323 @@
         "required": false,
         "system": false,
         "type": "number"
+      },
+      {
+        "hidden": false,
+        "id": "autodate2990389176",
+        "name": "created",
+        "onCreate": true,
+        "onUpdate": false,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      },
+      {
+        "hidden": false,
+        "id": "autodate3332085495",
+        "name": "updated",
+        "onCreate": true,
+        "onUpdate": true,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      }
+    ],
+    "indexes": [],
+    "system": false
+  },
+  {
+    "id": "cases_travel_001",
+    "listRule": "@request.auth.id != \"\"",
+    "viewRule": "@request.auth.id != \"\"",
+    "createRule": "@request.auth.id != \"\"",
+    "updateRule": "@request.auth.id != \"\"",
+    "deleteRule": "@request.auth.role = \"admin\"",
+    "name": "cases",
+    "type": "base",
+    "fields": [
+      {
+        "autogeneratePattern": "[a-z0-9]{15}",
+        "hidden": false,
+        "id": "text3208210256",
+        "max": 15,
+        "min": 15,
+        "name": "id",
+        "pattern": "^[a-z0-9]+$",
+        "presentable": false,
+        "primaryKey": true,
+        "required": true,
+        "system": true,
+        "type": "text"
+      },
+      {
+        "cascadeDelete": false,
+        "collectionId": "pat_travel_001",
+        "hidden": false,
+        "id": "cases_patient",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "name": "patient",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "cascadeDelete": false,
+        "collectionId": "pbc_2168323401",
+        "hidden": false,
+        "id": "cases_patient_form",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "name": "patient_form",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "cascadeDelete": false,
+        "collectionId": "_pb_users_auth_",
+        "hidden": false,
+        "id": "cases_opened_by",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "name": "opened_by",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "cascadeDelete": false,
+        "collectionId": "loc_travel_001",
+        "hidden": false,
+        "id": "cases_location",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "name": "location",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "hidden": false,
+        "id": "cases_type",
+        "maxSelect": 1,
+        "name": "type",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "select",
+        "values": [
+          "voyage",
+          "rappel_seul",
+          "suivi"
+        ]
+      },
+      {
+        "hidden": false,
+        "id": "cases_voyage",
+        "maxSize": 2000000,
+        "name": "voyage",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "json"
+      },
+      {
+        "hidden": false,
+        "id": "cases_status",
+        "maxSelect": 1,
+        "name": "status",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "select",
+        "values": [
+          "ouvert",
+          "termine",
+          "annule"
+        ]
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "cases_notes",
+        "max": 0,
+        "min": 0,
+        "name": "notes",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "hidden": false,
+        "id": "cases_opened_at",
+        "max": "",
+        "min": "",
+        "name": "opened_at",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "date"
+      },
+      {
+        "hidden": false,
+        "id": "cases_closed_at",
+        "max": "",
+        "min": "",
+        "name": "closed_at",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "date"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "cases_medical_encrypted",
+        "max": 0,
+        "min": 0,
+        "name": "medical_encrypted",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "hidden": false,
+        "id": "autodate2990389176",
+        "name": "created",
+        "onCreate": true,
+        "onUpdate": false,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      },
+      {
+        "hidden": false,
+        "id": "autodate3332085495",
+        "name": "updated",
+        "onCreate": true,
+        "onUpdate": true,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      }
+    ],
+    "indexes": [],
+    "system": false
+  },
+  {
+    "id": "obs_travel_001",
+    "listRule": "@request.auth.id != \"\"",
+    "viewRule": "@request.auth.id != \"\"",
+    "createRule": "@request.auth.id != \"\"",
+    "updateRule": "@request.auth.id != \"\"",
+    "deleteRule": "@request.auth.role = \"admin\"",
+    "name": "observations",
+    "type": "base",
+    "fields": [
+      {
+        "autogeneratePattern": "[a-z0-9]{15}",
+        "hidden": false,
+        "id": "text3208210256",
+        "max": 15,
+        "min": 15,
+        "name": "id",
+        "pattern": "^[a-z0-9]+$",
+        "presentable": false,
+        "primaryKey": true,
+        "required": true,
+        "system": true,
+        "type": "text"
+      },
+      {
+        "cascadeDelete": false,
+        "collectionId": "pat_travel_001",
+        "hidden": false,
+        "id": "obs_patient",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "name": "patient",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "cascadeDelete": false,
+        "collectionId": "cons_travel_001",
+        "hidden": false,
+        "id": "obs_consultation",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "name": "consultation",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "obs_type",
+        "max": 0,
+        "min": 0,
+        "name": "type",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": true,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "obs_value_encrypted",
+        "max": 0,
+        "min": 0,
+        "name": "value_encrypted",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": true,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "obs_unit",
+        "max": 0,
+        "min": 0,
+        "name": "unit",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "hidden": false,
+        "id": "obs_date",
+        "max": "",
+        "min": "",
+        "name": "date",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "date"
       },
       {
         "hidden": false,

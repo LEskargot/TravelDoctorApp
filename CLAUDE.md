@@ -79,13 +79,17 @@ Travel Doctor App v1.0 is a single-page web application for managing travel medi
 | Collection | Purpose |
 |------------|---------|
 | `users` | Practitioner accounts (email, password, name, role, default_location) |
-| `locations` | Clinic/site locations |
-| `patients` | Patient records (nom, dob, contact info) |
-| `consultations` | Consultation records linked to patient, practitioner, location |
+| `locations` | Clinic/site locations (name, address, phone, google_calendar_id) |
+| `patients` | Patient records (nom, dob, contact info, medical_encrypted) |
+| `cases` | Per-visit lifecycle: booking → form → consultation → done (patient, patient_form, type, voyage, status) |
+| `consultations` | Consultation records linked to patient, case, location |
+| `observations` | Clinical observations per patient (type, value_encrypted, unit, date) |
 | `vaccines_administered` | Vaccines given during consultation |
-| `boosters_scheduled` | Planned booster dates |
-| `prescriptions` | Medications prescribed |
+| `boosters_scheduled` | Planned booster dates (linked to case) |
+| `prescriptions` | Medications prescribed (medications_encrypted) |
 | `vaccine_lots` | Vaccine inventory per location |
+| `patient_forms` | Patient intake forms (encrypted, status: draft/submitted/processed/cancelled) |
+| `vaccination_files` | Uploaded vaccination documents |
 
 ### Configuration
 
@@ -196,6 +200,30 @@ No automated tests. Manual testing required for:
    - Character counters on all textareas with maxlength (amber near limit)
    - All hints translated in 4 languages (FR/EN/IT/ES)
 
+10. **PocketBase schema update for cases/patient data model** ✓ (2026-02-09)
+   - New collection: `cases` — per-visit lifecycle (patient, patient_form, opened_by, location, type, voyage, medical_encrypted, status, notes, opened_at, closed_at)
+   - New collection: `observations` — clinical observations (patient, consultation, type, value_encrypted, unit, date)
+   - `patients`: added `medical_encrypted` (encrypted JSON with allergies, conditions, medications, pregnancy etc.)
+   - `consultations`: added `case` relation (optional, will become required after migration); removed `voyage` and `medical` (moved to cases/patients); updated `consultation_type` values to teleconsultation/vaccination/rappel/suivi
+   - `boosters_scheduled`: added `case` relation
+   - `prescriptions`: replaced `medications` (json) with `medications_encrypted` (text)
+   - `patient_forms`: added `cancelled` to status values
+   - `locations`: added `google_calendar_id` to schema file (was already in DB)
+
+11. **Application code adapted to new cases/patient data model** ✓ (2026-02-10)
+   - **New PHP endpoints**: `encrypt-data.php` (batch encrypt), `decrypt-data.php` (batch decrypt)
+   - **`submit-public.php`**: now creates patient (find or create by AVS/DOB+name) + case on form submission
+   - **`decrypt-form.php`**: uses `linked_patient` from form record, returns `case_id` in response
+   - **`get-pending-forms.php`**: uses `linked_patient`, returns `case_id`, checks consultations for "known" badge
+   - **`get-patient-history.php`**: fetches cases (decrypts medical_encrypted), attaches case data to consultations, decrypts medications_encrypted on prescriptions
+   - **`mark-form-processed.php`**: also closes associated case (status=termine, closed_at)
+   - **`saveConsultationToDb()`**: encrypts medical/medications via PHP API, updates patient with medical_encrypted, creates/updates case with voyage + medical_encrypted, consultation links to case (no voyage/medical), boosters link to case, prescriptions use medications_encrypted
+   - **`selectPatientFromSearch()`**: single API call to get-patient-history.php, builds loadedPatientJSON from cases (voyage/medical from case, not consultation)
+   - **`loadPatientHistoryFromDb()`**: same API-first approach
+   - **`selectPendingForm()`**: stores case_id from decrypt-form.php response, sets selectedPatientId from linked patient
+   - **`displayPatientHistory()`**: updated consultation_type labels (vaccination, teleconsultation, rappel, suivi)
+   - **Data flow**: Patient created at form submission → case created → practitioner updates patient/case at consultation save
+
 ### Pending Tasks
 
 1. ~~**Set up cron job**~~ ✓ Done (2026-02-06) - runs every 15 min
@@ -230,7 +258,7 @@ No automated tests. Manual testing required for:
    - **Setup required before going live**:
      - Google Cloud project + Calendar API enabled + service account
      - Share each calendar with service account email (read-only)
-     - Add `google_calendar_id` text field to PocketBase `locations` collection
+     - `google_calendar_id` field already in PocketBase `locations` collection (in schema)
      - Service account JSON key file on server (outside web root)
      - Add `GOOGLE_SERVICE_ACCOUNT_KEY_PATH` to `config-secrets.php`
 
@@ -255,13 +283,18 @@ OneDoc booking → Email to contact@traveldoctor.ch
                         ↓
               Sends invitation email to patient
                         ↓
-              Patient completes form (status: submitted)
+              Patient completes form (submit-public.php)
+                        ↓
+              Creates patient (or links existing) + case (status: ouvert)
+              Form status: submitted
                         ↓
               Practitioner sees in "NOUVEAU RDV" list
                         ↓
-              Practitioner clicks → consultation starts
+              Practitioner clicks → loads patient + case data
                         ↓
-              Save consultation → patient record created, form marked processed
+              Save consultation → updates patient (medical_encrypted),
+              updates case (voyage, medical_encrypted), creates consultation,
+              form marked processed, case closed (termine)
 ```
 
 ### Form Sources

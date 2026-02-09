@@ -112,6 +112,27 @@ if (!$updateResponse || isset($updateResponse['code'])) {
     exit;
 }
 
+// Close the associated case
+$caseFilter = urlencode("patient_form = '{$formId}'");
+$casesResponse = pbRequest(
+    "/api/collections/cases/records?filter={$caseFilter}&perPage=1",
+    'GET',
+    null,
+    $adminToken
+);
+if ($casesResponse && !empty($casesResponse['items'])) {
+    $caseId = $casesResponse['items'][0]['id'];
+    pbRequest(
+        "/api/collections/cases/records/{$caseId}",
+        'PATCH',
+        [
+            'status' => 'termine',
+            'closed_at' => date('c')
+        ],
+        $adminToken
+    );
+}
+
 echo json_encode([
     'success' => true,
     'message' => 'Formulaire marqué comme traité',

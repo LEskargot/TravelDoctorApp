@@ -121,6 +121,35 @@ if (!empty($vaccinationFileIds)) {
     }
 }
 
+$formRecordId = $createResponse['id'];
+
+// Find or create patient record
+$patientId = findOrCreatePatient($adminToken, $patientName, $patientEmail, $patientAvs, $formData);
+
+// Link patient to form
+if ($patientId) {
+    pbRequest(
+        "/api/collections/patient_forms/records/{$formRecordId}",
+        'PATCH',
+        ['linked_patient' => $patientId],
+        $adminToken
+    );
+
+    // Create case linked to patient and form
+    pbRequest(
+        '/api/collections/cases/records',
+        'POST',
+        [
+            'patient' => $patientId,
+            'patient_form' => $formRecordId,
+            'status' => 'ouvert',
+            'opened_at' => date('c'),
+            'type' => 'voyage'
+        ],
+        $adminToken
+    );
+}
+
 // Increment rate limit counter
 incrementRateLimit($clientIP);
 
@@ -131,6 +160,97 @@ echo json_encode([
     'success' => true,
     'message' => 'Formulaire enregistré'
 ]);
+
+/**
+ * Find existing patient or create a new one.
+ * Matches by AVS first, then DOB + name.
+ */
+function findOrCreatePatient($adminToken, $patientName, $email, $avs, $formData) {
+    // Parse name: form uses "Prénom Nom" format
+    $nameParts = explode(' ', trim($patientName), 2);
+    $prenom = $nameParts[0] ?? '';
+    $nom = $nameParts[1] ?? $nameParts[0] ?? '';
+
+    $dobRaw = $formData['birthdate'] ?? '';
+    $dob = $dobRaw ? date('Y-m-d', strtotime($dobRaw)) : '';
+
+    // 1. Try AVS match
+    if (!empty($avs)) {
+        $avsFilter = urlencode("avs = '{$avs}'");
+        $search = pbRequest(
+            "/api/collections/patients/records?filter={$avsFilter}&perPage=1",
+            'GET',
+            null,
+            $adminToken
+        );
+        if ($search && !empty($search['items'])) {
+            return $search['items'][0]['id'];
+        }
+    }
+
+    // 2. Try DOB + name match
+    if (!empty($dob) && !empty($patientName)) {
+        $dobFilter = urlencode("dob = '{$dob}'");
+        $search = pbRequest(
+            "/api/collections/patients/records?filter={$dobFilter}&perPage=50",
+            'GET',
+            null,
+            $adminToken
+        );
+        if ($search && !empty($search['items'])) {
+            foreach ($search['items'] as $patient) {
+                $prenomMatch = normalizedContains($patient['prenom'], $prenom) ||
+                               normalizedContains($prenom, $patient['prenom']);
+                $nomMatch = normalizedContains($patient['nom'], $nom) ||
+                            normalizedContains($nom, $patient['nom']);
+                if ($prenomMatch && $nomMatch) {
+                    return $patient['id'];
+                }
+            }
+        }
+    }
+
+    // 3. No match — create new patient
+    $patientData = [
+        'nom' => $nom,
+        'prenom' => $prenom,
+        'dob' => $dob,
+        'email' => $email ?: null,
+        'telephone' => $formData['phone'] ?? null,
+        'poids' => isset($formData['weight']) ? (float)$formData['weight'] : null,
+        'avs' => $avs ?: null
+    ];
+
+    // Build address
+    $addressParts = [];
+    if (!empty($formData['street'])) $addressParts[] = $formData['street'];
+    if (!empty($formData['postal_code']) || !empty($formData['city'])) {
+        $addressParts[] = trim(($formData['postal_code'] ?? '') . ' ' . ($formData['city'] ?? ''));
+    }
+    if (!empty($addressParts)) {
+        $patientData['adresse'] = implode(', ', $addressParts);
+    }
+
+    // Set sex
+    if (!empty($formData['gender'])) {
+        $genderMap = ['masculin' => 'm', 'feminin' => 'f', 'autre' => 'autre'];
+        $patientData['sexe'] = $genderMap[$formData['gender']] ?? null;
+    }
+
+    $newPatient = pbRequest(
+        '/api/collections/patients/records',
+        'POST',
+        $patientData,
+        $adminToken
+    );
+
+    if ($newPatient && !isset($newPatient['code'])) {
+        return $newPatient['id'];
+    }
+
+    error_log('Failed to create patient: ' . json_encode($newPatient));
+    return null;
+}
 
 /**
  * Send confirmation email in the appropriate language
