@@ -130,6 +130,18 @@
         .data-status-item.loaded { background: #e8f5e9; color: #2e7d32; }
         .data-status-item.missing { background: #fff3e0; color: #ef6c00; }
         
+        /* EDIT MODE - CHECKBOX GROUPS & BOOLEAN SELECTS */
+        .edit-checkbox-group { display: flex; flex-wrap: wrap; gap: 6px 12px; max-height: 150px; overflow-y: auto; padding: 6px 0; }
+        .edit-checkbox-group label { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+        .edit-checkbox-group input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer; }
+        .edit-autre-text { display: none; width: 100%; padding: 6px 8px; margin-top: 4px; font-size: 12px; border: 1px solid #ddd; border-radius: 4px; }
+        .edit-autre-text.visible { display: block; }
+        .edit-field-row { margin-bottom: 10px; }
+        .edit-field-row > label { font-size: 12px; font-weight: 600; display: block; margin-bottom: 4px; }
+        .edit-boolean-row { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 8px; width: 100%; }
+        .edit-boolean-row label { font-size: 12px; font-weight: 600; min-width: 140px; flex-shrink: 0; }
+        .edit-boolean-row select { padding: 6px 8px; font-size: 12px; border: 1px solid #ddd; border-radius: 4px; flex: 1; max-width: 200px; }
+
         /* PATIENT HISTORY */
         .history-consultation { background: #f5f5f5; padding: 12px; margin-bottom: 10px; border-radius: 6px; border-left: 4px solid #2196F3; }
         .history-consultation h5 { margin: 0 0 8px 0; color: #1976D2; font-size: 14px; }
@@ -2187,8 +2199,8 @@ function populateFromOnlineForm(formData) {
                 const detail = fd['allergy_detail_' + t];
                 return detail ? label + ': ' + detail : label;
             }).join('; ') : '',
-            varicelleContractee: fd.chickenpox_disease === 'oui' ? true : (fd.chickenpox_disease === 'non' ? false : null),
-            varicelleVaccine: fd.chickenpox_vaccine === 'oui' ? true : (fd.chickenpox_vaccine === 'non' ? false : null),
+            varicelleContractee: fd.chickenpox_disease === 'oui' ? true : (fd.chickenpox_disease === 'non' ? false : (fd.chickenpox_disease === 'ne_sais_pas' ? 'unknown' : null)),
+            varicelleVaccine: fd.chickenpox_vaccine === 'oui' ? true : (fd.chickenpox_vaccine === 'non' ? false : (fd.chickenpox_vaccine === 'ne_sais_pas' ? 'unknown' : null)),
             problemeVaccination: fd.vaccination_problem === 'oui' ? true : (fd.vaccination_problem === 'non' ? false : null),
             problemeVaccinationDetails: fd.vaccination_problem_details || '',
             maladies: fd.comorbidities || [],
@@ -2450,20 +2462,27 @@ function toggleEditVoyage() {
 
 function saveVoyageEdit() {
     if (!patientFormData) return;
-    
-    // Update patientFormData with edited values
+
+    // Dates
     patientFormData.voyage.dateDepart = document.getElementById('editVoyageDateDepart').value;
     patientFormData.voyage.dateRetour = document.getElementById('editVoyageDateRetour').value;
-    
-    // Parse arrays (comma-separated input back to arrays)
-    patientFormData.voyage.nature = normalizeArray(document.getElementById('editVoyageNature').value);
-    patientFormData.voyage.hebergement = normalizeArray(document.getElementById('editVoyageHebergement').value);
-    patientFormData.voyage.activites = normalizeArray(document.getElementById('editVoyageActivites').value);
-    
-    // Parse boolean
-    var zonesValue = document.getElementById('editVoyageZonesRurales').value;
-    patientFormData.voyage.zonesRurales = zonesValue === 'true' ? true : (zonesValue === 'false' ? false : null);
-    
+
+    // Checkbox groups → arrays
+    patientFormData.voyage.nature = collectCheckboxGroup('editVoyageNature');
+    patientFormData.voyage.hebergement = collectCheckboxGroup('editVoyageHebergement');
+    patientFormData.voyage.activites = collectCheckboxGroup('editVoyageActivites');
+
+    // "Autre" text fields
+    var natureAutreEl = document.getElementById('editVoyageNatureAutre');
+    patientFormData.voyage.natureAutre = natureAutreEl ? natureAutreEl.value.trim() : '';
+    var hebergementAutreEl = document.getElementById('editVoyageHebergementAutre');
+    patientFormData.voyage.hebergementAutre = hebergementAutreEl ? hebergementAutreEl.value.trim() : '';
+    var activitesAutreEl = document.getElementById('editVoyageActivitesAutre');
+    patientFormData.voyage.activitesAutre = activitesAutreEl ? activitesAutreEl.value.trim() : '';
+
+    // Boolean select
+    patientFormData.voyage.zonesRurales = parseBooleanSelect('editVoyageZonesRurales');
+
     // Recalculate duration
     if (patientFormData.voyage.dateDepart && patientFormData.voyage.dateRetour) {
         const start = new Date(patientFormData.voyage.dateDepart);
@@ -2472,10 +2491,10 @@ function saveVoyageEdit() {
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         patientFormData.voyage.duree = diffDays + ' jours';
     }
-    
+
     // Refresh display
     displayExtractedData(patientFormData);
-    
+
     alert('✅ Données voyage mises à jour !');
 }
 
@@ -2494,24 +2513,39 @@ function toggleEditMedical() {
 
 function saveMedicalEdit() {
     if (!patientFormData || !patientFormData.medical) return;
-    
-    // Update patientFormData with edited values
-    patientFormData.medical.maladies = document.getElementById('editMedicalMaladies').value;
-    patientFormData.medical.allergieOeufs = document.getElementById('editMedicalAllergieOeufs').value;
-    patientFormData.medical.autresAllergies = document.getElementById('editMedicalAutresAllergies').value;
-    patientFormData.medical.allergiesDetails = document.getElementById('editMedicalAllergiesDetails').value;
-    patientFormData.medical.grossesse = document.getElementById('editMedicalGrossesse').value;
-    patientFormData.medical.contraception = document.getElementById('editMedicalContraception').value;
-    patientFormData.medical.allaitement = document.getElementById('editMedicalAllaitement').value;
-    patientFormData.medical.varicelleContractee = document.getElementById('editMedicalVaricelleContractee').value;
-    patientFormData.medical.varicelleVaccine = document.getElementById('editMedicalVaricelleVaccine').value;
-    patientFormData.medical.problemeVaccination = document.getElementById('editMedicalProblemeVaccination').value;
-    patientFormData.medical.medicaments = document.getElementById('editMedicalMedicaments').value;
-    patientFormData.medical.medicamentsDetails = document.getElementById('editMedicalMedicamentsDetails').value;
-    
+
+    // Checkbox groups → arrays
+    patientFormData.medical.maladies = collectCheckboxGroup('editMedicalMaladies');
+    patientFormData.medical.autresAllergies = collectCheckboxGroup('editMedicalAutresAllergies');
+
+    // Text fields
+    var allergieOeufsVal = document.getElementById('editMedicalAllergieOeufs').value.trim();
+    patientFormData.medical.allergieOeufs = allergieOeufsVal || null;
+    patientFormData.medical.allergiesDetails = document.getElementById('editMedicalAllergiesDetails').value.trim();
+    patientFormData.medical.medicamentsDetails = document.getElementById('editMedicalMedicamentsDetails').value.trim();
+    patientFormData.medical.problemeVaccinationDetails = document.getElementById('editMedicalProblemeVaccinationDetails').value.trim();
+    patientFormData.medical.psychologique = document.getElementById('editMedicalPsychologique').value.trim();
+
+    // Date field
+    patientFormData.medical.dernieresRegles = document.getElementById('editMedicalDernieresRegles').value;
+
+    // Number field
+    var cd4Val = document.getElementById('editMedicalCd4').value;
+    patientFormData.medical.cd4 = cd4Val ? parseInt(cd4Val, 10) : '';
+
+    // Boolean selects
+    patientFormData.medical.grossesse = parseBooleanSelect('editMedicalGrossesse');
+    patientFormData.medical.contraception = parseBooleanSelect('editMedicalContraception');
+    patientFormData.medical.allaitement = parseBooleanSelect('editMedicalAllaitement');
+    patientFormData.medical.varicelleContractee = parseBooleanSelect('editMedicalVaricelleContractee');
+    patientFormData.medical.varicelleVaccine = parseBooleanSelect('editMedicalVaricelleVaccine');
+    patientFormData.medical.problemeVaccination = parseBooleanSelect('editMedicalProblemeVaccination');
+    patientFormData.medical.medicaments = parseBooleanSelect('editMedicalMedicaments');
+    patientFormData.medical.chimio = parseBooleanSelect('editMedicalChimio');
+
     // Refresh display
     displayExtractedData(patientFormData);
-    
+
     alert('✅ Données médicales mises à jour !');
 }
 
@@ -3097,7 +3131,96 @@ function hideChronometer() {
 function formatBoolean(value) {
     if (value === true) return 'Oui';
     if (value === false) return 'Non';
+    if (value === 'unknown') return 'Ne sait pas';
     return '-';
+}
+
+// Escape HTML for safe attribute embedding
+function escHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+}
+
+// Normalize a value to an array (safety for legacy string data)
+function normalizeArray(value) {
+    if (Array.isArray(value)) return value;
+    if (!value || typeof value !== 'string') return [];
+    return value.split(',').map(s => s.trim()).filter(Boolean);
+}
+
+// Render checkbox group for edit mode (multi-select fields)
+function renderEditCheckboxGroup(id, labelMap, selectedKeys, autreFieldId, autreValue) {
+    const selected = normalizeArray(selectedKeys);
+    let html = '<div class="edit-checkbox-group" id="' + id + '">';
+    for (const [key, label] of Object.entries(labelMap)) {
+        const checked = selected.includes(key) ? ' checked' : '';
+        const isAucune = key === 'aucune';
+        const isAutre = key === 'autre';
+        const handler = isAucune
+            ? ' onchange="handleAucuneCheckbox(this,\'' + id + '\')"'
+            : ' onchange="handleNonAucuneCheckbox(this,\'' + id + '\')"';
+        const autreHandler = isAutre && autreFieldId
+            ? ' onchange="handleNonAucuneCheckbox(this,\'' + id + '\'); document.getElementById(\'' + autreFieldId + '\').classList.toggle(\'visible\', this.checked)"'
+            : handler;
+        html += '<label><input type="checkbox" value="' + escHtml(key) + '"' + checked + autreHandler + '> ' + escHtml(label) + '</label>';
+    }
+    html += '</div>';
+    if (autreFieldId) {
+        const visible = selected.includes('autre') ? ' visible' : '';
+        html += '<input type="text" id="' + autreFieldId + '" class="edit-autre-text' + visible + '" value="' + escHtml(autreValue || '') + '" placeholder="Préciser...">';
+    }
+    return html;
+}
+
+// Render boolean select for edit mode
+function renderEditBooleanSelect(id, currentValue, includeNeSaitPas) {
+    let html = '<select id="' + id + '" style="padding: 6px 8px; font-size: 12px; border: 1px solid #ddd; border-radius: 4px;">';
+    html += '<option value="">-</option>';
+    html += '<option value="true"' + (currentValue === true ? ' selected' : '') + '>Oui</option>';
+    html += '<option value="false"' + (currentValue === false ? ' selected' : '') + '>Non</option>';
+    if (includeNeSaitPas) {
+        html += '<option value="unknown"' + (currentValue === 'unknown' ? ' selected' : '') + '>Ne sait pas</option>';
+    }
+    html += '</select>';
+    return html;
+}
+
+// Collect checked values from a checkbox group
+function collectCheckboxGroup(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return [];
+    return Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+}
+
+// Parse boolean select value
+function parseBooleanSelect(selectId) {
+    const val = document.getElementById(selectId)?.value;
+    if (val === 'true') return true;
+    if (val === 'false') return false;
+    if (val === 'unknown') return 'unknown';
+    return null;
+}
+
+// "Aucune" checkbox: uncheck all others
+function handleAucuneCheckbox(cb, groupId) {
+    if (cb.checked) {
+        const container = document.getElementById(groupId);
+        container.querySelectorAll('input[type="checkbox"]').forEach(function(other) {
+            if (other !== cb) other.checked = false;
+        });
+        // Hide any "autre" text field
+        const autreText = container.parentElement.querySelector('.edit-autre-text');
+        if (autreText) autreText.classList.remove('visible');
+    }
+}
+
+// Non-"Aucune" checkbox: uncheck "Aucune" when any other is checked
+function handleNonAucuneCheckbox(cb, groupId) {
+    if (cb.checked) {
+        const container = document.getElementById(groupId);
+        const aucune = container.querySelector('input[value="aucune"]');
+        if (aucune) aucune.checked = false;
+    }
 }
 
 // Label translation maps for form keys → French display labels
@@ -3230,36 +3353,34 @@ function displayExtractedData(data) {
         
         // Voyage edit mode (hidden by default)
         html += '<div id="voyageEdit" style="display: none;">';
-        html += '<div style="margin-bottom: 10px;">';
-        html += '<label style="font-size: 12px; font-weight: 600;">Date de départ :</label>';
-        html += '<input type="date" id="editVoyageDateDepart" value="' + (data.voyage.dateDepart || '') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        html += '<div class="edit-field-row">';
+        html += '<label>Date de départ :</label>';
+        html += '<input type="date" id="editVoyageDateDepart" value="' + (data.voyage.dateDepart || '') + '" style="width: 100%; padding: 8px;">';
         html += '</div>';
-        html += '<div style="margin-bottom: 10px;">';
-        html += '<label style="font-size: 12px; font-weight: 600;">Date de retour :</label>';
-        html += '<input type="date" id="editVoyageDateRetour" value="' + (data.voyage.dateRetour || '') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        html += '<div class="edit-field-row">';
+        html += '<label>Date de retour :</label>';
+        html += '<input type="date" id="editVoyageDateRetour" value="' + (data.voyage.dateRetour || '') + '" style="width: 100%; padding: 8px;">';
         html += '</div>';
-        html += '<div style="margin-bottom: 10px;">';
-        html += '<label style="font-size: 12px; font-weight: 600;">Nature du voyage :</label>';
-        html += '<input type="text" id="editVoyageNature" value="' + formatArray(data.voyage.nature, 'travel_reason') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        html += '<div class="edit-field-row">';
+        html += '<label>Nature du voyage :</label>';
+        html += renderEditCheckboxGroup('editVoyageNature', FORM_LABELS.travel_reason, data.voyage.nature, 'editVoyageNatureAutre', data.voyage.natureAutre);
         html += '</div>';
-        html += '<div style="margin-bottom: 10px;">';
-        html += '<label style="font-size: 12px; font-weight: 600;">Hébergement :</label>';
-        html += '<input type="text" id="editVoyageHebergement" value="' + formatArray(data.voyage.hebergement, 'accommodation') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        html += '<div class="edit-field-row">';
+        html += '<label>Hébergement :</label>';
+        html += renderEditCheckboxGroup('editVoyageHebergement', FORM_LABELS.accommodation, data.voyage.hebergement, 'editVoyageHebergementAutre', data.voyage.hebergementAutre);
         html += '</div>';
-        html += '<div style="margin-bottom: 10px;">';
-        html += '<label style="font-size: 12px; font-weight: 600;">Activités :</label>';
-        html += '<input type="text" id="editVoyageActivites" value="' + formatArray(data.voyage.activites, 'activities') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        html += '<div class="edit-field-row">';
+        html += '<label>Activités :</label>';
+        html += renderEditCheckboxGroup('editVoyageActivites', FORM_LABELS.activities, data.voyage.activites, 'editVoyageActivitesAutre', data.voyage.activitesAutre);
         html += '</div>';
-        html += '<div style="margin-bottom: 10px;">';
-        html += '<label style="font-size: 12px; font-weight: 600;">Zones rurales :</label>';
-        html += '<select id="editVoyageZonesRurales" style="width: 100%; padding: 8px; margin-top: 5px;">';
-        html += '<option value="">-</option>';
-        html += '<option value="true"' + (data.voyage.zonesRurales === true ? ' selected' : '') + '>Oui</option>';
-        html += '<option value="false"' + (data.voyage.zonesRurales === false ? ' selected' : '') + '>Non</option>';
-        html += '</select>';
+        html += '<div class="edit-boolean-row">';
+        html += '<label>Zones rurales :</label>';
+        html += renderEditBooleanSelect('editVoyageZonesRurales', data.voyage.zonesRurales);
         html += '</div>';
+        html += '<div style="margin-top: 10px;">';
         html += '<button type="button" class="btn-primary btn-small" onclick="saveVoyageEdit()" style="margin-right: 10px;">✓ Enregistrer</button>';
         html += '<button type="button" class="btn-secondary btn-small" onclick="toggleEditVoyage()">✕ Annuler</button>';
+        html += '</div>';
         html += '</div>';
         
         html += '</div>';
@@ -3331,57 +3452,69 @@ function displayExtractedData(data) {
         html += '</ul></div>';
         
         // Medical edit mode (hidden by default)
+        var allergyLabelsFiltered = Object.fromEntries(Object.entries(FORM_LABELS.allergy_types).filter(function(e) { return e[0] !== 'oeufs' && e[0] !== 'aucune'; }));
         html += '<div id="medicalEdit" style="display: none;">';
-        html += '<div style="margin-bottom: 10px;">';
-        html += '<label style="font-size: 12px; font-weight: 600;">Comorbidités :</label>';
-        html += '<input type="text" id="editMedicalMaladies" value="' + formatArray(m.maladies, 'comorbidities') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        // Comorbidités
+        html += '<div class="edit-field-row">';
+        html += '<label>Comorbidités :</label>';
+        html += renderEditCheckboxGroup('editMedicalMaladies', FORM_LABELS.comorbidities, m.maladies);
         html += '</div>';
-        html += '<div style="margin-bottom: 10px;">';
-        html += '<label style="font-size: 12px; font-weight: 600;">Allergie œufs :</label>';
-        html += '<input type="text" id="editMedicalAllergieOeufs" value="' + (m.allergieOeufs || '') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        // Allergie œufs
+        html += '<div class="edit-field-row">';
+        html += '<label>Allergie œufs (détail) :</label>';
+        html += '<input type="text" id="editMedicalAllergieOeufs" value="' + escHtml(m.allergieOeufs || '') + '" style="width: 100%; padding: 8px;" placeholder="Laisser vide si pas d\'allergie">';
         html += '</div>';
-        html += '<div style="margin-bottom: 10px;">';
-        html += '<label style="font-size: 12px; font-weight: 600;">Autres allergies :</label>';
-        html += '<input type="text" id="editMedicalAutresAllergies" value="' + formatArray(m.autresAllergies, 'allergy_types') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        // Autres allergies
+        html += '<div class="edit-field-row">';
+        html += '<label>Autres allergies :</label>';
+        html += renderEditCheckboxGroup('editMedicalAutresAllergies', allergyLabelsFiltered, m.autresAllergies);
         html += '</div>';
-        html += '<div style="margin-bottom: 10px;">';
-        html += '<label style="font-size: 12px; font-weight: 600;">Détails allergies :</label>';
-        html += '<textarea id="editMedicalAllergiesDetails" style="width: 100%; padding: 8px; margin-top: 5px; min-height: 60px;">' + (m.allergiesDetails || '') + '</textarea>';
+        // Détails allergies
+        html += '<div class="edit-field-row">';
+        html += '<label>Détails allergies :</label>';
+        html += '<textarea id="editMedicalAllergiesDetails" style="width: 100%; padding: 8px; min-height: 60px;">' + escHtml(m.allergiesDetails || '') + '</textarea>';
         html += '</div>';
-        html += '<div style="margin-bottom: 10px;">';
-        html += '<label style="font-size: 12px; font-weight: 600;">Grossesse possible :</label>';
-        html += '<input type="text" id="editMedicalGrossesse" value="' + (m.grossesse || '') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        // Booleans: grossesse, contraception, allaitement
+        html += '<div class="edit-boolean-row"><label>Grossesse possible :</label>' + renderEditBooleanSelect('editMedicalGrossesse', m.grossesse) + '</div>';
+        html += '<div class="edit-boolean-row"><label>Contraception :</label>' + renderEditBooleanSelect('editMedicalContraception', m.contraception) + '</div>';
+        html += '<div class="edit-boolean-row"><label>Allaitement :</label>' + renderEditBooleanSelect('editMedicalAllaitement', m.allaitement) + '</div>';
+        // Dernières règles (new)
+        html += '<div class="edit-field-row">';
+        html += '<label>Dernières règles :</label>';
+        html += '<input type="date" id="editMedicalDernieresRegles" value="' + (m.dernieresRegles || '') + '" style="width: 100%; padding: 8px;">';
         html += '</div>';
-        html += '<div style="margin-bottom: 10px;">';
-        html += '<label style="font-size: 12px; font-weight: 600;">Contraception :</label>';
-        html += '<input type="text" id="editMedicalContraception" value="' + (m.contraception || '') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        // Varicelle
+        html += '<div class="edit-boolean-row"><label>Varicelle (maladie) :</label>' + renderEditBooleanSelect('editMedicalVaricelleContractee', m.varicelleContractee, true) + '</div>';
+        html += '<div class="edit-boolean-row"><label>Varicelle (vaccin) :</label>' + renderEditBooleanSelect('editMedicalVaricelleVaccine', m.varicelleVaccine, true) + '</div>';
+        // Problème vaccination
+        html += '<div class="edit-boolean-row"><label>Problème vaccination :</label>' + renderEditBooleanSelect('editMedicalProblemeVaccination', m.problemeVaccination) + '</div>';
+        html += '<div class="edit-field-row">';
+        html += '<label>Détails problème vaccination :</label>';
+        html += '<textarea id="editMedicalProblemeVaccinationDetails" style="width: 100%; padding: 8px; min-height: 40px;">' + escHtml(m.problemeVaccinationDetails || '') + '</textarea>';
         html += '</div>';
-        html += '<div style="margin-bottom: 10px;">';
-        html += '<label style="font-size: 12px; font-weight: 600;">Allaitement :</label>';
-        html += '<input type="text" id="editMedicalAllaitement" value="' + (m.allaitement || '') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        // Médicaments
+        html += '<div class="edit-boolean-row"><label>Médicaments réguliers :</label>' + renderEditBooleanSelect('editMedicalMedicaments', m.medicaments) + '</div>';
+        html += '<div class="edit-field-row">';
+        html += '<label>Détails médicaments :</label>';
+        html += '<textarea id="editMedicalMedicamentsDetails" style="width: 100%; padding: 8px; min-height: 60px;">' + escHtml(m.medicamentsDetails || '') + '</textarea>';
         html += '</div>';
-        html += '<div style="margin-bottom: 10px;">';
-        html += '<label style="font-size: 12px; font-weight: 600;">Varicelle (maladie) :</label>';
-        html += '<input type="text" id="editMedicalVaricelleContractee" value="' + (m.varicelleContractee || '') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        // CD4 (new)
+        html += '<div class="edit-field-row">';
+        html += '<label>CD4 :</label>';
+        html += '<input type="number" id="editMedicalCd4" value="' + escHtml(m.cd4 || '') + '" style="width: 100%; padding: 8px;" placeholder="Valeur CD4">';
         html += '</div>';
-        html += '<div style="margin-bottom: 10px;">';
-        html += '<label style="font-size: 12px; font-weight: 600;">Varicelle (vaccin) :</label>';
-        html += '<input type="text" id="editMedicalVaricelleVaccine" value="' + (m.varicelleVaccine || '') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        // Chimio (new)
+        html += '<div class="edit-boolean-row"><label>Chimio/radiothérapie :</label>' + renderEditBooleanSelect('editMedicalChimio', m.chimio) + '</div>';
+        // Psychologique (new)
+        html += '<div class="edit-field-row">';
+        html += '<label>Problème psychologique :</label>';
+        html += '<input type="text" id="editMedicalPsychologique" value="' + escHtml(m.psychologique || '') + '" style="width: 100%; padding: 8px;" placeholder="Détails...">';
         html += '</div>';
-        html += '<div style="margin-bottom: 10px;">';
-        html += '<label style="font-size: 12px; font-weight: 600;">Problème vaccination :</label>';
-        html += '<input type="text" id="editMedicalProblemeVaccination" value="' + (m.problemeVaccination || '') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
-        html += '</div>';
-        html += '<div style="margin-bottom: 10px;">';
-        html += '<label style="font-size: 12px; font-weight: 600;">Médicaments réguliers :</label>';
-        html += '<input type="text" id="editMedicalMedicaments" value="' + (m.medicaments || '') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
-        html += '</div>';
-        html += '<div style="margin-bottom: 10px;">';
-        html += '<label style="font-size: 12px; font-weight: 600;">Détails médicaments :</label>';
-        html += '<textarea id="editMedicalMedicamentsDetails" style="width: 100%; padding: 8px; margin-top: 5px; min-height: 60px;">' + (m.medicamentsDetails || '') + '</textarea>';
-        html += '</div>';
+        // Buttons
+        html += '<div style="margin-top: 10px;">';
         html += '<button type="button" class="btn-primary btn-small" onclick="saveMedicalEdit()" style="margin-right: 10px;">✓ Enregistrer</button>';
         html += '<button type="button" class="btn-secondary btn-small" onclick="toggleEditMedical()">✕ Annuler</button>';
+        html += '</div>';
         html += '</div>';
         
         html += '</div>';
