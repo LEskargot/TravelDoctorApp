@@ -1,0 +1,181 @@
+/* ==================== BASE ==================== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+
+.container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+h1 { color: #2c3e50; margin-bottom: 15px; font-size: 24px; }
+h2 { color: #555; font-size: 18px; margin-bottom: 20px; }
+h3 { color: #34495e; font-size: 16px; margin-bottom: 10px; }
+h4 { color: #555; font-size: 14px; margin-bottom: 8px; }
+
+/* ==================== BUTTONS ==================== */
+button { padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; transition: background 0.3s; }
+.btn-primary { background: #3498db; color: white; }
+.btn-primary:hover { background: #2980b9; }
+.btn-success { background: #27ae60; color: white; }
+.btn-success:hover { background: #229954; }
+.btn-secondary { background: #95a5a6; color: white; }
+.btn-secondary:hover { background: #7f8c8d; }
+.btn-small { padding: 6px 12px; font-size: 12px; }
+
+/* ==================== FORMS ==================== */
+label { display: block; margin-bottom: 5px; color: #555; font-size: 14px; }
+input, select, textarea {
+    width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;
+    font-size: 14px; font-family: Arial, sans-serif; margin-bottom: 10px;
+}
+input:focus, select:focus, textarea:focus {
+    outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+}
+
+/* ==================== CONNECTION INDICATOR ==================== */
+.connection-indicator {
+    position: fixed; top: 20px; left: 20px; z-index: 1001;
+    padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.connection-indicator.online { background: #d4edda; color: #155724; }
+.connection-indicator.offline { background: #f8d7da; color: #721c24; }
+.connection-indicator.connecting { background: #fff3cd; color: #856404; }
+.connection-dot { width: 8px; height: 8px; border-radius: 50%; }
+.connection-indicator.online .connection-dot { background: #28a745; }
+.connection-indicator.offline .connection-dot { background: #dc3545; }
+.connection-indicator.connecting .connection-dot { background: #ffc107; animation: pulse 1s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+/* ==================== LOGIN ==================== */
+.login-screen { text-align: center; padding: 60px 20px; max-width: 400px; margin: 0 auto; }
+.login-form { background: #f5f5f5; padding: 30px; border-radius: 12px; }
+.login-form label { text-align: left; font-weight: 600; }
+.login-btn {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: all 0.3s;
+}
+.login-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102,126,234,0.4); }
+.login-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.login-error { background: #f8d7da; color: #721c24; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 14px; }
+
+/* ==================== LOCATION SELECTOR ==================== */
+.location-screen { text-align: center; padding: 60px 20px; }
+.location-selector {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    padding: 20px; border-radius: 8px; max-width: 400px; margin: 0 auto;
+}
+
+/* ==================== HOME / USER HEADER ==================== */
+.home-screen { padding: 20px 0; }
+.user-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 15px; background: #f5f5f5; border-radius: 8px; margin-bottom: 20px;
+}
+.user-info { display: flex; align-items: center; gap: 10px; }
+.user-name { font-weight: 600; color: #333; }
+.location-badge {
+    display: inline-block; background: #e3f2fd; color: #1565C0;
+    padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+}
+.logout-btn {
+    padding: 6px 12px; background: #ef5350; color: white;
+    border: none; border-radius: 4px; cursor: pointer; font-size: 12px;
+}
+.logout-btn:hover { background: #d32f2f; }
+
+/* ==================== PATIENT SEARCH ==================== */
+.patient-search-section {
+    background: #e3f2fd; padding: 20px; border-radius: 8px; margin-bottom: 20px;
+}
+.search-input-group { display: flex; gap: 10px; margin-bottom: 15px; }
+.search-input-group input { flex: 1; }
+.search-results { max-height: 300px; overflow-y: auto; background: white; border-radius: 6px; }
+.search-result-item {
+    padding: 12px 15px; border-bottom: 1px solid #eee;
+    cursor: pointer; transition: background 0.2s;
+}
+.search-result-item:last-child { border-bottom: none; }
+.search-result-item:hover { background: #f5f5f5; }
+.search-result-name { font-weight: 600; color: #333; }
+.search-result-info { font-size: 12px; color: #666; }
+.search-no-results { padding: 20px; text-align: center; color: #666; font-style: italic; }
+
+/* ==================== PATIENT SUMMARY ==================== */
+.patient-summary {
+    background: white; padding: 15px; border-radius: 8px; margin-top: 15px;
+    border: 1px solid #e0e0e0;
+}
+.patient-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
+}
+.patient-name { font-size: 18px; color: #2c3e50; }
+.patient-age { font-size: 14px; color: #666; margin-left: 8px; }
+.patient-details { font-size: 13px; color: #555; line-height: 1.6; }
+.avs-display { font-family: 'Courier New', monospace; color: #1565C0; }
+
+/* ==================== MEDICAL DATA ==================== */
+.medical-section {
+    margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee;
+}
+.medical-row { margin-bottom: 6px; font-size: 13px; }
+.medical-row strong { color: #555; margin-right: 6px; }
+.medical-tag {
+    display: inline-block; background: #e8f5e9; color: #2e7d32;
+    padding: 2px 8px; border-radius: 12px; font-size: 12px; margin: 2px 4px 2px 0;
+}
+.medical-tag.allergy { background: #ffebee; color: #c62828; }
+
+/* ==================== CASES ==================== */
+.case-view { margin-top: 20px; }
+.case-list-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;
+}
+.case-card {
+    background: #f5f5f5; border: 2px solid #e0e0e0; border-radius: 8px;
+    padding: 12px 16px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s;
+}
+.case-card:hover { border-color: #2196F3; }
+.case-card.active { border-color: #2196F3; background: #e3f2fd; }
+.case-card.open { border-left: 4px solid #27ae60; }
+.case-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.case-type { font-weight: 600; color: #333; }
+.case-status { font-size: 12px; padding: 2px 8px; border-radius: 12px; }
+.case-status.ouvert { background: #e8f5e9; color: #2e7d32; }
+.case-status.termine { background: #f5f5f5; color: #666; }
+.case-status.annule { background: #ffebee; color: #c62828; }
+.case-destinations { font-size: 14px; color: #1565C0; margin-bottom: 4px; }
+.case-dates { font-size: 12px; color: #999; }
+
+/* ==================== CASE DETAIL ==================== */
+.case-detail {
+    background: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px;
+    padding: 20px; margin-top: 15px;
+}
+.case-detail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+
+/* ==================== CONSULTATIONS ==================== */
+.consultation-card {
+    background: white; border-left: 4px solid #2196F3;
+    padding: 12px; margin-bottom: 10px; border-radius: 0 6px 6px 0;
+}
+.consultation-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.consultation-type { font-weight: 600; color: #1976D2; font-size: 14px; }
+.consultation-date { font-size: 12px; color: #666; }
+.consultation-notes { font-size: 13px; color: #555; margin-top: 4px; }
+.consultation-duration { font-size: 12px; color: #999; margin-top: 4px; }
+
+.add-consultation { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+
+/* ==================== NEW CASE FORM ==================== */
+.new-case-form {
+    background: #fff3e0; padding: 15px; border-radius: 8px;
+    margin-bottom: 15px; border: 1px solid #ffcc02;
+}
+.form-row { margin-bottom: 10px; }
+.form-row label { font-weight: 600; font-size: 13px; }
+.form-actions { display: flex; gap: 10px; margin-top: 10px; }
+
+/* ==================== SHARED ==================== */
+.no-data-message { text-align: center; color: #999; font-style: italic; padding: 20px; }
+.cases-summary { margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee; }
+.open-cases-hint { font-size: 12px; color: #27ae60; margin-top: 4px; }
