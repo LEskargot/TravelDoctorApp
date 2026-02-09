@@ -479,13 +479,13 @@
                 <div class="accordion-body">
                     <!-- PATIENT SUMMARY (compact) -->
                     <div id="patientCompactView" style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <strong id="displayPatientName" style="font-size: 16px; color: #333;">-</strong>
-                                <span id="displayPatientInfo" style="margin-left: 10px; color: #666; font-size: 14px;">-</span>
-                            </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <strong id="displayPatientName" style="font-size: 16px; color: #333;">-</strong>
                             <button type="button" class="btn-secondary btn-small" onclick="togglePatientEdit()">✏️ Modifier</button>
                         </div>
+                        <div id="displayPatientDob" style="font-size: 13px; color: #555;"></div>
+                        <div id="displayPatientAddress" style="font-size: 13px; color: #555;"></div>
+                        <div id="displayPatientInfo" style="font-size: 13px; color: #555;"></div>
                     </div>
                     
                     <!-- EDIT MODE (hidden) -->
@@ -512,7 +512,12 @@
 
                         <button type="button" class="btn-secondary btn-small" onclick="togglePatientEdit()">✓ Valider</button>
                     </div>
-                    
+
+                    <!-- EXTRACTED FORM DATA (voyage, medical) -->
+                    <div id="extractedPreview" style="display: none; margin-bottom: 15px;">
+                        <div id="extractedContent"></div>
+                    </div>
+
                     <!-- CONSULTATION COUNT + TOGGLE -->
                     <div id="consultCountSection" style="display: none; background: #f5f5f5; padding: 12px; border-radius: 8px; margin-bottom: 10px;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -1020,9 +1025,33 @@ async function selectPatientFromSearch(patientId) {
         document.getElementById('manualAddress').value = patient.adresse || '';
         document.getElementById('manualEmail').value = patient.email || '';
         document.getElementById('manualPhone').value = patient.telephone || '';
+        if (patient.avs) document.getElementById('manualAvs').value = patient.avs;
         if (patient.poids) document.getElementById('weight').value = patient.poids;
 
         updatePatientSummary();
+
+        // Populate patientFormData from most recent consultation with voyage/medical data
+        const recentConsult = consultations.find(c => c.voyage || c.medical);
+        if (recentConsult) {
+            patientFormData = {
+                patient: {
+                    nom: fullName,
+                    dob: patient.dob || '',
+                    dobISO: patient.dob || '',
+                    rue: '',
+                    codePostal: '',
+                    ville: '',
+                    pays: '',
+                    email: patient.email || '',
+                    telephone: patient.telephone || '',
+                    genre: '',
+                    poids: patient.poids || ''
+                },
+                voyage: recentConsult.voyage || {},
+                medical: recentConsult.medical || {}
+            };
+            displayExtractedData(patientFormData);
+        }
 
         // Show consultation type choice
         document.getElementById('consultTypeChoice').style.display = 'block';
@@ -1579,7 +1608,12 @@ function displayPatientHistoryInApp() {
     
     // Update patient summary
     updatePatientSummary();
-    
+
+    // Display voyage/medical data if available
+    if (patientFormData) {
+        displayExtractedData(patientFormData);
+    }
+
     // Show consultation count
     if (consults.length > 0) {
         document.getElementById('consultCountText').textContent = consults.length + ' consultation(s) précédente(s)';
@@ -2059,6 +2093,7 @@ function selectCalendarEvent(eventData) {
     }
 
     updateCalculatedAge();
+    updatePatientSummary();
     startChronometer();
 }
 
@@ -2153,6 +2188,9 @@ function populateFromOnlineForm(formData) {
     if (fd.weight) {
         document.getElementById('weight').value = fd.weight;
     }
+
+    // Display voyage and medical data in Dossier Patient
+    displayExtractedData(patientFormData);
 }
 
 function startManualEntry() {
@@ -2477,26 +2515,36 @@ function updatePatientSummary() {
     const phone = document.getElementById('manualPhone').value.trim();
     const email = document.getElementById('manualEmail').value.trim();
     const avs = document.getElementById('manualAvs').value.trim();
+    const address = document.getElementById('manualAddress').value.trim();
+    const weight = document.getElementById('weight').value.trim();
 
     document.getElementById('displayPatientName').textContent = name;
 
-    let info = '';
+    // Row 2: DOB + age | Weight
+    let dobLine = '';
     if (dob) {
-        info += formatDateSwiss(new Date(dob));
+        dobLine = formatDateSwiss(new Date(dob));
+        // Calculate age
+        const dobDate = new Date(dob);
+        const today = new Date();
+        let age = today.getFullYear() - dobDate.getFullYear();
+        const m = today.getMonth() - dobDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < dobDate.getDate())) age--;
+        dobLine += ' (' + age + ' ans)';
     }
-    if (avs) {
-        info += (info ? ' • AVS: ' : 'AVS: ') + avs;
+    if (weight) {
+        dobLine += (dobLine ? ' • ' : '') + weight + ' kg';
     }
-    if (phone) {
-        info += (info ? ' • ' : '') + phone;
-    }
-    if (email) {
-        info += (info ? ' • ' : '') + email;
-    }
-    if (!info) {
-        info = '-';
-    }
+    document.getElementById('displayPatientDob').textContent = dobLine;
 
+    // Row 3: Address
+    document.getElementById('displayPatientAddress').textContent = address ? address.replace(/\n/g, ', ') : '';
+
+    // Row 4: Phone | Email | AVS
+    let info = '';
+    if (phone) info += phone;
+    if (email) info += (info ? ' • ' : '') + email;
+    if (avs) info += (info ? ' • AVS: ' : 'AVS: ') + avs;
     document.getElementById('displayPatientInfo').textContent = info;
 }
 
