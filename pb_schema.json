@@ -1194,6 +1194,20 @@
         "type": "bool"
       },
       {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text550594806",
+        "max": 0,
+        "min": 0,
+        "name": "google_calendar_id",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
         "hidden": false,
         "id": "autodate2990389176",
         "name": "created",
@@ -1367,7 +1381,8 @@
         "values": [
           "draft",
           "submitted",
-          "processed"
+          "processed",
+          "cancelled"
         ]
       },
       {
