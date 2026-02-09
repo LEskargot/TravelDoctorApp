@@ -46,7 +46,7 @@ $patientResponse = pbRequest(
     $adminToken
 );
 
-if (!$patientResponse || isset($patientResponse['code'])) {
+if (!$patientResponse || isset($patientResponse['code']) || empty($patientResponse['id'])) {
     http_response_code(404);
     echo json_encode(['error' => 'Patient non trouvé']);
     exit;
