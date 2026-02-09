@@ -2,8 +2,8 @@
 /**
  * OneDoc Email Processor
  *
- * Monitors inbox for OneDoc booking notifications and sends
- * prefilled form invitations to patients.
+ * Monitors inbox for OneDoc booking notifications and cancellations.
+ * Sends prefilled form invitations for bookings, cancels forms for cancellations.
  *
  * Run via cron every 2-3 minutes:
  * php /path/to/process-onedoc-emails.php
@@ -27,6 +27,7 @@ define('IMAP_FOLDER', 'OneDoc');
 
 // OneDoc subject patterns to filter
 define('ONEDOC_SUBJECTS', ['Nouveau RDV en ligne', 'Nouvelle consultation vidéo en ligne']);
+define('ONEDOC_CANCEL_SUBJECTS', ['Annulation RDV', 'Annulation consultation vidéo']);
 
 // Lock file to prevent concurrent runs
 define('LOCK_FILE', sys_get_temp_dir() . '/onedoc_processor.lock');
@@ -63,7 +64,7 @@ function main() {
 
         logMessage("Unread emails in folder: " . $allEmails->count());
 
-        // Filter by subject
+        // Filter by subject (booking or cancellation)
         $emails = [];
         foreach ($allEmails as $email) {
             $subject = $email->getSubject();
@@ -72,10 +73,20 @@ function main() {
             if ($decodedSubject === false) {
                 $decodedSubject = $subject;
             }
+            $matched = false;
             foreach (ONEDOC_SUBJECTS as $pattern) {
                 if (stripos($decodedSubject, $pattern) !== false) {
-                    $emails[] = $email;
+                    $emails[] = ['email' => $email, 'type' => 'booking'];
+                    $matched = true;
                     break;
+                }
+            }
+            if (!$matched) {
+                foreach (ONEDOC_CANCEL_SUBJECTS as $pattern) {
+                    if (stripos($decodedSubject, $pattern) !== false) {
+                        $emails[] = ['email' => $email, 'type' => 'cancellation'];
+                        break;
+                    }
                 }
             }
         }
@@ -89,9 +100,13 @@ function main() {
 
         logMessage("Found " . count($emails) . " matching email(s).");
 
-        foreach ($emails as $email) {
+        foreach ($emails as $item) {
             try {
-                processEmail($email);
+                if ($item['type'] === 'cancellation') {
+                    processCancellation($item['email']);
+                } else {
+                    processEmail($item['email']);
+                }
             } catch (Exception $e) {
                 logMessage("Error processing email: " . $e->getMessage());
             }
@@ -225,6 +240,94 @@ function processEmail($email) {
     } else {
         throw new Exception("Failed to send invitation email");
     }
+}
+
+/**
+ * Process a OneDoc cancellation email
+ */
+function processCancellation($email) {
+    $subject = $email->getSubject();
+    $decodedSubject = iconv_mime_decode($subject, ICONV_MIME_DECODE_CONTINUE_ON_ERROR, 'UTF-8');
+    if ($decodedSubject === false) $decodedSubject = $subject;
+    logMessage("Processing cancellation: $decodedSubject");
+
+    $body = $email->getHTMLBody();
+    if (empty($body)) {
+        throw new Exception("Could not extract cancellation email HTML body");
+    }
+
+    // Parse body (reuse existing function — same icon structure)
+    $patientData = parseOnedocEmail($body);
+
+    // Fallback: extract date/time from subject
+    // Format: "Annulation RDV du 01.04.2026 à 09:30" or "Annulation consultation vidéo du 18.02.2026 à 10:10"
+    if (empty($patientData['appointment_date'])) {
+        if (preg_match('/du\s+(\d{2}\.\d{2}\.\d{4})\s+[àa]\s*(\d{1,2}:\d{2})/u', $decodedSubject, $matches)) {
+            $patientData['appointment_date'] = $matches[1];
+            $patientData['appointment_time'] = $matches[2];
+        }
+    }
+
+    $appointmentKey = $patientData['appointment_date'] . ' ' . $patientData['appointment_time'];
+    logMessage("Cancellation for: " . $patientData['email'] . " appointment: $appointmentKey");
+
+    if (empty($patientData['email'])) {
+        throw new Exception("Could not extract patient email from cancellation");
+    }
+
+    $cancelled = cancelMatchingForm($patientData['email'], $appointmentKey);
+    if ($cancelled) {
+        logMessage("Form cancelled successfully");
+    } else {
+        logMessage("No matching form found to cancel");
+    }
+
+    $email->setFlag('Seen');
+}
+
+/**
+ * Find and cancel a patient_forms record matching the given email and appointment
+ */
+function cancelMatchingForm($email, $appointmentKey) {
+    $adminToken = pbAdminAuth();
+    if (!$adminToken) return false;
+
+    $filter = urlencode("source = 'onedoc' && status != 'processed' && status != 'cancelled' && email_encrypted != ''");
+
+    $response = pbRequest(
+        "/api/collections/patient_forms/records?filter=$filter&perPage=500&sort=-created",
+        'GET', null, $adminToken
+    );
+
+    if (!$response || empty($response['items'])) return false;
+
+    foreach ($response['items'] as $form) {
+        if (empty($form['email_encrypted'])) continue;
+        try {
+            $formEmail = decryptData($form['email_encrypted']);
+            if (strtolower($formEmail) !== strtolower($email)) continue;
+
+            if (!empty($form['form_data_encrypted'])) {
+                $formData = decryptFormData($form['form_data_encrypted']);
+                $formAppointment = $formData['onedoc_appointment'] ?? '';
+                if ($formAppointment === $appointmentKey) {
+                    // Match found — cancel it
+                    pbRequest(
+                        "/api/collections/patient_forms/records/" . $form['id'],
+                        'PATCH',
+                        ['status' => 'cancelled'],
+                        $adminToken
+                    );
+                    logMessage("Cancelled form " . $form['id'] . " for $email (appointment: $appointmentKey)");
+                    return true;
+                }
+            }
+        } catch (Exception $e) {
+            continue;
+        }
+    }
+
+    return false;
 }
 
 /**
