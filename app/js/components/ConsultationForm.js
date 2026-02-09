@@ -35,9 +35,9 @@ export default {
     emits: ['saved', 'back'],
 
     setup(props, { emit }) {
-        const { userName, location, locationName } = useAuth();
-        const { currentPatient, patientName, savePatient } = usePatient();
-        const { currentCase, addConsultation } = useCase();
+        const { userName, user, location, locationName } = useAuth();
+        const { currentPatient, patientName, medicalData, savePatient } = usePatient();
+        const { currentCase, addConsultation, updateCaseData, formData: caseFormData } = useCase();
         const chrono = useChronometer();
         const vaccines = useVaccines();
         const prescription = usePrescription();
@@ -90,9 +90,17 @@ export default {
                     avs: formData.avs
                 });
 
-                // Create consultation
+                // Update case with medical snapshot if medical data exists
+                if (currentCase.value && medicalData.value) {
+                    await updateCaseData(currentCase.value.id, {
+                        medical: medicalData.value
+                    });
+                }
+
+                // Create consultation with practitioner
                 const consultation = await addConsultation({
                     location: location.value,
+                    practitioner: user.value?.id,
                     date: new Date().toISOString().split('T')[0],
                     consultation_type: props.consultationType,
                     duration_minutes: chrono.elapsedMinutes.value,
@@ -108,6 +116,11 @@ export default {
 
                 // Save prescription (via PHP, encrypted)
                 await prescription.savePrescription(patientId, consultation.id);
+
+                // Mark form as processed if from pending forms
+                if (caseFormData.value?.formId) {
+                    await secureApi.markFormProcessed(caseFormData.value.formId, patientId);
+                }
 
                 // Offer backup
                 if (confirm('Consultation sauvegardee!\n\nVoulez-vous telecharger une copie de sauvegarde (JSON) ?')) {

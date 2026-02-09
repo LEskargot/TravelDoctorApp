@@ -7,6 +7,7 @@
  * Screens: login → location → home → (pending_forms | consultation)
  */
 import { initPocketBase, checkConnection } from './api/pocketbase.js';
+import * as secureApi from './api/secure-api.js';
 import { useAuth } from './composables/useAuth.js';
 import { usePatient } from './composables/usePatient.js';
 import { useCase } from './composables/useCase.js';
@@ -32,8 +33,8 @@ const App = {
             loadLocations, selectLocation, restoreSession, logout
         } = useAuth();
 
-        const { currentPatient, clearPatient } = usePatient();
-        const { clearCases } = useCase();
+        const { currentPatient, clearPatient, selectPatient } = usePatient();
+        const { clearCases, createNewCase, selectCase, loadCasesForPatient, setFormData } = useCase();
         const vaccines = useVaccines();
         const prescription = usePrescription();
         const chrono = useChronometer();
@@ -94,7 +95,7 @@ const App = {
         function startNewPatient() {
             clearPatient();
             clearCases();
-            consultationType.value = 'consultation_voyage';
+            consultationType.value = 'vaccination';
             screen.value = 'consultation';
         }
 
@@ -120,22 +121,47 @@ const App = {
 
         // ==================== Pending forms events ====================
 
-        function onFormSelected(form) {
-            // Load form data into patient context and start consultation
-            consultationType.value = 'consultation_voyage';
-            screen.value = 'consultation';
+        async function onFormSelected(formId) {
+            try {
+                // Decrypt form data
+                const formResult = await secureApi.decryptForm(formId);
+                const form = formResult.form;
+
+                // Load patient if linked
+                if (formResult.existing_patient?.id) {
+                    await selectPatient(formResult.existing_patient.id);
+                    await loadCasesForPatient(formResult.existing_patient.id);
+
+                    // Select the linked case if exists
+                    if (formResult.case_id) {
+                        await selectCase(formResult.case_id);
+                    }
+                }
+
+                // Store form reference for marking as processed after save
+                setFormData({
+                    formId: formId,
+                    caseId: formResult.case_id,
+                    formData: form
+                });
+
+                consultationType.value = 'vaccination';
+                screen.value = 'consultation';
+            } catch (error) {
+                alert('Erreur lors du chargement du formulaire: ' + error.message);
+            }
         }
 
         function onCalendarSelected(event) {
             // Start consultation from calendar event
-            consultationType.value = 'consultation_voyage';
+            consultationType.value = 'vaccination';
             screen.value = 'consultation';
         }
 
         function onManualEntry() {
             clearPatient();
             clearCases();
-            consultationType.value = 'consultation_voyage';
+            consultationType.value = 'vaccination';
             screen.value = 'consultation';
         }
 

@@ -85,15 +85,30 @@ export async function getPendingForms() {
 }
 
 export async function decryptForm(formId) {
-    return await secureRequest('decrypt-form.php', {
-        method: 'POST',
-        body: JSON.stringify({ form_id: formId })
-    });
+    return await secureRequest(`decrypt-form.php?id=${formId}`);
 }
 
 export async function markFormProcessed(formId, patientId) {
     return await secureRequest('mark-form-processed.php', {
         method: 'POST',
         body: JSON.stringify({ form_id: formId, patient_id: patientId, action: 'process' })
+    });
+}
+
+// ==================== Patient History (full, server-decrypted) ====================
+
+export async function getPatientHistory(patientId) {
+    return await secureRequest(`get-patient-history.php?patient_id=${patientId}`);
+}
+
+// ==================== Case Medical Snapshot ====================
+
+export async function saveCaseMedical(caseId, medicalData) {
+    return await secureRequest('encrypt-data.php', {
+        method: 'POST',
+        body: JSON.stringify({ items: [{ key: 'medical', data: medicalData }] })
+    }).then(async (encResult) => {
+        // Update case with encrypted medical via PocketBase (caller handles this)
+        return encResult.encrypted?.medical || null;
     });
 }

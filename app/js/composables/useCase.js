@@ -3,12 +3,16 @@
  * Manages travel cases and their consultations
  */
 import * as pbApi from '../api/pocketbase.js';
+import * as secureApi from '../api/secure-api.js';
 
 const { ref, computed } = Vue;
 
 const cases = ref([]);
 const currentCase = ref(null);
 const consultations = ref([]);
+
+// Tracks form data when processing a pending form
+const formData = ref(null);
 
 export function useCase() {
 
@@ -54,6 +58,29 @@ export function useCase() {
         if (currentCase.value?.id === caseId) currentCase.value = updated;
     }
 
+    /**
+     * Update case with medical snapshot and/or other data.
+     * Encrypts medical data server-side before saving to case.
+     */
+    async function updateCaseData(caseId, { medical, ...otherData }) {
+        const updatePayload = { ...otherData };
+
+        if (medical) {
+            // Encrypt medical data via PHP
+            const encryptedMedical = await secureApi.saveCaseMedical(caseId, medical);
+            if (encryptedMedical) {
+                updatePayload.medical_encrypted = encryptedMedical;
+            }
+        }
+
+        if (Object.keys(updatePayload).length > 0) {
+            const updated = await pbApi.updateCase(caseId, updatePayload);
+            const idx = cases.value.findIndex(c => c.id === caseId);
+            if (idx >= 0) cases.value[idx] = updated;
+            if (currentCase.value?.id === caseId) currentCase.value = updated;
+        }
+    }
+
     async function addConsultation(data) {
         if (!currentCase.value) throw new Error('No active case');
         const consultation = await pbApi.createConsultation({
@@ -65,23 +92,35 @@ export function useCase() {
         return consultation;
     }
 
+    /**
+     * Set form data when processing a pending form.
+     * Used by ConsultationForm to know which form to mark as processed.
+     */
+    function setFormData(data) {
+        formData.value = data;
+    }
+
     function clearCases() {
         cases.value = [];
         currentCase.value = null;
         consultations.value = [];
+        formData.value = null;
     }
 
     return {
         cases,
         currentCase,
         consultations,
+        formData,
         openCases,
         closedCases,
         loadCasesForPatient,
         selectCase,
         createNewCase,
         closeCase,
+        updateCaseData,
         addConsultation,
+        setFormData,
         clearCases
     };
 }
