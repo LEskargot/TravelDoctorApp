@@ -1,0 +1,481 @@
+/* ==================== BASE ==================== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+
+.container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+h1 { color: #2c3e50; margin-bottom: 15px; font-size: 24px; }
+h2 { color: #555; font-size: 18px; margin-bottom: 20px; }
+h3 { color: #34495e; font-size: 16px; margin-bottom: 10px; }
+h4 { color: #555; font-size: 14px; margin-bottom: 8px; }
+
+/* ==================== BUTTONS ==================== */
+button { padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; transition: background 0.3s; }
+.btn-primary { background: #3498db; color: white; }
+.btn-primary:hover { background: #2980b9; }
+.btn-success { background: #27ae60; color: white; }
+.btn-success:hover { background: #229954; }
+.btn-secondary { background: #95a5a6; color: white; }
+.btn-secondary:hover { background: #7f8c8d; }
+.btn-danger { background: #e74c3c; color: white; }
+.btn-danger:hover { background: #c0392b; }
+.btn-teal { background: #009688; color: white; }
+.btn-teal:hover { background: #00796b; }
+.btn-small { padding: 6px 12px; font-size: 12px; }
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.button-group { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+
+/* ==================== FORMS ==================== */
+label { display: block; margin-bottom: 5px; color: #555; font-size: 14px; }
+input, select, textarea {
+    width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;
+    font-size: 14px; font-family: Arial, sans-serif; margin-bottom: 10px;
+}
+input:focus, select:focus, textarea:focus {
+    outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+}
+
+/* ==================== CONNECTION INDICATOR ==================== */
+.connection-indicator {
+    position: fixed; top: 20px; left: 20px; z-index: 1001;
+    padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.connection-indicator.online { background: #d4edda; color: #155724; }
+.connection-indicator.offline { background: #f8d7da; color: #721c24; }
+.connection-indicator.connecting { background: #fff3cd; color: #856404; }
+.connection-dot { width: 8px; height: 8px; border-radius: 50%; }
+.connection-indicator.online .connection-dot { background: #28a745; }
+.connection-indicator.offline .connection-dot { background: #dc3545; }
+.connection-indicator.connecting .connection-dot { background: #ffc107; animation: pulse 1s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+/* ==================== LOGIN ==================== */
+.login-screen { text-align: center; padding: 60px 20px; max-width: 400px; margin: 0 auto; }
+.login-form { background: #f5f5f5; padding: 30px; border-radius: 12px; }
+.login-form label { text-align: left; font-weight: 600; }
+.login-btn {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: all 0.3s;
+}
+.login-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102,126,234,0.4); }
+.login-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.login-error { background: #f8d7da; color: #721c24; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 14px; }
+
+/* ==================== LOCATION SELECTOR ==================== */
+.location-screen { text-align: center; padding: 60px 20px; }
+.location-selector {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    padding: 20px; border-radius: 8px; max-width: 400px; margin: 0 auto;
+}
+
+/* ==================== HOME / USER HEADER ==================== */
+.home-screen { padding: 20px 0; }
+.user-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 15px; background: #f5f5f5; border-radius: 8px; margin-bottom: 20px;
+}
+.user-info { display: flex; align-items: center; gap: 10px; }
+.user-name { font-weight: 600; color: #333; }
+.location-badge {
+    display: inline-block; background: #e3f2fd; color: #1565C0;
+    padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+}
+.logout-btn {
+    padding: 6px 12px; background: #ef5350; color: white;
+    border: none; border-radius: 4px; cursor: pointer; font-size: 12px;
+}
+.logout-btn:hover { background: #d32f2f; }
+
+/* ==================== HOME ACTION BUTTONS ==================== */
+.home-actions {
+    display: flex; gap: 15px; margin-bottom: 25px; justify-content: center;
+}
+.home-action-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    padding: 20px 30px; border-radius: 12px; border: 2px solid transparent;
+    cursor: pointer; transition: all 0.3s; min-width: 160px;
+}
+.home-action-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.home-action-icon { font-size: 28px; }
+.home-action-label { font-size: 13px; font-weight: 700; letter-spacing: 0.5px; }
+.home-action-rdv {
+    background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+    color: #1565C0; border-color: #90caf9;
+}
+.home-action-rdv:hover { background: linear-gradient(135deg, #bbdefb, #90caf9); }
+.home-action-new {
+    background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+    color: #2e7d32; border-color: #a5d6a7;
+}
+.home-action-new:hover { background: linear-gradient(135deg, #c8e6c9, #a5d6a7); }
+
+.patient-actions-bar {
+    display: flex; justify-content: flex-end; gap: 8px; margin: 10px 0;
+}
+
+/* ==================== PATIENT SEARCH ==================== */
+.patient-search-section {
+    background: #e3f2fd; padding: 20px; border-radius: 8px; margin-bottom: 20px;
+}
+.search-input-group { display: flex; gap: 10px; margin-bottom: 15px; }
+.search-input-group input { flex: 1; }
+.search-results { max-height: 300px; overflow-y: auto; background: white; border-radius: 6px; }
+.search-result-item {
+    padding: 12px 15px; border-bottom: 1px solid #eee;
+    cursor: pointer; transition: background 0.2s;
+}
+.search-result-item:last-child { border-bottom: none; }
+.search-result-item:hover { background: #f5f5f5; }
+.search-result-name { font-weight: 600; color: #333; }
+.search-result-info { font-size: 12px; color: #666; }
+.search-no-results { padding: 20px; text-align: center; color: #666; font-style: italic; }
+
+/* ==================== PATIENT SUMMARY ==================== */
+.patient-summary {
+    background: white; padding: 15px; border-radius: 8px; margin-top: 15px;
+    border: 1px solid #e0e0e0;
+}
+.patient-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
+}
+.patient-name { font-size: 18px; color: #2c3e50; }
+.patient-age { font-size: 14px; color: #666; margin-left: 8px; }
+.patient-details { font-size: 13px; color: #555; line-height: 1.6; }
+.avs-display { font-family: 'Courier New', monospace; color: #1565C0; }
+
+/* ==================== MEDICAL DATA ==================== */
+.medical-section {
+    margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee;
+}
+.medical-row { margin-bottom: 6px; font-size: 13px; }
+.medical-row strong { color: #555; margin-right: 6px; }
+.medical-tag {
+    display: inline-block; background: #e8f5e9; color: #2e7d32;
+    padding: 2px 8px; border-radius: 12px; font-size: 12px; margin: 2px 4px 2px 0;
+}
+.medical-tag.allergy { background: #ffebee; color: #c62828; }
+
+/* ==================== CASES ==================== */
+.case-view { margin-top: 20px; }
+.case-list-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;
+}
+.case-card {
+    background: #f5f5f5; border: 2px solid #e0e0e0; border-radius: 8px;
+    padding: 12px 16px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s;
+}
+.case-card:hover { border-color: #2196F3; }
+.case-card.active { border-color: #2196F3; background: #e3f2fd; }
+.case-card.open { border-left: 4px solid #27ae60; }
+.case-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.case-type { font-weight: 600; color: #333; }
+.case-status { font-size: 12px; padding: 2px 8px; border-radius: 12px; }
+.case-status.ouvert { background: #e8f5e9; color: #2e7d32; }
+.case-status.termine { background: #f5f5f5; color: #666; }
+.case-status.annule { background: #ffebee; color: #c62828; }
+.case-destinations { font-size: 14px; color: #1565C0; margin-bottom: 4px; }
+.case-dates { font-size: 12px; color: #999; }
+
+/* ==================== CASE DETAIL ==================== */
+.case-detail {
+    background: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px;
+    padding: 20px; margin-top: 15px;
+}
+.case-detail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+
+/* ==================== CONSULTATIONS ==================== */
+.consultation-card {
+    background: white; border-left: 4px solid #2196F3;
+    padding: 12px; margin-bottom: 10px; border-radius: 0 6px 6px 0;
+}
+.consultation-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.consultation-type { font-weight: 600; color: #1976D2; font-size: 14px; }
+.consultation-date { font-size: 12px; color: #666; }
+.consultation-notes { font-size: 13px; color: #555; margin-top: 4px; }
+.consultation-duration { font-size: 12px; color: #999; margin-top: 4px; }
+
+.add-consultation { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+
+/* ==================== NEW CASE FORM ==================== */
+.new-case-form {
+    background: #fff3e0; padding: 15px; border-radius: 8px;
+    margin-bottom: 15px; border: 1px solid #ffcc02;
+}
+.form-row { margin-bottom: 10px; }
+.form-row label { font-weight: 600; font-size: 13px; }
+.form-actions { display: flex; gap: 10px; margin-top: 10px; }
+
+/* ==================== CONSULTATION FORM ==================== */
+.consultation-form { padding: 10px 0; }
+.consultation-form h1 { font-size: 22px; margin-bottom: 8px; }
+.practitioner-info { font-size: 14px; color: #555; margin-bottom: 15px; }
+
+/* ==================== ACCORDION ==================== */
+.accordion-section {
+    border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 10px;
+    overflow: hidden;
+}
+.accordion-section.active { border-color: #2196F3; }
+.accordion-header {
+    display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+    background: #f5f5f5; cursor: pointer; font-weight: 600; font-size: 15px;
+    color: #333; transition: background 0.2s; user-select: none;
+}
+.accordion-header:hover { background: #e8e8e8; }
+.accordion-section.active .accordion-header { background: #e3f2fd; color: #1565C0; }
+.accordion-icon { font-size: 12px; width: 16px; text-align: center; }
+.accordion-content { padding: 16px; }
+
+/* ==================== CHRONOMETER ==================== */
+.chronometer {
+    position: fixed; top: 20px; right: 20px; z-index: 1000;
+    background: white; border: 2px solid #2196F3; border-radius: 12px;
+    padding: 10px 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: flex; align-items: center; gap: 12px;
+}
+.chrono-time {
+    font-family: 'Courier New', monospace; font-size: 20px; font-weight: 700;
+    color: #333; min-width: 70px; text-align: center;
+}
+.chrono-status { font-size: 11px; color: #666; }
+.chrono-controls { display: flex; gap: 6px; }
+.chrono-controls button {
+    padding: 4px 10px; font-size: 12px; border-radius: 4px;
+}
+
+/* ==================== PATIENT EDIT FORM ==================== */
+.patient-edit-form { font-size: 13px; }
+.patient-compact-view { line-height: 1.8; }
+.patient-compact-view .edit-toggle {
+    float: right; font-size: 12px; color: #1565C0; cursor: pointer;
+    text-decoration: underline;
+}
+.patient-edit-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+}
+.patient-edit-grid label { font-weight: 600; margin-bottom: 2px; }
+.patient-edit-grid input { margin-bottom: 4px; }
+.field-full { grid-column: 1 / -1; }
+.age-display {
+    font-size: 13px; color: #555; padding: 4px 0;
+}
+.age-display.child { color: #e65100; font-weight: 600; }
+.weight-notice {
+    background: #fff8e1; border: 1px solid #ffecb3; border-radius: 6px;
+    padding: 8px 12px; margin-top: 8px; font-size: 12px; color: #f57f17;
+    display: flex; align-items: center; gap: 8px;
+}
+.weight-notice input { width: 80px; margin: 0; padding: 4px 8px; }
+
+/* ==================== NOTES SECTION ==================== */
+.notes-section .conseil-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px;
+}
+.notes-section .conseil-item {
+    display: flex; align-items: center; gap: 6px; font-size: 13px; color: #555;
+}
+.notes-section .conseil-item input[type="checkbox"] {
+    width: auto; margin: 0;
+}
+.notes-section textarea {
+    min-height: 120px; resize: vertical;
+}
+
+/* ==================== VACCINE PANEL ==================== */
+.vaccine-panel h4 { color: #1565C0; margin-bottom: 12px; }
+.vaccine-lot-status {
+    font-size: 12px; color: #666; margin-bottom: 10px;
+    padding: 6px 10px; background: #f5f5f5; border-radius: 4px;
+}
+.vaccine-checkbox-list {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 15px;
+}
+.vaccine-checkbox-item {
+    display: flex; align-items: center; gap: 6px; font-size: 13px;
+}
+.vaccine-checkbox-item input[type="checkbox"] { width: auto; margin: 0; }
+.vaccine-checkbox-item .expired { text-decoration: line-through; color: #999; }
+.vaccine-checkbox-item .expiring-soon { color: #e65100; }
+.lot-expiry-warning { font-size: 10px; color: #e65100; }
+
+/* Administered vaccines table */
+.vaccine-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.vaccine-table th {
+    background: #e3f2fd; color: #1565C0; text-align: left;
+    padding: 8px 10px; font-weight: 600; font-size: 12px;
+}
+.vaccine-table td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+.vaccine-table select { width: auto; min-width: 120px; margin: 0; padding: 4px 8px; }
+.vaccine-table .remove-btn {
+    padding: 2px 8px; font-size: 11px; background: #ffebee; color: #c62828;
+    border: 1px solid #ffcdd2; border-radius: 4px; cursor: pointer;
+}
+.vaccine-table .remove-btn:hover { background: #ffcdd2; }
+
+/* Boosters section */
+.boosters-section { margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee; }
+.booster-row {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+    font-size: 13px; padding: 6px 0;
+}
+.booster-row label { display: inline; margin: 0; font-weight: 600; min-width: 120px; }
+.booster-row input[type="date"] { width: auto; margin: 0; padding: 4px 8px; }
+
+/* ==================== PRESCRIPTION PANEL ==================== */
+.prescription-panel h4 { color: #009688; margin-bottom: 12px; }
+.medication-selector {
+    display: flex; gap: 10px; align-items: flex-end; margin-bottom: 15px; flex-wrap: wrap;
+}
+.medication-selector select { flex: 1; min-width: 200px; }
+.medication-selector button { white-space: nowrap; }
+
+.custom-med-fields {
+    display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;
+}
+.custom-med-fields input { flex: 1; min-width: 150px; }
+
+.medication-list { margin-top: 10px; }
+.medication-item {
+    background: #f5f5f5; border: 1px solid #e0e0e0; border-radius: 8px;
+    padding: 12px; margin-bottom: 10px; position: relative;
+}
+.medication-item-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+}
+.medication-name { font-weight: 600; color: #333; font-size: 14px; }
+.medication-item .remove-btn {
+    padding: 2px 8px; font-size: 11px; background: #ffebee; color: #c62828;
+    border: 1px solid #ffcdd2; border-radius: 4px; cursor: pointer;
+}
+.medication-item .remove-btn:hover { background: #ffcdd2; }
+.medication-dosing {
+    width: 100%; min-height: 60px; resize: vertical;
+    font-size: 13px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;
+    font-family: Arial, sans-serif;
+}
+
+.prescription-settings {
+    display: flex; gap: 15px; align-items: center; margin-top: 15px;
+    padding-top: 12px; border-top: 1px solid #eee; font-size: 13px;
+}
+.prescription-settings label { display: inline; margin: 0; font-weight: 600; }
+.prescription-settings input, .prescription-settings select {
+    width: auto; margin: 0; padding: 4px 8px;
+}
+
+/* ==================== DOSSIER STATUS ==================== */
+.dossier-status {
+    background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px;
+    padding: 15px; margin-top: 15px;
+}
+.dossier-status h4 { color: #555; margin-bottom: 10px; font-size: 14px; }
+.status-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 4px 0; font-size: 13px; color: #555;
+}
+.status-check { color: #27ae60; font-weight: 600; }
+.status-missing { color: #e74c3c; }
+
+/* ==================== MODAL ==================== */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); z-index: 2000;
+    display: flex; align-items: center; justify-content: center;
+}
+.modal-content {
+    background: white; border-radius: 12px; width: 90%; max-width: 600px;
+    max-height: 80vh; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+}
+.modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 20px; background: #f5f5f5; border-bottom: 1px solid #e0e0e0;
+}
+.modal-header h2 { font-size: 18px; color: #333; margin: 0; }
+.modal-close {
+    background: none; border: none; font-size: 20px; color: #666;
+    cursor: pointer; padding: 4px 8px; line-height: 1;
+}
+.modal-close:hover { color: #333; }
+.modal-body { padding: 20px; overflow-y: auto; max-height: calc(80vh - 60px); }
+
+/* ==================== TIMELINE ==================== */
+.timeline { padding: 10px 0 10px 20px; border-left: 3px solid #e0e0e0; }
+.timeline-item {
+    position: relative; padding: 0 0 20px 20px;
+}
+.timeline-dot {
+    position: absolute; left: -11px; top: 4px;
+    width: 16px; height: 16px; border-radius: 50%; border: 3px solid white;
+    box-shadow: 0 0 0 2px #e0e0e0;
+}
+.dot-case { background: #2196F3; }
+.dot-consultation { background: #27ae60; }
+.dot-observation { background: #ff9800; }
+.timeline-date { font-size: 11px; color: #999; margin-bottom: 2px; }
+.timeline-content { font-size: 13px; }
+.timeline-title { font-weight: 600; color: #333; }
+.timeline-details { font-size: 12px; color: #666; margin-top: 2px; }
+
+/* ==================== PENDING FORMS ==================== */
+.pending-forms { padding: 10px 0; }
+.pending-forms-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px;
+}
+.pending-forms-header h2 { margin: 0; }
+.pending-forms-actions { display: flex; gap: 8px; }
+
+.pending-search {
+    margin-bottom: 15px;
+}
+
+.form-date-group { margin-bottom: 20px; }
+.form-date-group h3 {
+    font-size: 14px; color: #666; margin-bottom: 10px;
+    padding-bottom: 6px; border-bottom: 1px solid #eee;
+}
+
+.form-card {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 16px; background: #f5f5f5; border: 2px solid #e0e0e0;
+    border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s;
+}
+.form-card:hover { border-color: #2196F3; background: #f0f7ff; }
+.form-card-info { flex: 1; }
+.form-card-name { font-weight: 600; color: #333; font-size: 14px; }
+.form-card-details { font-size: 12px; color: #666; margin-top: 2px; }
+.form-card-time { font-size: 12px; color: #999; margin-top: 2px; }
+
+.form-status-badge {
+    font-size: 11px; font-weight: 600; padding: 3px 10px;
+    border-radius: 12px; white-space: nowrap;
+}
+.badge-form-received { background: #e8f5e9; color: #2e7d32; }
+.badge-awaiting-form { background: #fff3e0; color: #e65100; }
+.badge-draft { background: #e3f2fd; color: #1565C0; }
+.badge-new { background: #e8f5e9; color: #2e7d32; }
+.badge-known { background: #e3f2fd; color: #1565C0; }
+
+/* ==================== SHARED ==================== */
+.no-data-message { text-align: center; color: #999; font-style: italic; padding: 20px; }
+.cases-summary { margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee; }
+.open-cases-hint { font-size: 12px; color: #27ae60; margin-top: 4px; }
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 600px) {
+    body { padding: 10px; }
+    .container { padding: 15px; }
+    .home-actions { flex-direction: column; }
+    .home-action-btn { min-width: auto; }
+    .vaccine-checkbox-list { grid-template-columns: 1fr 1fr; }
+    .patient-edit-grid { grid-template-columns: 1fr; }
+    .search-input-group { flex-direction: column; }
+    .button-group { flex-direction: column; }
+    .chronometer { top: auto; bottom: 10px; right: 10px; }
+    .medication-selector { flex-direction: column; }
+    .prescription-settings { flex-direction: column; align-items: flex-start; }
+}
