@@ -2121,11 +2121,19 @@ function populateFromOnlineForm(formData) {
     updatePatientSummary();
 
     // Store form data in the expected structure for displayExtractedData
+    // Form stores destinations as {country, departure, return} (not departure_date/return_date)
+    // Resolve country codes to French names
+    const countryNames = new Intl.DisplayNames(['fr'], { type: 'region' });
+    function resolveCountry(code) {
+        if (!code) return '';
+        try { return countryNames.of(code); } catch(e) { return code; }
+    }
+
     // Calculate travel duration
     let duree = '';
     if (fd.destinations && fd.destinations.length > 0) {
-        const allDepartures = fd.destinations.map(d => d.departure_date).filter(Boolean).sort();
-        const allReturns = fd.destinations.map(d => d.return_date).filter(Boolean).sort();
+        const allDepartures = fd.destinations.map(d => d.departure || d.departure_date).filter(Boolean).sort();
+        const allReturns = fd.destinations.map(d => d.return || d.return_date).filter(Boolean).sort();
         if (allDepartures.length > 0 && allReturns.length > 0) {
             const startDate = new Date(allDepartures[0]);
             const endDate = new Date(allReturns[allReturns.length - 1]);
@@ -2147,27 +2155,31 @@ function populateFromOnlineForm(formData) {
             pays: 'Suisse',
             email: formData.email || '',
             telephone: fd.phone || '',
-            genre: fd.gender || '',
+            genre: fd.gender ? fd.gender.charAt(0).toUpperCase() + fd.gender.slice(1) : '',
             poids: fd.weight || ''
         },
         voyage: {
             destinations: (fd.destinations || []).map(d => ({
-                pays: d.country || '',
-                depart: d.departure_date || '',
-                retour: d.return_date || ''
+                pays: resolveCountry(d.country) || d.country || '',
+                depart: d.departure || d.departure_date || '',
+                retour: d.return || d.return_date || ''
             })),
-            dateDepart: fd.destinations && fd.destinations.length > 0 ? fd.destinations[0].departure_date : '',
-            dateRetour: fd.destinations && fd.destinations.length > 0 ? fd.destinations[fd.destinations.length - 1].return_date : '',
+            dateDepart: fd.destinations && fd.destinations.length > 0 ? (fd.destinations[0].departure || fd.destinations[0].departure_date) : '',
+            dateRetour: fd.destinations && fd.destinations.length > 0 ? (fd.destinations[fd.destinations.length - 1].return || fd.destinations[fd.destinations.length - 1].return_date) : '',
             duree: duree,
             nature: fd.travel_reason || [],
+            natureAutre: fd.travel_reason_other || '',
             hebergement: fd.accommodation || [],
+            hebergementAutre: fd.accommodation_other || '',
             activites: fd.activities || [],
-            zonesRurales: fd.rural_stay === 'yes' ? true : (fd.rural_stay === 'no' ? false : null)
+            activitesAutre: fd.activities_other || '',
+            zonesRurales: fd.rural_stay === 'oui' ? true : (fd.rural_stay === 'non' ? false : null)
         },
         medical: {
-            grossesse: fd.pregnancy === 'yes' ? true : (fd.pregnancy === 'no' ? false : null),
-            contraception: null,
-            allaitement: fd.breastfeeding === 'yes' ? true : (fd.breastfeeding === 'no' ? false : null),
+            grossesse: fd.pregnancy === 'oui' ? true : (fd.pregnancy === 'non' ? false : null),
+            contraception: fd.contraception === 'oui' ? true : (fd.contraception === 'non' ? false : null),
+            allaitement: fd.breastfeeding === 'oui' ? true : (fd.breastfeeding === 'non' ? false : null),
+            dernieresRegles: fd.last_menses || '',
             allergieOeufs: fd.allergy_types && fd.allergy_types.includes('oeufs') ? (fd.allergy_detail_oeufs || 'Oui') : null,
             autresAllergies: fd.allergy_types ? fd.allergy_types.filter(t => t !== 'oeufs' && t !== 'aucune') : [],
             allergiesDetails: fd.allergy_types ? fd.allergy_types.filter(t => t !== 'oeufs' && t !== 'aucune').map(t => {
@@ -2175,12 +2187,23 @@ function populateFromOnlineForm(formData) {
                 const detail = fd['allergy_detail_' + t];
                 return detail ? label + ': ' + detail : label;
             }).join('; ') : '',
-            varicelleContractee: null,
-            varicelleVaccine: null,
-            problemeVaccination: null,
+            varicelleContractee: fd.chickenpox_disease === 'oui' ? true : (fd.chickenpox_disease === 'non' ? false : null),
+            varicelleVaccine: fd.chickenpox_vaccine === 'oui' ? true : (fd.chickenpox_vaccine === 'non' ? false : null),
+            problemeVaccination: fd.vaccination_problem === 'oui' ? true : (fd.vaccination_problem === 'non' ? false : null),
+            problemeVaccinationDetails: fd.vaccination_problem_details || '',
             maladies: fd.comorbidities || [],
-            medicaments: fd.medications === 'yes' ? true : (fd.medications === 'no' ? false : null),
-            medicamentsDetails: fd.medications_details || ''
+            maladiesDetails: (fd.comorbidities || []).filter(c => c !== 'aucune').map(c => {
+                const label = FORM_LABELS.comorbidities[c] || c;
+                const detailKey = c === 'autre' ? 'comorbidity_other' : (c === 'psychiatrique' ? 'psychiatric_details' : ('comorbidity_detail_' + c));
+                const detail = fd[detailKey];
+                return detail ? label + ' (' + detail + ')' : label;
+            }).join(', '),
+            medicaments: fd.takes_medication === 'oui' ? true : (fd.takes_medication === 'non' ? false : null),
+            medicamentsDetails: fd.medication_list || '',
+            cd4: fd.hiv_cd4 || '',
+            chimio: fd.recent_chemotherapy === 'oui' ? true : (fd.recent_chemotherapy === 'non' ? false : null),
+            psychologique: fd.psychiatric_details || '',
+            vaccination_card_links: (formData.vaccination_files || []).map(f => f.url).filter(Boolean)
         }
     };
 
@@ -3077,9 +3100,44 @@ function formatBoolean(value) {
     return '-';
 }
 
-// Format array for display
-function formatArray(value) {
+// Label translation maps for form keys → French display labels
+const FORM_LABELS = {
+    travel_reason: {
+        tourisme_organise: 'Tourisme organisé', tourisme_independant: 'Tourisme indépendant',
+        affaires: 'Affaires', aventure: 'Aventure', visite_famille: 'Visite famille/amis',
+        humanitaire: 'Humanitaire', pelerinage: 'Pèlerinage', expatriation: 'Expatriation',
+        autre: 'Autre'
+    },
+    accommodation: {
+        pas_decide: 'Pas décidé', habitant: "Chez l'habitant", hotel: 'Hôtel',
+        autre: 'Autre'
+    },
+    activities: {
+        alpinisme: 'Alpinisme', randonnee: 'Randonnée', plongee: 'Plongée',
+        rafting: 'Rafting', velo: 'Vélo', snorkeling: 'Snorkeling', aucune: 'Aucune',
+        autre: 'Autre'
+    },
+    comorbidities: {
+        vih: 'VIH', thymus: 'Problème du thymus', rate: 'Absence de rate',
+        cancer: 'Cancer', hematologie: 'Maladie hématologique',
+        hypertension: 'Hypertension', cardiaque: 'Maladie cardiaque',
+        diabete: 'Diabète', asthme: 'Asthme',
+        inflammatoire: 'Maladie inflammatoire intestinale', digestive: 'Maladie digestive chronique',
+        rhumatologie: 'Maladie rhumatologique', epilepsie: 'Épilepsie',
+        musculaire: 'Maladie musculaire', psychiatrique: 'Maladie psychiatrique',
+        chirurgie: 'Chirurgie récente', aucune: 'Aucune', autre: 'Autre'
+    },
+    allergy_types: {
+        oeufs: 'Œufs', medicaments: 'Médicaments', aliments: 'Aliments',
+        environnement: 'Environnement', aucune: 'Aucune', autre: 'Autre'
+    }
+};
+
+// Format array for display, with optional label translation
+function formatArray(value, category) {
     if (!value || value.length === 0) return '-';
+    const map = category && FORM_LABELS[category];
+    if (map) return value.map(v => map[v] || v).join(', ');
     return value.join(', ');
 }
 
@@ -3139,19 +3197,33 @@ function displayExtractedData(data) {
         html += '<ul class="history-list" style="font-size: 13px;">';
         
         if (data.voyage.destinations && data.voyage.destinations.length > 0) {
-            const dests = data.voyage.destinations.map(d => typeof d === 'object' ? d.pays : d).filter(Boolean).join(', ');
+            const dests = data.voyage.destinations.map(d => {
+                if (typeof d !== 'object') return d;
+                let text = d.pays || '';
+                if (d.depart && d.retour) text += ' : ' + formatDateDisplay(d.depart) + ' - ' + formatDateDisplay(d.retour);
+                return text;
+            }).filter(Boolean).join(', ');
             html += '<li><strong>Destination(s) :</strong> ' + dests + '</li>';
         }
         
-        if (data.voyage.dateDepart && data.voyage.dateRetour) {
-            html += '<li><strong>Dates :</strong> ' + formatDateDisplay(data.voyage.dateDepart) + ' → ' + formatDateDisplay(data.voyage.dateRetour);
+        // Show dates - fallback to extracting from destinations if top-level dates are missing
+        let dateDepart = data.voyage.dateDepart;
+        let dateRetour = data.voyage.dateRetour;
+        if (!dateDepart && data.voyage.destinations && data.voyage.destinations.length > 0) {
+            const allDeps = data.voyage.destinations.map(d => d.depart).filter(Boolean).sort();
+            const allRets = data.voyage.destinations.map(d => d.retour).filter(Boolean).sort();
+            if (allDeps.length) dateDepart = allDeps[0];
+            if (allRets.length) dateRetour = allRets[allRets.length - 1];
+        }
+        if (dateDepart && dateRetour) {
+            html += '<li><strong>Dates :</strong> ' + formatDateDisplay(dateDepart) + ' → ' + formatDateDisplay(dateRetour);
             if (data.voyage.duree) html += ' (' + data.voyage.duree + ')';
             html += '</li>';
         }
-        
-        if (data.voyage.nature) html += '<li><strong>Nature :</strong> ' + formatArray(data.voyage.nature) + '</li>';
-        if (data.voyage.hebergement) html += '<li><strong>Hébergement :</strong> ' + formatArray(data.voyage.hebergement) + '</li>';
-        if (data.voyage.activites) html += '<li><strong>Activités :</strong> ' + formatArray(data.voyage.activites) + '</li>';
+
+        if (data.voyage.nature && data.voyage.nature.length > 0) html += '<li><strong>Nature :</strong> ' + formatArray(data.voyage.nature, 'travel_reason') + (data.voyage.natureAutre ? ' (' + data.voyage.natureAutre + ')' : '') + '</li>';
+        if (data.voyage.hebergement && data.voyage.hebergement.length > 0) html += '<li><strong>Hébergement :</strong> ' + formatArray(data.voyage.hebergement, 'accommodation') + (data.voyage.hebergementAutre ? ' (' + data.voyage.hebergementAutre + ')' : '') + '</li>';
+        if (data.voyage.activites && data.voyage.activites.length > 0) html += '<li><strong>Activités :</strong> ' + formatArray(data.voyage.activites, 'activities') + (data.voyage.activitesAutre ? ' (' + data.voyage.activitesAutre + ')' : '') + '</li>';
         if (data.voyage.zonesRurales !== null) html += '<li><strong>Zones rurales :</strong> ' + formatBoolean(data.voyage.zonesRurales) + '</li>';
         
         html += '</ul></div>';
@@ -3168,15 +3240,15 @@ function displayExtractedData(data) {
         html += '</div>';
         html += '<div style="margin-bottom: 10px;">';
         html += '<label style="font-size: 12px; font-weight: 600;">Nature du voyage :</label>';
-        html += '<input type="text" id="editVoyageNature" value="' + formatArray(data.voyage.nature) + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        html += '<input type="text" id="editVoyageNature" value="' + formatArray(data.voyage.nature, 'travel_reason') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
         html += '</div>';
         html += '<div style="margin-bottom: 10px;">';
         html += '<label style="font-size: 12px; font-weight: 600;">Hébergement :</label>';
-        html += '<input type="text" id="editVoyageHebergement" value="' + formatArray(data.voyage.hebergement) + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        html += '<input type="text" id="editVoyageHebergement" value="' + formatArray(data.voyage.hebergement, 'accommodation') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
         html += '</div>';
         html += '<div style="margin-bottom: 10px;">';
         html += '<label style="font-size: 12px; font-weight: 600;">Activités :</label>';
-        html += '<input type="text" id="editVoyageActivites" value="' + formatArray(data.voyage.activites) + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        html += '<input type="text" id="editVoyageActivites" value="' + formatArray(data.voyage.activites, 'activities') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
         html += '</div>';
         html += '<div style="margin-bottom: 10px;">';
         html += '<label style="font-size: 12px; font-weight: 600;">Zones rurales :</label>';
@@ -3207,11 +3279,11 @@ function displayExtractedData(data) {
         html += '<ul class="history-list" style="font-size: 13px;">';
         
         // Comorbidités
-        if (m.maladies) html += '<li><strong>Comorbidités :</strong> ' + formatArray(m.maladies) + '</li>';
-        
+        if (m.maladies && (Array.isArray(m.maladies) ? m.maladies.length > 0 : true)) html += '<li><strong>Comorbidités :</strong> ' + (m.maladiesDetails || formatArray(m.maladies, 'comorbidities')) + '</li>';
+
         // Allergies
-        if (m.allergieOeufs !== null) html += '<li>Allergie œufs : ' + formatBoolean(m.allergieOeufs) + '</li>';
-        if (m.autresAllergies) html += '<li>Autres allergies : ' + formatArray(m.autresAllergies) + '</li>';
+        if (m.allergieOeufs) html += '<li>Allergie œufs : ' + m.allergieOeufs + '</li>';
+        if (m.autresAllergies && m.autresAllergies.length > 0) html += '<li>Autres allergies : ' + formatArray(m.autresAllergies, 'allergy_types') + '</li>';
         if (m.allergiesDetails) html += '<li style="margin-left: 15px; font-style: italic;">→ ' + m.allergiesDetails + '</li>';
         
         // Grossesse / Contraception / Allaitement
@@ -3242,7 +3314,7 @@ function displayExtractedData(data) {
         
         // Autres conditions
         if (m.cd4) html += '<li>CD4 : ' + formatNumber(m.cd4) + '</li>';
-        if (m.chimio !== null) html += '<li>Chimiothérapie/radiothérapie (6 derniers mois) : ' + formatBoolean(m.chimio) + '</li>';
+        if (m.chimio === true || m.chimio === false) html += '<li>Chimiothérapie/radiothérapie (6 derniers mois) : ' + formatBoolean(m.chimio) + '</li>';
         if (m.psychologique) html += '<li>Problème psychologique : ' + m.psychologique + '</li>';
         if (m.carnetVaccination) html += '<li>Carnet de vaccination : ' + m.carnetVaccination + '</li>';
         
@@ -3262,7 +3334,7 @@ function displayExtractedData(data) {
         html += '<div id="medicalEdit" style="display: none;">';
         html += '<div style="margin-bottom: 10px;">';
         html += '<label style="font-size: 12px; font-weight: 600;">Comorbidités :</label>';
-        html += '<input type="text" id="editMedicalMaladies" value="' + (m.maladies || '') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        html += '<input type="text" id="editMedicalMaladies" value="' + formatArray(m.maladies, 'comorbidities') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
         html += '</div>';
         html += '<div style="margin-bottom: 10px;">';
         html += '<label style="font-size: 12px; font-weight: 600;">Allergie œufs :</label>';
@@ -3270,7 +3342,7 @@ function displayExtractedData(data) {
         html += '</div>';
         html += '<div style="margin-bottom: 10px;">';
         html += '<label style="font-size: 12px; font-weight: 600;">Autres allergies :</label>';
-        html += '<input type="text" id="editMedicalAutresAllergies" value="' + (m.autresAllergies || '') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
+        html += '<input type="text" id="editMedicalAutresAllergies" value="' + formatArray(m.autresAllergies, 'allergy_types') + '" style="width: 100%; padding: 8px; margin-top: 5px;">';
         html += '</div>';
         html += '<div style="margin-bottom: 10px;">';
         html += '<label style="font-size: 12px; font-weight: 600;">Détails allergies :</label>';
@@ -3857,18 +3929,23 @@ function displayPatientHistory(consultations) {
             html += '<ul class="history-list" style="font-size: 12px;">';
             
             if (v.destinations && v.destinations.length > 0) {
-                const dests = v.destinations.map(d => typeof d === 'object' ? d.pays : d).filter(Boolean).join(', ');
+                const dests = v.destinations.map(d => {
+                    if (typeof d !== 'object') return d;
+                    let text = d.pays || '';
+                    if (d.depart && d.retour) text += ' : ' + formatDateDisplay(d.depart) + ' - ' + formatDateDisplay(d.retour);
+                    return text;
+                }).filter(Boolean).join(', ');
                 html += '<li><strong>Destination(s) :</strong> ' + dests + '</li>';
             }
             if (v.dateDepart && v.dateRetour) {
-                html += '<li><strong>Dates :</strong> ' + v.dateDepart + ' → ' + v.dateRetour;
+                html += '<li><strong>Dates :</strong> ' + formatDateDisplay(v.dateDepart) + ' → ' + formatDateDisplay(v.dateRetour);
                 if (v.duree) html += ' (' + v.duree + ')';
                 html += '</li>';
             }
-            if (v.nature && v.nature !== '-') html += '<li><strong>Nature :</strong> ' + v.nature + '</li>';
-            if (v.hebergement && v.hebergement !== '-') html += '<li><strong>Hébergement :</strong> ' + v.hebergement + '</li>';
-            if (v.activites && v.activites !== '-') html += '<li><strong>Activités :</strong> ' + v.activites + '</li>';
-            if (v.zonesRurales && v.zonesRurales !== '-') html += '<li><strong>Zones rurales :</strong> ' + v.zonesRurales + '</li>';
+            if (v.nature && v.nature !== '-') html += '<li><strong>Nature :</strong> ' + (Array.isArray(v.nature) ? formatArray(v.nature, 'travel_reason') : v.nature) + (v.natureAutre ? ' (' + v.natureAutre + ')' : '') + '</li>';
+            if (v.hebergement && v.hebergement !== '-') html += '<li><strong>Hébergement :</strong> ' + (Array.isArray(v.hebergement) ? formatArray(v.hebergement, 'accommodation') : v.hebergement) + (v.hebergementAutre ? ' (' + v.hebergementAutre + ')' : '') + '</li>';
+            if (v.activites && v.activites !== '-') html += '<li><strong>Activités :</strong> ' + (Array.isArray(v.activites) ? formatArray(v.activites, 'activities') : v.activites) + (v.activitesAutre ? ' (' + v.activitesAutre + ')' : '') + '</li>';
+            if (v.zonesRurales !== null && v.zonesRurales !== undefined && v.zonesRurales !== '-') html += '<li><strong>Zones rurales :</strong> ' + (typeof v.zonesRurales === 'boolean' ? formatBoolean(v.zonesRurales) : v.zonesRurales) + '</li>';
             
             html += '</ul></div>';
         }
@@ -3885,43 +3962,56 @@ function displayPatientHistory(consultations) {
                 html += '<li>Poids : ' + consultPatient.poids + ' kg</li>';
             }
             
+            // Helper: display boolean or string value
+            function displayBool(val) {
+                if (typeof val === 'boolean') return formatBoolean(val);
+                return val;
+            }
+
             // Comorbidités
-            if (m.maladies && m.maladies !== '-') html += '<li><strong>Comorbidités :</strong> ' + m.maladies + '</li>';
-            
+            if (m.maladies && m.maladies !== '-') {
+                let maladiesText;
+                if (m.maladiesDetails) maladiesText = m.maladiesDetails;
+                else if (Array.isArray(m.maladies)) maladiesText = formatArray(m.maladies, 'comorbidities');
+                else maladiesText = m.maladies;
+                html += '<li><strong>Comorbidités :</strong> ' + maladiesText + '</li>';
+            }
+
             // Allergies
             if (m.allergieOeufs && m.allergieOeufs !== '-') html += '<li>Allergie œufs : ' + m.allergieOeufs + '</li>';
-            if (m.autresAllergies && m.autresAllergies !== '-') html += '<li>Autres allergies : ' + m.autresAllergies + '</li>';
+            if (m.autresAllergies && m.autresAllergies !== '-') html += '<li>Autres allergies : ' + (Array.isArray(m.autresAllergies) ? formatArray(m.autresAllergies, 'allergy_types') : m.autresAllergies) + '</li>';
             if (m.allergiesDetails) html += '<li style="margin-left: 15px; font-style: italic;">→ ' + m.allergiesDetails + '</li>';
-            
+
             // Grossesse / Contraception / Allaitement
-            if (m.grossesse && m.grossesse !== '-') html += '<li>Grossesse possible : ' + m.grossesse + '</li>';
-            if (m.contraception && m.contraception !== '-') html += '<li>Contraception : ' + m.contraception + '</li>';
-            if (m.allaitement && m.allaitement !== '-') html += '<li>Allaitement : ' + m.allaitement + '</li>';
-            if (m.dernieresRegles) html += '<li>Dernières règles : ' + m.dernieresRegles + '</li>';
-            
+            if (m.grossesse !== null && m.grossesse !== undefined && m.grossesse !== '-') html += '<li>Grossesse possible : ' + displayBool(m.grossesse) + '</li>';
+            if (m.contraception !== null && m.contraception !== undefined && m.contraception !== '-') html += '<li>Contraception : ' + displayBool(m.contraception) + '</li>';
+            if (m.allaitement !== null && m.allaitement !== undefined && m.allaitement !== '-') html += '<li>Allaitement : ' + displayBool(m.allaitement) + '</li>';
+            if (m.dernieresRegles) html += '<li>Dernières règles : ' + formatDateDisplay(m.dernieresRegles) + '</li>';
+
             // Varicelle
-            if (m.varicelleContractee && m.varicelleContractee !== '-') html += '<li>Varicelle (maladie contractée) : ' + m.varicelleContractee + '</li>';
-            if (m.varicelleVaccine && m.varicelleVaccine !== '-') html += '<li>Varicelle (vacciné) : ' + m.varicelleVaccine + '</li>';
-            
+            if (m.varicelleContractee !== null && m.varicelleContractee !== undefined && m.varicelleContractee !== '-') html += '<li>Varicelle (maladie contractée) : ' + displayBool(m.varicelleContractee) + '</li>';
+            if (m.varicelleVaccine !== null && m.varicelleVaccine !== undefined && m.varicelleVaccine !== '-') html += '<li>Varicelle (vacciné) : ' + displayBool(m.varicelleVaccine) + '</li>';
+
             // Vaccination
-            if (m.problemeVaccination && m.problemeVaccination !== '-') {
-                html += '<li>Problème vaccination antérieure : ' + m.problemeVaccination + '</li>';
+            if (m.problemeVaccination !== null && m.problemeVaccination !== undefined && m.problemeVaccination !== '-') {
+                html += '<li>Problème vaccination antérieure : ' + displayBool(m.problemeVaccination) + '</li>';
                 if (m.problemeVaccinationDetails) {
                     html += '<li style="margin-left: 15px; font-style: italic;">→ ' + m.problemeVaccinationDetails + '</li>';
                 }
             }
-            
+
             // Médicaments
-            if (m.medicaments && m.medicaments !== '-') {
-                html += '<li>Médicaments réguliers : ' + m.medicaments + '</li>';
+            if (m.medicaments !== null && m.medicaments !== undefined && m.medicaments !== '-') {
+                html += '<li>Médicaments réguliers : ' + displayBool(m.medicaments) + '</li>';
                 if (m.medicamentsDetails) {
                     html += '<li style="margin-left: 15px; font-style: italic;">→ ' + m.medicamentsDetails + '</li>';
                 }
             }
-            
+
             // Autres conditions
             if (m.cd4) html += '<li>CD4 : ' + m.cd4 + '</li>';
-            if (m.chimio) html += '<li>Chimiothérapie/radiothérapie (6 derniers mois) : ' + m.chimio + '</li>';
+            if (m.chimio === true || m.chimio === false) html += '<li>Chimiothérapie/radiothérapie (6 derniers mois) : ' + formatBoolean(m.chimio) + '</li>';
+            else if (m.chimio && m.chimio !== '-') html += '<li>Chimiothérapie/radiothérapie (6 derniers mois) : ' + m.chimio + '</li>';
             if (m.psychologique) html += '<li>Problème psychologique : ' + m.psychologique + '</li>';
             if (m.carnetVaccination) html += '<li>Carnet de vaccination : ' + m.carnetVaccination + '</li>';
             
@@ -4202,57 +4292,67 @@ function exportConsultationPdf() {
         const voyage = patientFormData.voyage;
         
         if (voyage.destinations && voyage.destinations.length > 0) {
-            const destinations = voyage.destinations.map(d => typeof d === 'object' ? d.pays : d).filter(Boolean).join(', ');
+            const destinations = voyage.destinations.map(d => {
+                if (typeof d !== 'object') return d;
+                let text = d.pays || '';
+                if (d.depart && d.retour) text += ' : ' + formatDateDisplay(d.depart) + ' - ' + formatDateDisplay(d.retour);
+                return text;
+            }).filter(Boolean).join(', ');
             if (destinations) {
-                doc.text('Destination(s) : ' + destinations, margin, y);
-                y += 5;
+                const lines = doc.splitTextToSize('Destination(s) : ' + destinations, maxWidth);
+                lines.forEach(line => {
+                    checkPageBreak(5);
+                    doc.text(line, margin, y);
+                    y += 5;
+                });
             }
         }
-        
-        if (voyage.dateDepart) {
-            doc.text('Date départ : ' + voyage.dateDepart, margin, y);
+
+        if (voyage.dateDepart || voyage.dateRetour) {
+            let datesText = 'Dates : ';
+            if (voyage.dateDepart) datesText += formatDateDisplay(voyage.dateDepart);
+            if (voyage.dateDepart && voyage.dateRetour) datesText += ' → ';
+            if (voyage.dateRetour) datesText += formatDateDisplay(voyage.dateRetour);
+            if (voyage.duree) datesText += ' (' + voyage.duree + ')';
+            doc.text(datesText, margin, y);
             y += 5;
         }
         
-        if (voyage.dateRetour) {
-            doc.text('Date retour : ' + voyage.dateRetour, margin, y);
-            y += 5;
-        }
-        
-        if (voyage.duree) {
-            doc.text('Durée : ' + voyage.duree, margin, y);
-            y += 5;
-        }
-        
-        if (voyage.nature) {
-            const lines = doc.splitTextToSize('Nature : ' + voyage.nature, maxWidth);
+        if (voyage.nature && voyage.nature.length > 0) {
+            let natureText = 'Nature : ' + formatArray(voyage.nature, 'travel_reason');
+            if (voyage.natureAutre) natureText += ' (' + voyage.natureAutre + ')';
+            const lines = doc.splitTextToSize(natureText, maxWidth);
             lines.forEach(line => {
                 checkPageBreak(5);
                 doc.text(line, margin, y);
                 y += 5;
             });
         }
-        
-        if (voyage.hebergement) {
-            const lines = doc.splitTextToSize('Hébergement : ' + voyage.hebergement, maxWidth);
+
+        if (voyage.hebergement && voyage.hebergement.length > 0) {
+            let hebText = 'Hébergement : ' + formatArray(voyage.hebergement, 'accommodation');
+            if (voyage.hebergementAutre) hebText += ' (' + voyage.hebergementAutre + ')';
+            const lines = doc.splitTextToSize(hebText, maxWidth);
             lines.forEach(line => {
                 checkPageBreak(5);
                 doc.text(line, margin, y);
                 y += 5;
             });
         }
-        
-        if (voyage.activites) {
-            const lines = doc.splitTextToSize('Activités : ' + voyage.activites, maxWidth);
+
+        if (voyage.activites && voyage.activites.length > 0) {
+            let actText = 'Activités : ' + formatArray(voyage.activites, 'activities');
+            if (voyage.activitesAutre) actText += ' (' + voyage.activitesAutre + ')';
+            const lines = doc.splitTextToSize(actText, maxWidth);
             lines.forEach(line => {
                 checkPageBreak(5);
                 doc.text(line, margin, y);
                 y += 5;
             });
         }
-        
-        if (voyage.zonesRurales) {
-            doc.text('Zones rurales : ' + voyage.zonesRurales, margin, y);
+
+        if (voyage.zonesRurales === true || voyage.zonesRurales === false) {
+            doc.text('Zones rurales : ' + formatBoolean(voyage.zonesRurales), margin, y);
             y += 5;
         }
         
@@ -4277,28 +4377,28 @@ function exportConsultationPdf() {
             y += 5;
         }
         
-        if (med.grossesse) {
-            doc.text('Grossesse possible : ' + med.grossesse, margin, y);
+        if (med.grossesse === true || med.grossesse === false) {
+            doc.text('Grossesse possible : ' + formatBoolean(med.grossesse), margin, y);
             y += 5;
         }
-        
-        if (med.contraception) {
-            doc.text('Contraception : ' + med.contraception, margin, y);
+
+        if (med.contraception === true || med.contraception === false) {
+            doc.text('Contraception : ' + formatBoolean(med.contraception), margin, y);
             y += 5;
         }
-        
-        if (med.allaitement) {
-            doc.text('Allaitement : ' + med.allaitement, margin, y);
+
+        if (med.allaitement === true || med.allaitement === false) {
+            doc.text('Allaitement : ' + formatBoolean(med.allaitement), margin, y);
             y += 5;
         }
-        
+
         if (med.allergieOeufs) {
             doc.text('Allergie œufs : ' + med.allergieOeufs, margin, y);
             y += 5;
         }
-        
-        if (med.autresAllergies) {
-            doc.text('Autres allergies : ' + med.autresAllergies, margin, y);
+
+        if (med.autresAllergies && med.autresAllergies.length > 0) {
+            doc.text('Autres allergies : ' + formatArray(med.autresAllergies, 'allergy_types'), margin, y);
             y += 5;
         }
         
@@ -4311,18 +4411,18 @@ function exportConsultationPdf() {
             });
         }
         
-        if (med.varicelleContractee) {
-            doc.text('Varicelle (maladie) : ' + med.varicelleContractee, margin, y);
+        if (med.varicelleContractee === true || med.varicelleContractee === false) {
+            doc.text('Varicelle (maladie) : ' + formatBoolean(med.varicelleContractee), margin, y);
             y += 5;
         }
-        
-        if (med.varicelleVaccine) {
-            doc.text('Varicelle (vaccin) : ' + med.varicelleVaccine, margin, y);
+
+        if (med.varicelleVaccine === true || med.varicelleVaccine === false) {
+            doc.text('Varicelle (vaccin) : ' + formatBoolean(med.varicelleVaccine), margin, y);
             y += 5;
         }
-        
-        if (med.problemeVaccination) {
-            doc.text('Problème vaccination : ' + med.problemeVaccination, margin, y);
+
+        if (med.problemeVaccination === true || med.problemeVaccination === false) {
+            doc.text('Problème vaccination : ' + formatBoolean(med.problemeVaccination), margin, y);
             y += 5;
         }
         
@@ -4335,22 +4435,23 @@ function exportConsultationPdf() {
             });
         }
         
-        if (med.maladies && med.maladies !== '-') {
-            const lines = doc.splitTextToSize('Comorbidités : ' + med.maladies, maxWidth);
+        if (med.maladies && (Array.isArray(med.maladies) ? med.maladies.length > 0 : med.maladies !== '-')) {
+            const maladiesText = med.maladiesDetails || (Array.isArray(med.maladies) ? formatArray(med.maladies, 'comorbidities') : med.maladies);
+            const lines = doc.splitTextToSize('Comorbidités : ' + maladiesText, maxWidth);
             lines.forEach(line => {
                 checkPageBreak(5);
                 doc.text(line, margin, y);
                 y += 5;
             });
         }
-        
+
         if (med.cd4) {
             doc.text('CD4 : ' + med.cd4, margin, y);
             y += 5;
         }
-        
-        if (med.chimio) {
-            doc.text('Chimiothérapie/radiothérapie (6 derniers mois) : ' + med.chimio, margin, y);
+
+        if (med.chimio === true || med.chimio === false) {
+            doc.text('Chimiothérapie/radiothérapie (6 derniers mois) : ' + formatBoolean(med.chimio), margin, y);
             y += 5;
         }
         
@@ -4363,8 +4464,8 @@ function exportConsultationPdf() {
             });
         }
         
-        if (med.medicaments) {
-            doc.text('Médicaments : ' + med.medicaments, margin, y);
+        if (med.medicaments === true || med.medicaments === false) {
+            doc.text('Médicaments : ' + formatBoolean(med.medicaments), margin, y);
             y += 5;
         }
         
