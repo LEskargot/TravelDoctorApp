@@ -12,6 +12,9 @@
 import { usePatient } from '../composables/usePatient.js';
 import { useCase } from '../composables/useCase.js';
 import { useAuth } from '../composables/useAuth.js';
+import * as pbApi from '../api/pocketbase.js';
+import * as secureApi from '../api/secure-api.js';
+import { FORM_LABELS } from '../data/form-labels.js';
 
 const countryNames = new Intl.DisplayNames(['fr'], { type: 'region' });
 function resolveCountry(code) {
@@ -34,6 +37,10 @@ export default {
         const showNewCaseForm = Vue.ref(false);
         const newCaseType = Vue.ref('voyage');
         const newCaseDestinations = Vue.ref('');
+
+        // Expandable consultation details
+        const expandedConsultId = Vue.ref(null);
+        const consultDetails = Vue.ref({}); // consultId -> { vaccines, prescriptions, loaded }
 
         async function onCreateCase() {
             if (!currentPatient.value) return;
@@ -60,9 +67,55 @@ export default {
             });
         }
 
+        // ==================== Consultation expand/collapse ====================
+
+        async function toggleConsultation(consultId) {
+            if (expandedConsultId.value === consultId) {
+                expandedConsultId.value = null;
+                return;
+            }
+            expandedConsultId.value = consultId;
+
+            // Load details if not already loaded
+            if (!consultDetails.value[consultId]?.loaded) {
+                consultDetails.value[consultId] = { vaccines: [], prescriptions: [], loaded: false };
+                try {
+                    const [vaccines, prescRes] = await Promise.all([
+                        pbApi.getVaccinesForConsultation(consultId).catch(() => []),
+                        currentPatient.value?.id
+                            ? secureApi.getPrescriptions(currentPatient.value.id).catch(() => null)
+                            : Promise.resolve(null)
+                    ]);
+                    // Filter prescriptions to this consultation
+                    const allRx = prescRes?.prescriptions || [];
+                    const consultRx = allRx.filter(p => p.consultation === consultId);
+
+                    consultDetails.value[consultId] = {
+                        vaccines,
+                        prescriptions: consultRx,
+                        loaded: true
+                    };
+                } catch (e) {
+                    console.error('Failed to load consultation details:', e);
+                    consultDetails.value[consultId] = { vaccines: [], prescriptions: [], loaded: true };
+                }
+            }
+        }
+
+        // Reset expanded state when case changes
+        Vue.watch(currentCase, () => {
+            expandedConsultId.value = null;
+            consultDetails.value = {};
+        });
+
+        // ==================== Formatting ====================
+
         function formatDate(dateStr) {
             if (!dateStr) return '';
-            return new Date(dateStr).toLocaleDateString('fr-CH');
+            const dateOnly = dateStr.split('T')[0];
+            const parts = dateOnly.split('-');
+            if (parts.length === 3) return `${parts[2]}.${parts[1]}.${parts[0]}`;
+            return dateStr;
         }
 
         function caseStatusLabel(status) {
@@ -92,12 +145,24 @@ export default {
             ).join(', ');
         }
 
+        function getVoyageChips(voyage, category) {
+            if (!voyage) return [];
+            const arr = voyage[category] || [];
+            const labelMap = category === 'nature' ? FORM_LABELS.travel_reason
+                : category === 'hebergement' ? FORM_LABELS.accommodation
+                : FORM_LABELS.activities;
+            return arr.map(k => labelMap[k] || k);
+        }
+
         return {
             cases, currentCase, consultations, openCases,
             showNewCaseForm, newCaseType, newCaseDestinations,
+            expandedConsultId, consultDetails,
             selectCase, onCreateCase, closeCase, onStartConsultation,
-            formatDate, formatDestinations, caseStatusLabel, caseTypeLabel, consultTypeLabel,
-            currentPatient, patientName
+            toggleConsultation,
+            formatDate, formatDestinations, getVoyageChips,
+            caseStatusLabel, caseTypeLabel, consultTypeLabel,
+            resolveCountry, currentPatient, patientName
         };
     },
 
@@ -177,6 +242,30 @@ export default {
                 </div>
             </div>
 
+            <!-- Voyage details -->
+            <div v-if="currentCase.voyage" class="case-voyage-detail">
+                <div v-if="currentCase.voyage.destinations?.length" class="voyage-destinations-detail">
+                    <div v-for="d in currentCase.voyage.destinations" :key="(d.country || d) + (d.departure || '')" class="voyage-dest-row">
+                        <strong>{{ typeof d === 'string' ? d : resolveCountry(d.country) || d.country }}</strong>
+                        <template v-if="d.departure">
+                            : {{ formatDate(d.departure) }} – {{ formatDate(d.return) }}
+                        </template>
+                    </div>
+                </div>
+                <div v-if="getVoyageChips(currentCase.voyage, 'nature').length" class="voyage-chips">
+                    <span class="voyage-section-label">Motif: </span>
+                    <span v-for="n in getVoyageChips(currentCase.voyage, 'nature')" :key="n" class="voyage-chip travel">{{ n }}</span>
+                </div>
+                <div v-if="getVoyageChips(currentCase.voyage, 'hebergement').length" class="voyage-chips">
+                    <span class="voyage-section-label">Hebergement: </span>
+                    <span v-for="h in getVoyageChips(currentCase.voyage, 'hebergement')" :key="h" class="voyage-chip neutral">{{ h }}</span>
+                </div>
+                <div v-if="getVoyageChips(currentCase.voyage, 'activites').length" class="voyage-chips">
+                    <span class="voyage-section-label">Activites: </span>
+                    <span v-for="a in getVoyageChips(currentCase.voyage, 'activites')" :key="a" class="voyage-chip activity">{{ a }}</span>
+                </div>
+            </div>
+
             <!-- Consultations within this case -->
             <h5>Consultations ({{ consultations.length }})</h5>
 
@@ -184,14 +273,65 @@ export default {
                 Aucune consultation dans ce dossier.
             </div>
 
-            <div v-for="consult in consultations" :key="consult.id" class="consultation-card">
+            <div v-for="consult in consultations" :key="consult.id"
+                 class="consultation-card"
+                 :class="{ expanded: expandedConsultId === consult.id }"
+                 @click="toggleConsultation(consult.id)">
+
                 <div class="consultation-header">
-                    <span class="consultation-type">{{ consultTypeLabel(consult.consultation_type) }}</span>
-                    <span class="consultation-date">{{ formatDate(consult.date) }}</span>
+                    <span class="consultation-type">
+                        {{ consultTypeLabel(consult.consultation_type) }}
+                        <span v-if="consult.practitioner_name" class="consultation-practitioner">· {{ consult.practitioner_name }}</span>
+                    </span>
+                    <span class="consultation-date">
+                        {{ formatDate(consult.date) }}
+                        <template v-if="consult.duration_minutes"> · {{ consult.duration_minutes }} min</template>
+                        <span class="expand-indicator">{{ expandedConsultId === consult.id ? '▼' : '▶' }}</span>
+                    </span>
                 </div>
-                <div v-if="consult.notes" class="consultation-notes">{{ consult.notes }}</div>
-                <div v-if="consult.duration_minutes" class="consultation-duration">
-                    {{ consult.duration_minutes }} min
+
+                <!-- Expanded details -->
+                <div v-if="expandedConsultId === consult.id" class="consultation-expand" @click.stop>
+
+                    <div v-if="consult.notes" class="history-section">
+                        <div class="history-section-title">Notes</div>
+                        <div class="consultation-notes">{{ consult.notes }}</div>
+                    </div>
+
+                    <div v-if="!consultDetails[consult.id]?.loaded" class="consultation-loading">
+                        Chargement...
+                    </div>
+
+                    <template v-else>
+                        <div v-if="consultDetails[consult.id]?.vaccines?.length" class="history-section">
+                            <div class="history-section-title">Vaccins administres</div>
+                            <div class="history-list">
+                                <div v-for="v in consultDetails[consult.id].vaccines" :key="v.id">
+                                    {{ v.vaccine }}
+                                    <span v-if="v.lot" style="color: #999;">(lot: {{ v.lot }})</span>
+                                    <span v-if="v.site" style="color: #999;"> — {{ v.site }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="consultDetails[consult.id]?.prescriptions?.length" class="history-section">
+                            <div class="history-section-title">Ordonnance</div>
+                            <div class="history-list">
+                                <div v-for="p in consultDetails[consult.id].prescriptions" :key="p.id">
+                                    <template v-if="p.medications?.length">
+                                        <span v-for="(m, i) in p.medications" :key="i">
+                                            {{ m.name || m }}<template v-if="i < p.medications.length - 1">, </template>
+                                        </span>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="!consultDetails[consult.id]?.vaccines?.length && !consultDetails[consult.id]?.prescriptions?.length && !consult.notes"
+                             class="no-data-message" style="margin-top: 4px;">
+                            Aucun detail enregistre
+                        </div>
+                    </template>
                 </div>
             </div>
 
