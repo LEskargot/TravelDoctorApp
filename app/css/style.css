@@ -157,7 +157,8 @@ input:focus, select:focus, textarea:focus {
     display: inline-block; background: #e8f5e9; color: #2e7d32;
     padding: 2px 8px; border-radius: 12px; font-size: 12px; margin: 2px 4px 2px 0;
 }
-.medical-tag.allergy { background: #ffebee; color: #c62828; }
+.medical-tag.immune { background: #ffebee; color: #c62828; }
+.medical-tag.allergy { background: #fff3e0; color: #e65100; }
 
 /* ==================== CASES ==================== */
 .case-view { margin-top: 20px; }
@@ -465,6 +466,102 @@ input:focus, select:focus, textarea:focus {
 .cases-summary { margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee; }
 .open-cases-hint { font-size: 12px; color: #27ae60; margin-top: 4px; }
 
+/* ==================== CHECKBOX MULTISELECT ==================== */
+.checkbox-multiselect {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px;
+}
+.checkbox-item {
+    display: flex; align-items: center; gap: 6px; font-size: 13px; color: #555;
+}
+.checkbox-item input[type="checkbox"] { width: auto; margin: 0; }
+.checkbox-item .detail-input {
+    flex: 1; padding: 3px 6px; font-size: 12px; margin: 0; min-width: 100px;
+}
+
+/* ==================== VOYAGE EDITOR ==================== */
+.destination-row {
+    display: grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap: 8px;
+    align-items: center; margin-bottom: 6px;
+}
+.destination-row input, .destination-row select { margin: 0; }
+.destination-row .remove-dest {
+    padding: 4px 10px; font-size: 14px; background: #ffebee; color: #c62828;
+    border: 1px solid #ffcdd2; border-radius: 4px; cursor: pointer;
+}
+.destination-row .remove-dest:hover { background: #ffcdd2; }
+.destination-header {
+    display: grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap: 8px;
+    font-size: 12px; color: #999; font-weight: 600; margin-bottom: 4px;
+}
+.voyage-compact { font-size: 13px; line-height: 1.6; }
+.voyage-compact .dest-line { margin-bottom: 2px; }
+.voyage-cols { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 8px; }
+.voyage-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.voyage-chip {
+    display: inline-block; padding: 2px 8px; border-radius: 12px;
+    font-size: 11px; font-weight: 600;
+}
+.voyage-chip.travel { background: #e3f2fd; color: #1565C0; }
+.voyage-chip.neutral { background: #f5f5f5; color: #555; }
+.voyage-chip.activity { background: #e8f5e9; color: #2e7d32; }
+.voyage-chip.rural { background: #fff3e0; color: #e65100; }
+.voyage-section-label { font-size: 11px; color: #999; font-weight: 600; text-transform: uppercase; }
+
+/* ==================== MEDICAL EDITOR ==================== */
+.medical-editor { font-size: 13px; }
+.medical-compact { line-height: 1.8; }
+.medical-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.medical-field { margin-bottom: 10px; }
+.medical-field label { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+.tri-state-select {
+    width: auto; min-width: 120px; padding: 4px 8px; margin: 0; font-size: 13px;
+}
+.detail-textarea {
+    width: 100%; min-height: 40px; resize: vertical; font-size: 13px;
+    padding: 6px 8px; margin-top: 4px;
+}
+/* Medical section cards */
+.med-group {
+    background: #fafafa; border: 1px solid #e8e8e8; border-radius: 6px;
+    padding: 10px 12px; margin-bottom: 8px;
+}
+.med-group.comorbidities { border-left: 3px solid #c62828; }
+.med-group.allergies { border-left: 3px solid #e65100; }
+.med-group.medications { border-left: 3px solid #1565C0; }
+.med-group.gynecology { border-left: 3px solid #7B1FA2; }
+.med-group.vaccination { border-left: 3px solid #00796b; }
+
+/* ==================== PATIENT HISTORY ==================== */
+.history-toggle {
+    width: 100%; padding: 10px 16px; background: #f5f5f5; border: 1px solid #e0e0e0;
+    border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;
+    color: #555; text-align: left; transition: background 0.2s;
+}
+.history-toggle:hover { background: #e8e8e8; }
+.history-consultation {
+    background: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px;
+    padding: 12px 16px; margin-bottom: 10px;
+}
+.history-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px; font-size: 14px;
+}
+.history-type { font-weight: 600; color: #1565C0; }
+.history-date { font-size: 12px; color: #999; }
+.history-section { margin-bottom: 8px; }
+.history-section-title { font-size: 11px; color: #999; font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+.history-list { font-size: 13px; color: #555; line-height: 1.6; }
+.history-notes { font-size: 13px; color: #555; white-space: pre-line; }
+.history-notes.truncated { max-height: 60px; overflow: hidden; position: relative; }
+.history-notes.truncated::after {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+    height: 30px; background: linear-gradient(transparent, #fafafa);
+}
+.history-show-more {
+    font-size: 12px; color: #1565C0; cursor: pointer; border: none;
+    background: none; padding: 2px 0; text-decoration: underline;
+}
+
 /* ==================== RESPONSIVE ==================== */
 @media (max-width: 600px) {
     body { padding: 10px; }
@@ -478,4 +575,9 @@ input:focus, select:focus, textarea:focus {
     .chronometer { top: auto; bottom: 10px; right: 10px; }
     .medication-selector { flex-direction: column; }
     .prescription-settings { flex-direction: column; align-items: flex-start; }
+    .checkbox-multiselect { grid-template-columns: 1fr; }
+    .destination-row { grid-template-columns: 1fr 1fr; }
+    .destination-header { display: none; }
+    .voyage-cols { grid-template-columns: 1fr; }
+    .medical-grid { grid-template-columns: 1fr; }
 }
