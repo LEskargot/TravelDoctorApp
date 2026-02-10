@@ -131,7 +131,7 @@ export default {
 
         function formatDate(dateStr) {
             if (!dateStr) return '';
-            const dateOnly = dateStr.split('T')[0];
+            const dateOnly = dateStr.split('T')[0].split(' ')[0];
             const parts = dateOnly.split('-');
             if (parts.length === 3) return `${parts[2]}.${parts[1]}.${parts[0]}`;
             return dateStr;

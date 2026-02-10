@@ -86,6 +86,25 @@ export default {
             else arr.push(key);
         }
 
+        function toggleActivity(key) {
+            if (key === 'aucune') {
+                if (activites.value.includes('aucune')) {
+                    activites.value = [];
+                } else {
+                    activites.value = ['aucune'];
+                    activitesAutre.value = '';
+                }
+            } else {
+                const idx = activites.value.indexOf(key);
+                if (idx >= 0) activites.value.splice(idx, 1);
+                else {
+                    const ai = activites.value.indexOf('aucune');
+                    if (ai >= 0) activites.value.splice(ai, 1);
+                    activites.value.push(key);
+                }
+            }
+        }
+
         function getVoyageData() {
             return {
                 destinations: destinations.value
@@ -221,7 +240,7 @@ export default {
             hebergement, hebergementAutre, activites, activitesAutre,
             zonesRurales, hasData,
             activeDropdown, suggestions, highlightIdx,
-            addDestination, removeDestination, toggleArrayItem,
+            addDestination, removeDestination, toggleArrayItem, toggleActivity,
             getVoyageData, getCountryName, daysBetween, formatDateDisplay,
             onCountryInput, onCountryFocus, onCountryBlur, onCountryKeydown,
             selectCountry, getDateWarnings,
@@ -347,7 +366,7 @@ export default {
                 <label>Activites</label>
                 <div class="checkbox-multiselect">
                     <label v-for="(label, key) in FORM_LABELS.activities" :key="key" class="checkbox-item">
-                        <input type="checkbox" :checked="activites.includes(key)" @change="toggleArrayItem(activites, key)">
+                        <input type="checkbox" :checked="activites.includes(key)" @change="toggleActivity(key)">
                         {{ label }}
                     </label>
                 </div>

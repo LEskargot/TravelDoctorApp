@@ -110,6 +110,49 @@ export default {
             else arr.push(key);
         }
 
+        function toggleComorbidity(key) {
+            if (key === 'aucune') {
+                if (comorbidities.value.includes('aucune')) {
+                    comorbidities.value = [];
+                } else {
+                    comorbidities.value = ['aucune'];
+                    comorbidityDetails.value = {};
+                    comorbidityOther.value = '';
+                    psychiatricDetails.value = '';
+                    cd4.value = '';
+                    cd4Date.value = '';
+                    recentChemotherapy.value = '';
+                }
+            } else {
+                const idx = comorbidities.value.indexOf(key);
+                if (idx >= 0) comorbidities.value.splice(idx, 1);
+                else {
+                    const ai = comorbidities.value.indexOf('aucune');
+                    if (ai >= 0) comorbidities.value.splice(ai, 1);
+                    comorbidities.value.push(key);
+                }
+            }
+        }
+
+        function toggleAllergy(key) {
+            if (key === 'aucune') {
+                if (allergies.value.includes('aucune')) {
+                    allergies.value = [];
+                } else {
+                    allergies.value = ['aucune'];
+                    allergyDetails.value = {};
+                }
+            } else {
+                const idx = allergies.value.indexOf(key);
+                if (idx >= 0) allergies.value.splice(idx, 1);
+                else {
+                    const ai = allergies.value.indexOf('aucune');
+                    if (ai >= 0) allergies.value.splice(ai, 1);
+                    allergies.value.push(key);
+                }
+            }
+        }
+
         function getMedicalData() {
             return {
                 comorbidities: comorbidities.value,
@@ -172,7 +215,7 @@ export default {
             problemeVaccination, problemeVaccinationDetails,
             dengueHistory, cd4, cd4Date, poids,
             activeComorbidities, activeAllergies, hasData,
-            toggleArrayItem, getMedicalData, finishEditing, triLabel, isImmune,
+            toggleArrayItem, toggleComorbidity, toggleAllergy, getMedicalData, finishEditing, triLabel, isImmune,
             FORM_LABELS, TRI_OPTIONS, DETAIL_COMORBIDITIES
         };
     },
@@ -257,7 +300,7 @@ export default {
                         <template v-for="(label, key) in FORM_LABELS.comorbidities" :key="key">
                             <div class="checkbox-item">
                                 <input type="checkbox" :checked="comorbidities.includes(key)"
-                                       @change="toggleArrayItem(comorbidities, key)">
+                                       @change="toggleComorbidity(key)">
                                 <span>{{ label }}</span>
                                 <input v-if="DETAIL_COMORBIDITIES.includes(key) && comorbidities.includes(key)"
                                        type="text" class="detail-input"
@@ -284,7 +327,7 @@ export default {
                 </div>
 
                 <!-- Recent chemotherapy -->
-                <div v-if="comorbidities.includes('cancer')" class="medical-field">
+                <div v-if="comorbidities.some(c => ['cancer', 'hematologie', 'rhumatologie', 'thymus'].includes(c))" class="medical-field">
                     <label>Chimiotherapie recente</label>
                     <select v-model="recentChemotherapy" class="tri-state-select">
                         <option v-for="o in TRI_OPTIONS" :value="o.value">{{ o.label }}</option>
@@ -299,7 +342,7 @@ export default {
                     <div class="checkbox-multiselect">
                         <div v-for="(label, key) in FORM_LABELS.allergy_types" :key="key" class="checkbox-item">
                             <input type="checkbox" :checked="allergies.includes(key)"
-                                   @change="toggleArrayItem(allergies, key)">
+                                   @change="toggleAllergy(key)">
                             <span>{{ label }}</span>
                             <input v-if="key !== 'aucune' && allergies.includes(key)"
                                    type="text" class="detail-input"
