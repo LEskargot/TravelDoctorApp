@@ -42,6 +42,10 @@ export default {
         const expandedConsultId = Vue.ref(null);
         const consultDetails = Vue.ref({}); // consultId -> { vaccines, prescriptions, loaded }
 
+        // Case medical snapshot (decrypted on demand)
+        const caseMedical = Vue.ref(null);
+        const caseMedicalLoading = Vue.ref(false);
+
         async function onCreateCase() {
             if (!currentPatient.value) return;
 
@@ -102,10 +106,25 @@ export default {
             }
         }
 
-        // Reset expanded state when case changes
-        Vue.watch(currentCase, () => {
+        // Reset expanded state + decrypt medical when case changes
+        Vue.watch(currentCase, async (c) => {
             expandedConsultId.value = null;
             consultDetails.value = {};
+            caseMedical.value = null;
+
+            if (c?.medical_encrypted) {
+                caseMedicalLoading.value = true;
+                try {
+                    const res = await secureApi.decryptItems([
+                        { key: 'medical', encrypted: c.medical_encrypted }
+                    ]);
+                    caseMedical.value = res.decrypted?.medical || null;
+                } catch (e) {
+                    console.error('Failed to decrypt case medical:', e);
+                } finally {
+                    caseMedicalLoading.value = false;
+                }
+            }
         });
 
         // ==================== Formatting ====================
@@ -154,13 +173,38 @@ export default {
             return arr.map(k => labelMap[k] || k);
         }
 
+        // ==================== Case medical snapshot helpers ====================
+
+        const IMMUNE_COMORBIDITIES = ['vih', 'thymus', 'rate', 'cancer', 'hematologie'];
+
+        function getCaseComorbidities(med) {
+            if (!med?.comorbidities) return [];
+            return med.comorbidities.filter(c => c !== 'aucune').map(c => ({
+                label: FORM_LABELS.comorbidities[c] || c,
+                immune: IMMUNE_COMORBIDITIES.includes(c),
+                detail: c === 'psychiatrique' ? med.psychiatricDetails
+                    : c === 'autre' ? med.comorbidityOther
+                    : med.comorbidityDetails?.[c] || ''
+            }));
+        }
+
+        function getCaseAllergies(med) {
+            if (!med?.allergies) return [];
+            return med.allergies.filter(a => a !== 'aucune').map(a => ({
+                label: FORM_LABELS.allergy_types[a] || a,
+                detail: med.allergyDetails?.[a] || ''
+            }));
+        }
+
         return {
             cases, currentCase, consultations, openCases,
             showNewCaseForm, newCaseType, newCaseDestinations,
             expandedConsultId, consultDetails,
+            caseMedical, caseMedicalLoading,
             selectCase, onCreateCase, closeCase, onStartConsultation,
             toggleConsultation,
             formatDate, formatDestinations, getVoyageChips,
+            getCaseComorbidities, getCaseAllergies,
             caseStatusLabel, caseTypeLabel, consultTypeLabel,
             resolveCountry, currentPatient, patientName
         };
@@ -263,6 +307,42 @@ export default {
                 <div v-if="getVoyageChips(currentCase.voyage, 'activites').length" class="voyage-chips">
                     <span class="voyage-section-label">Activites: </span>
                     <span v-for="a in getVoyageChips(currentCase.voyage, 'activites')" :key="a" class="voyage-chip activity">{{ a }}</span>
+                </div>
+            </div>
+
+            <!-- Medical snapshot at time of case -->
+            <div v-if="caseMedicalLoading" class="case-medical-snapshot">
+                <div class="history-section-title">Donnees medicales du dossier</div>
+                <div class="consultation-loading">Chargement...</div>
+            </div>
+            <div v-else-if="caseMedical" class="case-medical-snapshot">
+                <div class="history-section-title">Donnees medicales du dossier</div>
+                <div v-if="getCaseComorbidities(caseMedical).length" class="medical-row">
+                    <strong>Comorbidites:</strong>
+                    <span v-for="c in getCaseComorbidities(caseMedical)" :key="c.label"
+                          :class="['medical-tag', c.immune ? 'immune' : '']">
+                        {{ c.label }}<template v-if="c.detail"> ({{ c.detail }})</template>
+                    </span>
+                </div>
+                <div v-if="caseMedical.recentChemotherapy === 'oui'" class="medical-row medical-warning">
+                    Chimiotherapie recente
+                </div>
+                <div v-if="getCaseAllergies(caseMedical).length" class="medical-row">
+                    <strong>Allergies:</strong>
+                    <span v-for="a in getCaseAllergies(caseMedical)" :key="a.label" class="medical-tag allergy">
+                        {{ a.label }}<template v-if="a.detail"> ({{ a.detail }})</template>
+                    </span>
+                </div>
+                <div v-if="caseMedical.medicaments === 'oui'" class="medical-row">
+                    <strong>Medicaments:</strong> Oui
+                    <template v-if="caseMedical.medicamentsDetails"> — {{ caseMedical.medicamentsDetails }}</template>
+                </div>
+                <div v-if="caseMedical.grossesse === 'oui'" class="medical-row medical-warning">
+                    <strong>Grossesse:</strong> Oui
+                </div>
+                <div v-if="caseMedical.problemeVaccination === 'oui'" class="medical-row medical-warning">
+                    <strong>Probleme de vaccination:</strong> Oui
+                    <template v-if="caseMedical.problemeVaccinationDetails"> — {{ caseMedical.problemeVaccinationDetails }}</template>
                 </div>
             </div>
 

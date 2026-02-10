@@ -113,6 +113,15 @@ export async function getPatientHistory(patientId) {
     return await secureRequest(`get-patient-history.php?patient_id=${patientId}`);
 }
 
+// ==================== Batch Decrypt ====================
+
+export async function decryptItems(items) {
+    return await secureRequest('decrypt-data.php', {
+        method: 'POST',
+        body: JSON.stringify({ items })
+    });
+}
+
 // ==================== Case Medical Snapshot ====================
 
 export async function saveCaseMedical(caseId, medicalData) {
