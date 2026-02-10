@@ -6,13 +6,16 @@
  * After: reactive form with v-if toggle
  */
 import { usePatient } from '../composables/usePatient.js';
+import { useCase } from '../composables/useCase.js';
 import { formatDateDisplay, formatAvsInput, calculateAge } from '../utils/formatting.js';
+import { mapFormToPatient } from '../utils/form-mapping.js';
 
 export default {
     name: 'PatientEditForm',
 
     setup() {
         const { currentPatient, patientName, patientAge, sensitiveFields } = usePatient();
+        const { formData: caseFormData } = useCase();
 
         const isEditing = Vue.ref(false);
         const form = Vue.reactive({
@@ -38,6 +41,19 @@ export default {
                 form.email = fields.email || '';
                 form.phone = fields.telephone || '';
                 form.avs = fields.avs || '';
+            }
+        }, { immediate: true });
+
+        // Auto-populate from pending form data
+        Vue.watch(caseFormData, (fd) => {
+            if (fd?.formData) {
+                const mapped = mapFormToPatient(fd.formData);
+                if (mapped.name) form.name = mapped.name;
+                if (mapped.dob) form.dob = mapped.dob;
+                if (mapped.address) form.address = mapped.address;
+                if (mapped.email) form.email = mapped.email;
+                if (mapped.phone) form.phone = mapped.phone;
+                if (mapped.avs) form.avs = mapped.avs;
             }
         }, { immediate: true });
 

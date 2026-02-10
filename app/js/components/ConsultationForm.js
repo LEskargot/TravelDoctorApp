@@ -18,6 +18,9 @@ import { downloadJson, makeBackupFilename } from '../utils/export-helpers.js';
 
 import Chronometer from './Chronometer.js';
 import PatientEditForm from './PatientEditForm.js';
+import VoyageEditor from './VoyageEditor.js';
+import MedicalEditor from './MedicalEditor.js';
+import PatientHistory from './PatientHistory.js';
 import NotesSection from './NotesSection.js';
 import VaccinePanel from './VaccinePanel.js';
 import PrescriptionPanel from './PrescriptionPanel.js';
@@ -26,7 +29,7 @@ import DossierStatus from './DossierStatus.js';
 export default {
     name: 'ConsultationForm',
 
-    components: { Chronometer, PatientEditForm, NotesSection, VaccinePanel, PrescriptionPanel, DossierStatus },
+    components: { Chronometer, PatientEditForm, VoyageEditor, MedicalEditor, PatientHistory, NotesSection, VaccinePanel, PrescriptionPanel, DossierStatus },
 
     props: {
         consultationType: { type: String, default: 'teleconsultation' }
@@ -37,7 +40,7 @@ export default {
     setup(props, { emit }) {
         const { userName, user, location, locationName } = useAuth();
         const { currentPatient, patientName, medicalData, savePatient } = usePatient();
-        const { currentCase, addConsultation, updateCaseData, formData: caseFormData } = useCase();
+        const { currentCase, addConsultation, updateCaseData, updateVoyage, formData: caseFormData } = useCase();
         const chrono = useChronometer();
         const vaccines = useVaccines();
         const prescription = usePrescription();
@@ -47,6 +50,8 @@ export default {
         const activeAccordion = Vue.ref('patient');
 
         const patientEditRef = Vue.ref(null);
+        const voyageEditorRef = Vue.ref(null);
+        const medicalEditorRef = Vue.ref(null);
 
         // Start chronometer on mount
         Vue.onMounted(() => {
@@ -77,23 +82,34 @@ export default {
             chrono.stop();
 
             try {
+                // Get medical data from editor
+                const medData = medicalEditorRef.value?.getMedicalData() || null;
+                const poids = medData?.poids ? parseFloat(medData.poids) : null;
+
                 // Save patient (non-sensitive + sensitive via PHP)
                 const patientId = await savePatient({
                     nom: formData.nom,
                     prenom: formData.prenom,
                     dob: formData.dob,
-                    poids: parseFloat(document.querySelector('.weight-notice input')?.value) || null,
+                    poids: poids,
                     // Sensitive fields (routed through PHP)
                     email: formData.email,
                     telephone: formData.telephone,
                     adresse: formData.adresse,
-                    avs: formData.avs
+                    avs: formData.avs,
+                    // Medical data (encrypted via PHP)
+                    medical: medData
                 });
 
-                // Update case with medical snapshot if medical data exists
-                if (currentCase.value && medicalData.value) {
+                // Save voyage to case
+                if (currentCase.value && voyageEditorRef.value) {
+                    await updateVoyage(currentCase.value.id, voyageEditorRef.value.getVoyageData());
+                }
+
+                // Update case with medical snapshot
+                if (currentCase.value && medData) {
                     await updateCaseData(currentCase.value.id, {
-                        medical: medicalData.value
+                        medical: medData
                     });
                 }
 
@@ -174,7 +190,8 @@ export default {
 
         return {
             userName, locationName, currentPatient, patientName,
-            notes, saving, activeAccordion, patientEditRef,
+            notes, saving, activeAccordion,
+            patientEditRef, voyageEditorRef, medicalEditorRef,
             toggleAccordion, saveConsultation, exportPrescriptionPdf,
             emit
         };
@@ -202,6 +219,9 @@ export default {
             </div>
             <div class="accordion-content" v-show="activeAccordion === 'patient'">
                 <PatientEditForm ref="patientEditRef" />
+                <VoyageEditor ref="voyageEditorRef" />
+                <MedicalEditor ref="medicalEditorRef" />
+                <PatientHistory />
             </div>
         </div>
 

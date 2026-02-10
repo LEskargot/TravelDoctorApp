@@ -18,6 +18,7 @@ import { useChronometer } from './composables/useChronometer.js';
 import LoginScreen from './components/LoginScreen.js';
 import PatientSearch from './components/PatientSearch.js';
 import CaseView from './components/CaseView.js';
+import PatientHistory from './components/PatientHistory.js';
 import ConsultationForm from './components/ConsultationForm.js';
 import PendingForms from './components/PendingForms.js';
 import TimelineModal from './components/TimelineModal.js';
@@ -25,7 +26,7 @@ import TimelineModal from './components/TimelineModal.js';
 const { createApp, ref, computed, watch, onMounted } = Vue;
 
 const App = {
-    components: { LoginScreen, PatientSearch, CaseView, ConsultationForm, PendingForms, TimelineModal },
+    components: { LoginScreen, PatientSearch, CaseView, PatientHistory, ConsultationForm, PendingForms, TimelineModal },
 
     setup() {
         const {
@@ -65,8 +66,14 @@ const App = {
             isOnline.value = connected;
 
             if (restoreSession()) {
-                await loadLocations();
-                screen.value = 'location';
+                try {
+                    await loadLocations();
+                    screen.value = 'location';
+                } catch (e) {
+                    console.error('Failed to load locations on restore:', e);
+                    // Still show location screen — user can retry
+                    screen.value = 'location';
+                }
             }
         });
 
@@ -139,10 +146,16 @@ const App = {
                 }
 
                 // Store form reference for marking as processed after save
+                // form.form_data has the actual fields; merge top-level email/avs in
+                const fd = {
+                    ...(form.form_data || {}),
+                    email: form.form_data?.email || form.email || '',
+                    avs: form.form_data?.avs || form.avs || ''
+                };
                 setFormData({
                     formId: formId,
                     caseId: formResult.case_id,
-                    formData: form
+                    formData: fd
                 });
 
                 consultationType.value = 'vaccination';
@@ -256,6 +269,7 @@ const App = {
                 </div>
 
                 <CaseView @start-consultation="onStartConsultation" />
+                <PatientHistory />
             </template>
 
             <TimelineModal :visible="showTimeline" @close="showTimeline = false" />

@@ -19,6 +19,7 @@ export function useAuth() {
     const userName = computed(() => user.value?.name || user.value?.email || '');
 
     async function login(email, password) {
+        user.value = null; // Reset to ensure watcher detects the change
         await pbLogin(email, password);
         user.value = getCurrentUser();
     }

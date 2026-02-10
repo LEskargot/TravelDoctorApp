@@ -119,6 +119,10 @@ export function usePatient() {
             .sort((a, b) => new Date(b.date) - new Date(a.date))[0] || null;
     }
 
+    function setMedicalData(data) {
+        medicalData.value = data;
+    }
+
     function clearPatient() {
         currentPatient.value = null;
         searchResults.value = [];
@@ -141,6 +145,7 @@ export function usePatient() {
         savePatient,
         addObservation,
         getLatestObservation,
+        setMedicalData,
         clearPatient
     };
 }

@@ -81,6 +81,13 @@ export function useCase() {
         }
     }
 
+    async function updateVoyage(caseId, voyageData) {
+        const updated = await pbApi.updateCase(caseId, { voyage: voyageData });
+        const idx = cases.value.findIndex(c => c.id === caseId);
+        if (idx >= 0) cases.value[idx] = updated;
+        if (currentCase.value?.id === caseId) currentCase.value = updated;
+    }
+
     async function addConsultation(data) {
         if (!currentCase.value) throw new Error('No active case');
         const consultation = await pbApi.createConsultation({
@@ -119,6 +126,7 @@ export function useCase() {
         createNewCase,
         closeCase,
         updateCaseData,
+        updateVoyage,
         addConsultation,
         setFormData,
         clearCases
