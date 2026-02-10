@@ -165,8 +165,28 @@ const App = {
             }
         }
 
-        function onCalendarSelected(event) {
-            // Start consultation from calendar event
+        async function onCalendarSelected(event) {
+            // Load patient if known, otherwise clear
+            if (event.is_known_patient && event.existing_patient_id) {
+                await selectPatient(event.existing_patient_id);
+                await loadCasesForPatient(event.existing_patient_id);
+            } else {
+                clearPatient();
+                clearCases();
+            }
+
+            // Build synthetic formData from calendar fields to populate Dossier Patient
+            setFormData({
+                formId: null,
+                caseId: null,
+                formData: {
+                    full_name: event.patient_name || '',
+                    birthdate: event.dob || '',
+                    email: event.email || '',
+                    phone: event.phone || ''
+                }
+            });
+
             consultationType.value = 'vaccination';
             screen.value = 'consultation';
         }

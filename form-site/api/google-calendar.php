@@ -247,31 +247,54 @@ function parseEventDescription($text) {
                 break;
             }
         }
-        // After separator: firstName, lastName, sex, DOB, email, phone
+        // Extract all fields positionally: +1 firstName, +2 lastName, +3 sex, +4 DOB, +5 email, +6 phone
         if ($sepIndex >= 0 && isset($lines[$sepIndex + 1], $lines[$sepIndex + 2])) {
-            $firstName = $lines[$sepIndex + 1];
-            $lastName = $lines[$sepIndex + 2];
-            $result['patient_name'] = trim($firstName . ' ' . $lastName);
+            $result['patient_name'] = trim($lines[$sepIndex + 1] . ' ' . $lines[$sepIndex + 2]);
+
+            if (isset($lines[$sepIndex + 3])) {
+                $sexLine = $lines[$sepIndex + 3];
+                if (preg_match('/^(M|Homme|Masculin|Male|Mr\.?)$/i', $sexLine)) {
+                    $result['sex'] = 'Homme';
+                } elseif (preg_match('/^(F|Femme|Féminin|Female|Mme\.?|Madame)$/i', $sexLine)) {
+                    $result['sex'] = 'Femme';
+                }
+            }
+            if (isset($lines[$sepIndex + 4])) {
+                if (preg_match('/(\d{2})[.\/-](\d{2})[.\/-](\d{4})/', $lines[$sepIndex + 4], $dm)) {
+                    $result['dob'] = $dm[3] . '-' . $dm[2] . '-' . $dm[1];
+                }
+            }
+            if (isset($lines[$sepIndex + 5])) {
+                if (preg_match('/[\w.+-]+@[\w.-]+\.\w{2,}/', $lines[$sepIndex + 5], $em)) {
+                    $result['email'] = $em[0];
+                }
+            }
+            if (isset($lines[$sepIndex + 6])) {
+                $phoneLine = $lines[$sepIndex + 6];
+                if (!empty($phoneLine)) {
+                    $result['phone'] = trim(preg_replace('/\s+/', ' ', $phoneLine));
+                }
+            }
         }
+
+        return $result;
     }
 
-    // Email: standard email pattern
+    // Fallback: unstructured description — use regex
     if (preg_match('/[\w.+-]+@[\w.-]+\.\w{2,}/', $text, $m)) {
         $result['email'] = $m[0];
     }
 
-    // Phone: international or local format
-    if (preg_match('/(\+?\d[\d\s.\-()]{8,})/', $text, $m)) {
-        $result['phone'] = trim(preg_replace('/\s+/', ' ', $m[1]));
+    if (preg_match('/(\d{2})[.\/-](\d{2})[.\/-](\d{4})/', $text, $dobMatch)) {
+        $result['dob'] = $dobMatch[3] . '-' . $dobMatch[2] . '-' . $dobMatch[1];
+        // Strip DOB from text before phone regex to avoid false match
+        $text = str_replace($dobMatch[0], '', $text);
     }
 
-    // Date of birth: DD.MM.YYYY or DD/MM/YYYY or DD-MM-YYYY
-    if (preg_match('/(\d{2})[.\/-](\d{2})[.\/-](\d{4})/', $text, $m)) {
-        // Convert to Y-m-d format
-        $result['dob'] = $m[3] . '-' . $m[2] . '-' . $m[1];
+    if (preg_match('/(\+?\d[\d\s.\-()]{8,})/', $text, $pm)) {
+        $result['phone'] = trim(preg_replace('/\s+/', ' ', $pm[1]));
     }
 
-    // Sex: look for keywords
     if (preg_match('/\b(Homme|Masculin|Male|Mr\.?)\b/i', $text)) {
         $result['sex'] = 'Homme';
     } elseif (preg_match('/\b(Femme|Féminin|Female|Mme\.?|Madame)\b/i', $text)) {

@@ -83,6 +83,7 @@ export default {
                     email: evt.email || '',
                     form_id: evt.form_id || null,
                     form_status: evt.form_status || null,
+                    phone: evt.phone || '',
                     is_known_patient: evt.is_known_patient || false,
                     existing_patient_id: evt.existing_patient_id || null
                 };
