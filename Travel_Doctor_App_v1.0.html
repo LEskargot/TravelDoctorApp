@@ -3438,10 +3438,8 @@ function formatNumber(value) {
 // Format date for display (ISO to French)
 function formatDateDisplay(isoDate) {
     if (!isoDate) return '-';
-    // Strip time portion if present (e.g. "2026-02-10T00:00:00.000Z")
-    var dateOnly = isoDate.split('T')[0];
     // Convert YYYY-MM-DD to DD.MM.YYYY
-    var parts = dateOnly.split('-');
+    var parts = isoDate.split('-');
     if (parts.length === 3) {
         return parts[2] + '.' + parts[1] + '.' + parts[0];
     }
