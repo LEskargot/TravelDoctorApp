@@ -15,6 +15,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
+$authUser = requireAuth();
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['error' => 'Method not allowed']);
@@ -34,6 +36,11 @@ if (empty($patientId) || empty($type) || $value === null) {
     http_response_code(400);
     echo json_encode(['error' => 'patient_id, type et value requis']);
     exit;
+}
+
+validatePbId($patientId, 'patient_id');
+if ($consultationId) {
+    validatePbId($consultationId, 'consultation_id');
 }
 
 $adminToken = pbAdminAuth();

@@ -50,6 +50,8 @@ if (!empty($avs)) {
     $avsClean = preg_replace('/[.\s]/', '', $avs);
 
     // Search with both formats
+    $avs = sanitizePbFilterValue($avs);
+    $avsClean = sanitizePbFilterValue($avsClean);
     $avsFilter = urlencode("avs = '{$avs}' || avs = '{$avsClean}'");
     $response = pbRequest(
         "/api/collections/patients/records?filter={$avsFilter}&perPage=10",
@@ -76,7 +78,7 @@ if (!empty($avs)) {
 // Priority 2: Search by DOB + name with normalization (if no AVS match or AVS not provided)
 if (empty($matches) && !empty($dob)) {
     // Format date for PocketBase
-    $dobFormatted = date('Y-m-d', strtotime($dob));
+    $dobFormatted = sanitizePbFilterValue(date('Y-m-d', strtotime($dob)));
 
     // Fetch all patients with same DOB, then compare names with normalization
     $dobFilter = urlencode("dob = '{$dobFormatted}'");

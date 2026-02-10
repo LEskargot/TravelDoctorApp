@@ -64,6 +64,21 @@ if (!$patientEmail) {
     exit;
 }
 
+// Validate AVS format (digits, dots, spaces only) if provided
+if (!empty($patientAvs) && !preg_match('/^[\d.\s]+$/', $patientAvs)) {
+    http_response_code(400);
+    echo json_encode(['error' => 'Format AVS invalide']);
+    exit;
+}
+
+// Validate birthdate format if provided
+$birthdate = $formData['birthdate'] ?? '';
+if (!empty($birthdate) && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $birthdate)) {
+    http_response_code(400);
+    echo json_encode(['error' => 'Format de date de naissance invalide']);
+    exit;
+}
+
 // Authenticate with PocketBase
 $adminToken = pbAdminAuth();
 if (!$adminToken) {
@@ -176,6 +191,7 @@ function findOrCreatePatient($adminToken, $patientName, $email, $avs, $formData)
 
     // 1. Try AVS match
     if (!empty($avs)) {
+        $avs = sanitizePbFilterValue($avs);
         $avsFilter = urlencode("avs = '{$avs}'");
         $search = pbRequest(
             "/api/collections/patients/records?filter={$avsFilter}&perPage=1",
@@ -190,6 +206,7 @@ function findOrCreatePatient($adminToken, $patientName, $email, $avs, $formData)
 
     // 2. Try DOB + name match
     if (!empty($dob) && !empty($patientName)) {
+        $dob = sanitizePbFilterValue($dob);
         $dobFilter = urlencode("dob = '{$dob}'");
         $search = pbRequest(
             "/api/collections/patients/records?filter={$dobFilter}&perPage=50",

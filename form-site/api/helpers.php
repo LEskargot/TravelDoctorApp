@@ -95,6 +95,14 @@ function validatePbId($id, $paramName = 'id') {
     return $id;
 }
 
+/**
+ * Sanitize a value before interpolating into a PocketBase filter string.
+ * Strips single quotes and backslashes to prevent filter injection.
+ */
+function sanitizePbFilterValue($value) {
+    return str_replace(["'", "\\"], '', $value);
+}
+
 function pbAdminAuth() {
     // PocketBase v0.20+ uses _superusers collection
     $response = pbRequest('/api/collections/_superusers/auth-with-password', 'POST', [

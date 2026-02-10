@@ -202,7 +202,7 @@ foreach ($calendarEvents as $event) {
     $existingPatientId = null;
 
     if (!empty($event['email'])) {
-        $emailFilter = urlencode("email = '" . addslashes($event['email']) . "'");
+        $emailFilter = urlencode("email = '" . sanitizePbFilterValue($event['email']) . "'");
         $patientSearch = pbRequest(
             "/api/collections/patients/records?filter={$emailFilter}&perPage=1",
             'GET',
@@ -217,7 +217,7 @@ foreach ($calendarEvents as $event) {
 
     // If no email match on patient, try DOB + name
     if (!$isKnownPatient && !empty($event['dob']) && !empty($event['patient_name'])) {
-        $dobFilter = urlencode("dob = '" . $event['dob'] . "'");
+        $dobFilter = urlencode("dob = '" . sanitizePbFilterValue($event['dob']) . "'");
         $patientSearch = pbRequest(
             "/api/collections/patients/records?filter={$dobFilter}&perPage=50",
             'GET',

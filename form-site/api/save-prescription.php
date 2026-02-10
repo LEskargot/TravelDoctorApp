@@ -15,6 +15,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
+$authUser = requireAuth();
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['error' => 'Method not allowed']);
@@ -32,6 +34,8 @@ if (empty($consultationId)) {
     echo json_encode(['error' => 'consultation_id requis']);
     exit;
 }
+
+validatePbId($consultationId, 'consultation_id');
 
 if (empty($medications)) {
     http_response_code(400);

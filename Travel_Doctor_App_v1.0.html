@@ -1113,7 +1113,7 @@ async function selectPatientFromSearch(patientId) {
         const voyageData = recentConsultWithCase?.case?.voyage || null;
 
         if (medicalData || voyageData) {
-            let inferredGenre = patient.sexe === 'm' ? 'Masculin' : (patient.sexe === 'f' ? 'Femme' : '');
+            let inferredGenre = patient.sexe === 'm' ? 'Homme' : (patient.sexe === 'f' ? 'Femme' : '');
             if (!inferredGenre && medicalData) {
                 const med = medicalData;
                 if ((med.grossesse !== null && med.grossesse !== undefined) || (med.contraception !== null && med.contraception !== undefined) || (med.allaitement !== null && med.allaitement !== undefined) || med.dernieresRegles) {
