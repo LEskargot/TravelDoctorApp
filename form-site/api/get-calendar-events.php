@@ -21,6 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
+$authUser = requireAuth();
+
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
     echo json_encode(['error' => 'Method not allowed']);
@@ -33,6 +35,8 @@ if (empty($locationId)) {
     echo json_encode(['error' => 'location_id is required']);
     exit;
 }
+
+validatePbId($locationId, 'location_id');
 
 // Date range: defaults to today → +30 days (Europe/Zurich)
 $tz = new DateTimeZone('Europe/Zurich');

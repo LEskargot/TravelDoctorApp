@@ -833,6 +833,24 @@ async function withConnectionHandling(apiCall) {
     }
 }
 
+// ==================== SECURE API HELPERS ====================
+function authHeaders() {
+    const token = pb.authStore.token;
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+}
+
+function secureGet(url) {
+    return fetch(url, { headers: authHeaders() });
+}
+
+function securePost(url, body) {
+    return fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(body)
+    });
+}
+
 // ==================== AUTHENTICATION ====================
 function isAuthenticated() {
     return pb.authStore.isValid;
@@ -996,7 +1014,7 @@ async function searchPatients() {
 async function selectPatientFromSearch(patientId) {
     try {
         // Fetch full patient history via API (handles decryption server-side)
-        const response = await fetch(`${FORM_API_URL}/get-patient-history.php?patient_id=${patientId}`);
+        const response = await secureGet(`${FORM_API_URL}/get-patient-history.php?patient_id=${patientId}`);
         const data = await response.json();
 
         if (!data.success) {
@@ -1241,11 +1259,7 @@ async function saveConsultationToDb() {
 
         let encrypted = {};
         if (encryptItems.length > 0) {
-            const encResponse = await fetch(`${FORM_API_URL}/encrypt-data.php`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({items: encryptItems})
-            });
+            const encResponse = await securePost(`${FORM_API_URL}/encrypt-data.php`, {items: encryptItems});
             const encResult = await encResponse.json();
             if (!encResult.success) throw new Error('Encryption failed');
             encrypted = encResult.encrypted;
@@ -1365,14 +1379,10 @@ async function saveConsultationToDb() {
         // 8. Mark online form as processed (also closes case server-side)
         if (selectedFormData && selectedFormData.id) {
             try {
-                await fetch(`${FORM_API_URL}/mark-form-processed.php`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        form_id: selectedFormData.id,
-                        patient_id: patientId,
-                        action: 'process'
-                    })
+                await securePost(`${FORM_API_URL}/mark-form-processed.php`, {
+                    form_id: selectedFormData.id,
+                    patient_id: patientId,
+                    action: 'process'
                 });
             } catch (e) {
                 console.warn('Could not mark form as processed:', e);
@@ -1801,8 +1811,8 @@ async function loadPendingForms() {
     try {
         // Fetch pending forms and calendar events in parallel
         const [formsRes, calRes] = await Promise.all([
-            fetch(`${FORM_API_URL}/get-pending-forms.php`),
-            fetch(`${FORM_API_URL}/get-calendar-events.php?location_id=${currentLocation}`)
+            secureGet(`${FORM_API_URL}/get-pending-forms.php`),
+            secureGet(`${FORM_API_URL}/get-calendar-events.php?location_id=${currentLocation}`)
                 .catch(err => { console.warn('Calendar fetch failed:', err); return null; })
         ]);
 
@@ -2094,18 +2104,14 @@ async function sendFormInvitation(btn, eventData) {
     btn.textContent = '⏳ Envoi...';
 
     try {
-        const response = await fetch(`${FORM_API_URL}/send-form-invitation.php`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                email: eventData.email,
-                patient_name: eventData.patient_name,
-                dob: eventData.dob || '',
-                phone: eventData.phone || '',
-                appointment_date: eventData.appointment_date || '',
-                appointment_time: eventData.appointment_time || '',
-                form_id: eventData.form_id || ''
-            })
+        const response = await securePost(`${FORM_API_URL}/send-form-invitation.php`, {
+            email: eventData.email,
+            patient_name: eventData.patient_name,
+            dob: eventData.dob || '',
+            phone: eventData.phone || '',
+            appointment_date: eventData.appointment_date || '',
+            appointment_time: eventData.appointment_time || '',
+            form_id: eventData.form_id || ''
         });
 
         const data = await response.json();
@@ -2127,7 +2133,7 @@ async function sendFormInvitation(btn, eventData) {
 async function selectPendingForm(formId) {
     try {
         // Fetch full form data
-        const response = await fetch(`${FORM_API_URL}/decrypt-form.php?id=${formId}`);
+        const response = await secureGet(`${FORM_API_URL}/decrypt-form.php?id=${formId}`);
         const data = await response.json();
 
         if (!data.success) {
@@ -2346,7 +2352,7 @@ function startManualEntry() {
 
 async function loadPatientHistoryFromDb(patientId) {
     try {
-        const response = await fetch(`${FORM_API_URL}/get-patient-history.php?patient_id=${patientId}`);
+        const response = await secureGet(`${FORM_API_URL}/get-patient-history.php?patient_id=${patientId}`);
         const data = await response.json();
 
         if (data.success) {

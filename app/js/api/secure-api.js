@@ -5,12 +5,24 @@
  * All encryption/decryption happens server-side in PHP.
  */
 
+import { getPb } from './pocketbase.js';
+
 const FORM_API_URL = 'https://form.traveldoctor.ch/api';
 
+function authHeaders() {
+    try {
+        const token = getPb().authStore.token;
+        return token ? { 'Authorization': `Bearer ${token}` } : {};
+    } catch {
+        return {};
+    }
+}
+
 async function secureRequest(endpoint, options = {}) {
+    const { headers: extraHeaders, ...rest } = options;
     const response = await fetch(`${FORM_API_URL}/${endpoint}`, {
-        headers: { 'Content-Type': 'application/json', ...options.headers },
-        ...options
+        ...rest,
+        headers: { 'Content-Type': 'application/json', ...authHeaders(), ...extraHeaders }
     });
 
     if (!response.ok) {

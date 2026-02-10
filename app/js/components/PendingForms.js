@@ -6,6 +6,7 @@
  * After: reactive lists, v-for, @click
  */
 import { useAuth } from '../composables/useAuth.js';
+import { getPb } from '../api/pocketbase.js';
 import * as secureApi from '../api/secure-api.js';
 import { formatDateDisplay } from '../utils/formatting.js';
 
@@ -17,6 +18,13 @@ export default {
     setup(props, { emit }) {
         const { location } = useAuth();
         const FORM_API_URL = 'https://form.traveldoctor.ch/api';
+
+        function authHeaders() {
+            try {
+                const token = getPb().authStore.token;
+                return token ? { 'Authorization': `Bearer ${token}` } : {};
+            } catch { return {}; }
+        }
 
         const forms = Vue.ref([]);
         const calendarEvents = Vue.ref([]);
@@ -31,9 +39,10 @@ export default {
             loading.value = true;
             error.value = '';
             try {
+                const headers = authHeaders();
                 const [formsRes, calRes] = await Promise.all([
-                    fetch(`${FORM_API_URL}/get-pending-forms.php`),
-                    fetch(`${FORM_API_URL}/get-calendar-events.php?location_id=${location.value}`)
+                    fetch(`${FORM_API_URL}/get-pending-forms.php`, { headers }),
+                    fetch(`${FORM_API_URL}/get-calendar-events.php?location_id=${location.value}`, { headers })
                         .catch(() => null)
                 ]);
 

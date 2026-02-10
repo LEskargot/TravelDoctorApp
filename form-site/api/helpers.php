@@ -49,9 +49,50 @@ function normalizedContains($haystack, $needle) {
 }
 
 function corsHeaders() {
+    // TODO: restrict when deployed — replace * with actual domains
+    // $allowed = ['https://app.traveldoctor.ch', 'https://form.traveldoctor.ch'];
     header('Access-Control-Allow-Origin: *');
     header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
-    header('Access-Control-Allow-Headers: Content-Type');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization');
+}
+
+/**
+ * Verify caller is an authenticated practitioner via PocketBase token.
+ * Expects: Authorization: Bearer <pb_auth_token>
+ * Returns the user record (id, name, email, role) or exits with 401.
+ */
+function requireAuth() {
+    $header = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+    if (!$header && function_exists('apache_request_headers')) {
+        $apacheHeaders = apache_request_headers();
+        $header = $apacheHeaders['Authorization'] ?? $apacheHeaders['authorization'] ?? '';
+    }
+    if (!preg_match('/^Bearer\s+(.+)$/i', $header, $matches)) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Authentication required']);
+        exit;
+    }
+    $token = $matches[1];
+    $result = pbRequest('/api/collections/users/auth-refresh', 'POST', null, $token);
+    if (!$result || !isset($result['record']['id'])) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Invalid or expired token']);
+        exit;
+    }
+    return $result['record'];
+}
+
+/**
+ * Validate a PocketBase record ID (exactly 15 lowercase alphanumeric chars).
+ * Prevents filter injection since validated IDs cannot contain quotes or operators.
+ */
+function validatePbId($id, $paramName = 'id') {
+    if (!preg_match('/^[a-z0-9]{15}$/', $id)) {
+        http_response_code(400);
+        echo json_encode(['error' => "Invalid $paramName format"]);
+        exit;
+    }
+    return $id;
 }
 
 function pbAdminAuth() {
