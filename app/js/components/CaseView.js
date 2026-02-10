@@ -13,6 +13,13 @@ import { usePatient } from '../composables/usePatient.js';
 import { useCase } from '../composables/useCase.js';
 import { useAuth } from '../composables/useAuth.js';
 
+const countryNames = new Intl.DisplayNames(['fr'], { type: 'region' });
+function resolveCountry(code) {
+    if (!code) return code;
+    try { return countryNames.of(code.toUpperCase()); }
+    catch { return code; }
+}
+
 export default {
     name: 'CaseView',
 
@@ -78,11 +85,18 @@ export default {
             return labels[type] || type;
         }
 
+        function formatDestinations(destinations) {
+            if (!destinations?.length) return '';
+            return destinations.map(d =>
+                typeof d === 'string' ? d : resolveCountry(d.country) || d.country
+            ).join(', ');
+        }
+
         return {
             cases, currentCase, consultations, openCases,
             showNewCaseForm, newCaseType, newCaseDestinations,
             selectCase, onCreateCase, closeCase, onStartConsultation,
-            formatDate, caseStatusLabel, caseTypeLabel, consultTypeLabel,
+            formatDate, formatDestinations, caseStatusLabel, caseTypeLabel, consultTypeLabel,
             currentPatient, patientName
         };
     },
@@ -136,7 +150,7 @@ export default {
 
             <div class="case-card-body">
                 <div v-if="c.voyage?.destinations?.length" class="case-destinations">
-                    {{ c.voyage.destinations.join(', ') }}
+                    {{ formatDestinations(c.voyage.destinations) }}
                 </div>
                 <div class="case-dates">
                     Ouvert le {{ formatDate(c.opened_at) }}
@@ -151,7 +165,7 @@ export default {
                 <h4>
                     {{ caseTypeLabel(currentCase.type) }}
                     <span v-if="currentCase.voyage?.destinations?.length">
-                        — {{ currentCase.voyage.destinations.join(', ') }}
+                        — {{ formatDestinations(currentCase.voyage.destinations) }}
                     </span>
                 </h4>
                 <div class="case-detail-actions">

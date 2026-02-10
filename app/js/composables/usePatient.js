@@ -63,7 +63,7 @@ export function usePatient() {
             pbApi.getPatient(patientId),
             secureApi.getPatientSensitiveFields(patientId).catch(() => null),
             secureApi.getPatientMedical(patientId).catch(() => null),
-            secureApi.getObservations(patientId).catch(() => null)
+            secureApi.getObservations(patientId).catch(e => { console.debug('Observations:', e.message); return null; })
         ]);
 
         currentPatient.value = patient;

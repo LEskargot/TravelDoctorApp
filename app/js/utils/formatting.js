@@ -10,7 +10,8 @@ export function formatDateSwiss(date) {
 
 export function formatDateDisplay(isoDate) {
     if (!isoDate) return '-';
-    const parts = isoDate.split('-');
+    const dateOnly = isoDate.split('T')[0];
+    const parts = dateOnly.split('-');
     if (parts.length === 3) return `${parts[2]}.${parts[1]}.${parts[0]}`;
     return isoDate;
 }
