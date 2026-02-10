@@ -6,19 +6,16 @@ import { useCase } from '../composables/useCase.js';
 import { FORM_LABELS } from '../data/form-labels.js';
 import { formatDateDisplay } from '../utils/formatting.js';
 import { mapFormToVoyage } from '../utils/form-mapping.js';
-
-const countryNames = new Intl.DisplayNames(['fr'], { type: 'region' });
-
-function resolveCountry(code) {
-    if (!code) return '';
-    try { return countryNames.of(code.toUpperCase()); }
-    catch { return code; }
-}
+import { getCountryName, searchCountries } from '../data/countries.js';
 
 function daysBetween(d1, d2) {
     if (!d1 || !d2) return '';
     const diff = Math.ceil((new Date(d2) - new Date(d1)) / 86400000);
     return diff > 0 ? `${diff}j` : '';
+}
+
+function emptyDest() {
+    return { country: '', departure: '', return: '', _searchText: '' };
 }
 
 export default {
@@ -29,7 +26,7 @@ export default {
 
         const isEditing = Vue.ref(false);
 
-        const destinations = Vue.ref([{ country: '', departure: '', return: '' }]);
+        const destinations = Vue.ref([emptyDest()]);
         const nature = Vue.ref([]);
         const natureAutre = Vue.ref('');
         const hebergement = Vue.ref([]);
@@ -38,10 +35,18 @@ export default {
         const activitesAutre = Vue.ref('');
         const zonesRurales = Vue.ref('');
 
+        // Autocomplete state
+        const activeDropdown = Vue.ref(-1);
+        const suggestions = Vue.ref([]);
+        const highlightIdx = Vue.ref(-1);
+
         function loadFromVoyage(voyage) {
             if (!voyage) return;
             if (voyage.destinations?.length) {
-                destinations.value = voyage.destinations.map(d => ({ ...d }));
+                destinations.value = voyage.destinations.map(d => ({
+                    ...d,
+                    _searchText: getCountryName(d.country)
+                }));
             }
             nature.value = voyage.nature || [];
             natureAutre.value = voyage.natureAutre || '';
@@ -66,7 +71,7 @@ export default {
         }, { immediate: true });
 
         function addDestination() {
-            destinations.value.push({ country: '', departure: '', return: '' });
+            destinations.value.push(emptyDest());
         }
 
         function removeDestination(idx) {
@@ -83,7 +88,9 @@ export default {
 
         function getVoyageData() {
             return {
-                destinations: destinations.value.filter(d => d.country),
+                destinations: destinations.value
+                    .filter(d => d.country)
+                    .map(({ country, departure, return: ret }) => ({ country, departure, return: ret })),
                 nature: nature.value,
                 natureAutre: natureAutre.value,
                 hebergement: hebergement.value,
@@ -101,12 +108,123 @@ export default {
             activites.value.length > 0
         );
 
+        // --- Country autocomplete ---
+
+        function closeDropdown() {
+            activeDropdown.value = -1;
+            suggestions.value = [];
+            highlightIdx.value = -1;
+        }
+
+        function onCountryInput(idx, value) {
+            destinations.value[idx]._searchText = value;
+            destinations.value[idx].country = '';
+            if (value.length >= 2) {
+                suggestions.value = searchCountries(value);
+                activeDropdown.value = idx;
+                highlightIdx.value = -1;
+            } else {
+                closeDropdown();
+            }
+        }
+
+        function onCountryFocus(idx) {
+            const d = destinations.value[idx];
+            if (d._searchText.length >= 2 && !d.country) {
+                suggestions.value = searchCountries(d._searchText);
+                activeDropdown.value = idx;
+                highlightIdx.value = -1;
+            }
+        }
+
+        function onCountryBlur(idx) {
+            setTimeout(() => {
+                if (activeDropdown.value !== idx) return;
+                closeDropdown();
+                const d = destinations.value[idx];
+                if (!d.country && d._searchText) {
+                    // Try auto-select if there's exactly one match
+                    const matches = searchCountries(d._searchText, 2);
+                    if (matches.length === 1) {
+                        d.country = matches[0].code;
+                        d._searchText = matches[0].fr;
+                    } else {
+                        d._searchText = '';
+                    }
+                }
+            }, 200);
+        }
+
+        function selectCountry(idx, country) {
+            destinations.value[idx].country = country.code;
+            destinations.value[idx]._searchText = country.fr;
+            closeDropdown();
+        }
+
+        function onCountryKeydown(idx, event) {
+            if (activeDropdown.value !== idx || !suggestions.value.length) return;
+            switch (event.key) {
+                case 'ArrowDown':
+                    event.preventDefault();
+                    highlightIdx.value = Math.min(highlightIdx.value + 1, suggestions.value.length - 1);
+                    break;
+                case 'ArrowUp':
+                    event.preventDefault();
+                    highlightIdx.value = Math.max(highlightIdx.value - 1, 0);
+                    break;
+                case 'Enter':
+                    event.preventDefault();
+                    if (highlightIdx.value >= 0) {
+                        selectCountry(idx, suggestions.value[highlightIdx.value]);
+                    }
+                    break;
+                case 'Escape':
+                    closeDropdown();
+                    break;
+                case 'Tab':
+                    if (highlightIdx.value >= 0) {
+                        selectCountry(idx, suggestions.value[highlightIdx.value]);
+                    }
+                    break;
+            }
+        }
+
+        // --- Date validation ---
+
+        function getDateWarnings(d) {
+            const warnings = [];
+            if (!d.departure && !d.return) return warnings;
+
+            if (d.departure && d.return) {
+                if (new Date(d.return) <= new Date(d.departure)) {
+                    warnings.push({ type: 'error', text: 'Le retour doit \u00eatre apr\u00e8s le d\u00e9part' });
+                }
+                const days = (new Date(d.return) - new Date(d.departure)) / 86400000;
+                if (days > 730) {
+                    warnings.push({ type: 'warn', text: 'Voyage de plus de 2 ans' });
+                }
+            }
+
+            if (d.departure) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                if (new Date(d.departure) < today) {
+                    warnings.push({ type: 'warn', text: 'Date de d\u00e9part dans le pass\u00e9' });
+                }
+            }
+
+            return warnings;
+        }
+
         return {
             isEditing, destinations, nature, natureAutre,
             hebergement, hebergementAutre, activites, activitesAutre,
             zonesRurales, hasData,
+            activeDropdown, suggestions, highlightIdx,
             addDestination, removeDestination, toggleArrayItem,
-            getVoyageData, resolveCountry, daysBetween, formatDateDisplay,
+            getVoyageData, getCountryName, daysBetween, formatDateDisplay,
+            onCountryInput, onCountryFocus, onCountryBlur, onCountryKeydown,
+            selectCountry, getDateWarnings,
             FORM_LABELS
         };
     },
@@ -122,9 +240,9 @@ export default {
         <div v-if="!isEditing" class="voyage-compact">
             <template v-if="hasData">
                 <div v-for="d in destinations" :key="d.country + d.departure" class="dest-line">
-                    <strong>{{ resolveCountry(d.country) || d.country }}</strong>
+                    <strong>{{ getCountryName(d.country) || d.country }}</strong>
                     <template v-if="d.departure">
-                        : {{ formatDateDisplay(d.departure) }} – {{ formatDateDisplay(d.return) }}
+                        : {{ formatDateDisplay(d.departure) }} \u2013 {{ formatDateDisplay(d.return) }}
                         <span v-if="daysBetween(d.departure, d.return)" style="color: #999;">({{ daysBetween(d.departure, d.return) }})</span>
                     </template>
                 </div>
@@ -164,12 +282,35 @@ export default {
                 <span>Pays</span><span>Depart</span><span>Retour</span><span></span>
             </div>
             <div v-for="(d, idx) in destinations" :key="idx" class="destination-row">
-                <input type="text" v-model="d.country" placeholder="Code pays (ex: BR)" maxlength="2"
-                       style="text-transform: uppercase;">
+                <div class="country-autocomplete-wrapper">
+                    <input type="text"
+                           :value="d._searchText"
+                           @input="onCountryInput(idx, $event.target.value)"
+                           @focus="onCountryFocus(idx)"
+                           @blur="onCountryBlur(idx)"
+                           @keydown="onCountryKeydown(idx, $event)"
+                           placeholder="Pays..."
+                           autocomplete="off">
+                    <div v-if="activeDropdown === idx && suggestions.length > 0"
+                         class="country-dropdown">
+                        <div v-for="(s, si) in suggestions" :key="s.code"
+                             class="country-dropdown-item"
+                             :class="{ highlighted: highlightIdx === si }"
+                             @mousedown.prevent="selectCountry(idx, s)">
+                            {{ s.fr }}
+                        </div>
+                    </div>
+                </div>
                 <input type="date" v-model="d.departure">
                 <input type="date" v-model="d.return">
                 <button class="remove-dest" @click="removeDestination(idx)"
-                        :disabled="destinations.length <= 1">✕</button>
+                        :disabled="destinations.length <= 1">\u2715</button>
+                <div v-if="getDateWarnings(d).length" class="date-warnings">
+                    <span v-for="w in getDateWarnings(d)" :key="w.text"
+                          :class="'date-warning-' + w.type">
+                        {{ w.text }}
+                    </span>
+                </div>
             </div>
             <button class="btn-secondary btn-small" @click="addDestination" style="margin-bottom: 12px;">
                 + Destination

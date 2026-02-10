@@ -526,6 +526,27 @@ input:focus, select:focus, textarea:focus {
 .voyage-chip.activity { background: #e8f5e9; color: #2e7d32; }
 .voyage-chip.rural { background: #fff3e0; color: #e65100; }
 .voyage-section-label { font-size: 11px; color: #999; font-weight: 600; text-transform: uppercase; }
+/* Country autocomplete */
+.country-autocomplete-wrapper { position: relative; }
+.country-autocomplete-wrapper input { width: 100%; }
+.country-dropdown {
+    position: absolute; top: 100%; left: 0; right: 0;
+    background: #fff; border: 1px solid #ddd; border-top: none;
+    border-radius: 0 0 4px 4px; max-height: 200px;
+    overflow-y: auto; z-index: 100;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.country-dropdown-item {
+    padding: 8px 12px; cursor: pointer; font-size: 13px;
+}
+.country-dropdown-item:hover, .country-dropdown-item.highlighted {
+    background: #e3f2fd;
+}
+/* Date warnings */
+.date-warnings { grid-column: 1 / -1; }
+.date-warnings span { font-size: 11px; margin-right: 12px; }
+.date-warning-error { color: #c62828; }
+.date-warning-warn { color: #e65100; }
 
 /* ==================== MEDICAL EDITOR ==================== */
 .medical-editor { font-size: 13px; }
