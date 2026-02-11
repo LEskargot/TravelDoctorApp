@@ -165,6 +165,11 @@ $requestBody = [
         [
             'role' => 'user',
             'content' => $messageContent
+        ],
+        // Assistant prefill forces JSON array output (prevents explanatory text)
+        [
+            'role' => 'assistant',
+            'content' => '['
         ]
     ]
 ];
@@ -208,9 +213,10 @@ if (!$apiResult || !isset($apiResult['content'][0]['text'])) {
     exit;
 }
 
-$rawText = $apiResult['content'][0]['text'];
+// Prepend '[' from assistant prefill, then append the model's completion
+$rawText = '[' . $apiResult['content'][0]['text'];
 
-// Strip markdown code fences if present (Claude sometimes wraps JSON)
+// Strip markdown code fences if present
 $rawText = preg_replace('/^```(?:json)?\s*/i', '', $rawText);
 $rawText = preg_replace('/\s*```\s*$/', '', $rawText);
 $rawText = trim($rawText);
