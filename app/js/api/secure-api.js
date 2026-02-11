@@ -124,9 +124,9 @@ export async function decryptItems(items) {
 
 // ==================== Delivery Note AI Parsing ====================
 
-export async function parseDeliveryNotePdf(file) {
+export async function parseDeliveryNote(file, fieldName = 'pdf') {
     const formData = new FormData();
-    formData.append('pdf', file);
+    formData.append(fieldName, file);
 
     const token = getPb().authStore.token;
     const response = await fetch(`${FORM_API_URL}/parse-delivery-note.php`, {

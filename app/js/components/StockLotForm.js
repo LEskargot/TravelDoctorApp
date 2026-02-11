@@ -8,7 +8,7 @@
  * - Multi-lot review mode when PDF detects multiple vaccines
  */
 import { VACCINE_SCHEDULES } from '../data/vaccine-schedules.js';
-import { parseDeliveryNotePdf } from '../api/secure-api.js';
+import { parseDeliveryNote } from '../api/secure-api.js';
 
 const ALL_VACCINES = Object.keys(VACCINE_SCHEDULES).sort();
 
@@ -74,7 +74,8 @@ export default {
         const pdfError = Vue.ref('');
         const detectedLots = Vue.ref([]); // multi-lot from PDF
         const showMultiLot = Vue.ref(false);
-        const pdfPreviewUrl = Vue.ref(''); // blob URL for PDF preview
+        const pdfPreviewUrl = Vue.ref(''); // blob URL for document preview
+        const previewIsImage = Vue.ref(false);
 
         const isEditMode = Vue.computed(() => !!props.editLot);
 
@@ -155,47 +156,47 @@ export default {
             });
         }
 
-        // ==================== PDF Parsing ====================
+        // ==================== Document Parsing (PDF or image) ====================
 
-        async function onPdfUpload(event) {
-            const file = event.target.files?.[0];
-            if (!file) return;
-
+        /**
+         * Shared handler: parse a file (PDF or image) for vaccine lots.
+         * For PDFs: tries AI first, falls back to local PDF.js/Tesseract/regex.
+         * For images: AI only (no local fallback).
+         */
+        async function parseFile(file, fieldName = 'pdf') {
             pdfError.value = '';
             pdfProgress.value = '';
             pdfParsing.value = true;
             detectedLots.value = [];
 
-            // Create preview URL for the uploaded PDF
+            // Create preview URL
             if (pdfPreviewUrl.value) URL.revokeObjectURL(pdfPreviewUrl.value);
+            const isImage = file.type.startsWith('image/');
+            previewIsImage.value = isImage;
             pdfPreviewUrl.value = URL.createObjectURL(file);
-
             let lots = [];
 
             // Step 1: Try AI parsing (Claude API via PHP)
             try {
                 pdfProgress.value = 'Analyse intelligente du document...';
-                const result = await parseDeliveryNotePdf(file);
+                const result = await parseDeliveryNote(file, fieldName);
                 lots = result.lots || [];
-                console.log(`[Stock PDF] AI parsed lots (mode: ${result.mode || 'unknown'}):`, lots);
+                console.log(`[Stock] AI parsed lots (mode: ${result.mode || 'unknown'}):`, lots);
 
-                // If AI returned 0 lots, try local as well
-                if (lots.length === 0) {
-                    console.log('[Stock PDF] AI returned 0 lots, trying local parsing');
+                // If AI returned 0 lots and it's a PDF, try local parsing
+                if (lots.length === 0 && !isImage) {
+                    console.log('[Stock] AI returned 0 lots, trying local parsing');
                     lots = await localParsePdf(file);
                 }
             } catch (aiError) {
-                console.warn('[Stock PDF] AI parsing failed, falling back to local:', aiError.message);
-                // Step 2: Fallback to local parsing (PDF.js + Tesseract OCR + regex)
-                try {
-                    lots = await localParsePdf(file);
-                } catch (localError) {
-                    console.error('[Stock PDF] Local parsing also failed:', localError);
-                    pdfError.value = 'Erreur lors de la lecture du PDF.';
-                    pdfParsing.value = false;
-                    pdfProgress.value = '';
-                    event.target.value = '';
-                    return;
+                console.warn('[Stock] AI parsing failed:', aiError.message);
+                if (!isImage) {
+                    // Fallback to local parsing for PDFs only
+                    try {
+                        lots = await localParsePdf(file);
+                    } catch (localError) {
+                        console.error('[Stock] Local parsing also failed:', localError);
+                    }
                 }
             }
 
@@ -215,6 +216,19 @@ export default {
 
             pdfParsing.value = false;
             pdfProgress.value = '';
+        }
+
+        function onPdfUpload(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            parseFile(file, 'pdf');
+            event.target.value = '';
+        }
+
+        function onCameraCapture(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            parseFile(file, 'image');
             event.target.value = '';
         }
 
@@ -658,10 +672,10 @@ export default {
             vaccine, lot, expiration, quantity,
             vaccineSearch, showVaccineDropdown, vaccineInput,
             filteredVaccines, isEditMode,
-            pdfParsing, pdfProgress, pdfError, detectedLots, showMultiLot, pdfPreviewUrl,
+            pdfParsing, pdfProgress, pdfError, detectedLots, showMultiLot, pdfPreviewUrl, previewIsImage,
             onVaccineInput, selectVaccine, onVaccineBlur,
             onSave, onClose,
-            onPdfUpload, saveMultiLots, cancelMultiLots
+            onPdfUpload, onCameraCapture, saveMultiLots, cancelMultiLots
         };
     },
 
@@ -674,22 +688,29 @@ export default {
             </div>
             <div class="modal-body">
 
-                <!-- PDF upload (add mode only) -->
+                <!-- Document import (add mode only) -->
                 <div v-if="!isEditMode && !showMultiLot" class="pdf-upload-section">
-                    <label class="pdf-upload-label">
-                        <span class="pdf-upload-btn">&#128196; Importer depuis un bon de livraison (PDF)</span>
-                        <input type="file" accept=".pdf" @change="onPdfUpload" style="display:none">
-                    </label>
-                    <span v-if="pdfParsing" class="pdf-parsing">{{ pdfProgress || 'Analyse du PDF...' }}</span>
+                    <div class="import-buttons">
+                        <label class="pdf-upload-label">
+                            <span class="pdf-upload-btn">&#128196; Importer un PDF</span>
+                            <input type="file" accept=".pdf" @change="onPdfUpload" style="display:none">
+                        </label>
+                        <label class="pdf-upload-label">
+                            <span class="pdf-upload-btn">&#128247; Photographier</span>
+                            <input type="file" accept="image/*" capture="environment" @change="onCameraCapture" style="display:none">
+                        </label>
+                    </div>
+                    <span v-if="pdfParsing" class="pdf-parsing">{{ pdfProgress || 'Analyse du document...' }}</span>
                     <span v-if="pdfError" class="pdf-error">{{ pdfError }}</span>
                 </div>
 
                 <!-- Multi-lot review (from PDF) with side-by-side preview -->
                 <div v-if="showMultiLot" class="multi-lot-review">
                     <div class="multi-lot-layout">
-                        <!-- PDF preview -->
+                        <!-- Document preview -->
                         <div v-if="pdfPreviewUrl" class="pdf-preview-pane">
-                            <iframe :src="pdfPreviewUrl" class="pdf-preview-frame"></iframe>
+                            <img v-if="previewIsImage" :src="pdfPreviewUrl" class="pdf-preview-image">
+                            <iframe v-else :src="pdfPreviewUrl" class="pdf-preview-frame"></iframe>
                         </div>
 
                         <!-- Detected lots -->

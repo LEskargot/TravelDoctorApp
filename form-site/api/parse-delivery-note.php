@@ -33,18 +33,30 @@ if (!defined('ANTHROPIC_API_KEY') || empty(ANTHROPIC_API_KEY)) {
     exit;
 }
 
-// Check PDF file was uploaded
-if (!isset($_FILES['pdf']) || $_FILES['pdf']['error'] !== UPLOAD_ERR_OK) {
+// Check file was uploaded (field name: 'pdf' for PDF, 'image' for camera photo)
+$file = $_FILES['pdf'] ?? $_FILES['image'] ?? null;
+if (!$file || $file['error'] !== UPLOAD_ERR_OK) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'No PDF file uploaded', 'fallback' => true]);
+    echo json_encode(['success' => false, 'error' => 'No file uploaded', 'fallback' => true]);
     exit;
 }
 
 // Limit file size (10 MB)
 $maxSize = 10 * 1024 * 1024;
-if ($_FILES['pdf']['size'] > $maxSize) {
+if ($file['size'] > $maxSize) {
     http_response_code(413);
-    echo json_encode(['success' => false, 'error' => 'PDF too large (max 10 MB)', 'fallback' => true]);
+    echo json_encode(['success' => false, 'error' => 'File too large (max 10 MB)', 'fallback' => true]);
+    exit;
+}
+
+// Detect file type
+$mimeType = $file['type'] ?: mime_content_type($file['tmp_name']);
+$isImage = in_array($mimeType, ['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+$isPdf = ($mimeType === 'application/pdf');
+
+if (!$isImage && !$isPdf) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'error' => 'Unsupported file type. Use PDF or image (JPEG/PNG).', 'fallback' => true]);
     exit;
 }
 
@@ -60,29 +72,35 @@ $allowedVaccines = [
 
 $vaccineList = implode(', ', $allowedVaccines);
 
-// Step 1: Try to extract text layer from PDF using pdftotext (poppler-utils)
-$pdfPath = $_FILES['pdf']['tmp_name'];
+// Step 1: Determine parsing mode
+$filePath = $file['tmp_name'];
 $extractedText = '';
 $useVision = false;
 
-// Check if shell_exec is available (often disabled on shared hosting)
-$shellExecAvailable = function_exists('shell_exec') && !in_array('shell_exec', array_map('trim', explode(',', ini_get('disable_functions'))));
-
-if ($shellExecAvailable) {
-    $pdftotextBin = trim(shell_exec('which pdftotext 2>/dev/null') ?? '');
-    if ($pdftotextBin) {
-        $escapedPath = escapeshellarg($pdfPath);
-        $extractedText = shell_exec("$pdftotextBin -layout $escapedPath - 2>/dev/null") ?? '';
-    }
-}
-
-// If text layer is too sparse (<50 non-whitespace chars), fall back to full PDF vision
-$strippedLen = strlen(preg_replace('/\s+/', '', $extractedText));
-if ($strippedLen < 50) {
+if ($isImage) {
+    // Images always use vision mode
     $useVision = true;
-    error_log("parse-delivery-note: text layer too sparse ({$strippedLen} chars), using PDF vision");
+    error_log("parse-delivery-note: image upload, using vision mode");
 } else {
-    error_log("parse-delivery-note: using text layer ({$strippedLen} chars)");
+    // PDF: try to extract text layer using pdftotext (poppler-utils)
+    $shellExecAvailable = function_exists('shell_exec') && !in_array('shell_exec', array_map('trim', explode(',', ini_get('disable_functions'))));
+
+    if ($shellExecAvailable) {
+        $pdftotextBin = trim(shell_exec('which pdftotext 2>/dev/null') ?? '');
+        if ($pdftotextBin) {
+            $escapedPath = escapeshellarg($filePath);
+            $extractedText = shell_exec("$pdftotextBin -layout $escapedPath - 2>/dev/null") ?? '';
+        }
+    }
+
+    // If text layer is too sparse (<50 non-whitespace chars), fall back to vision
+    $strippedLen = strlen(preg_replace('/\s+/', '', $extractedText));
+    if ($strippedLen < 50) {
+        $useVision = true;
+        error_log("parse-delivery-note: text layer too sparse ({$strippedLen} chars), using PDF vision");
+    } else {
+        error_log("parse-delivery-note: using text layer ({$strippedLen} chars)");
+    }
 }
 
 // Build the extraction prompt (shared between text and vision modes)
@@ -130,24 +148,43 @@ Return ONLY a JSON array, no explanation:
 If no matching vaccines are found, return: []
 INSTRUCTIONS;
 
-// Step 2: Build Claude API request — text-only or full PDF vision
+// Step 2: Build Claude API request — text-only or vision (PDF document / image)
 if ($useVision) {
-    // Scanned PDF: send full document for vision processing
-    $pdfData = base64_encode(file_get_contents($pdfPath));
-    $messageContent = [
-        [
-            'type' => 'document',
-            'source' => [
-                'type' => 'base64',
-                'media_type' => 'application/pdf',
-                'data' => $pdfData
+    $fileData = base64_encode(file_get_contents($filePath));
+
+    if ($isImage) {
+        // Image: use image content block
+        $messageContent = [
+            [
+                'type' => 'image',
+                'source' => [
+                    'type' => 'base64',
+                    'media_type' => $mimeType,
+                    'data' => $fileData
+                ]
+            ],
+            [
+                'type' => 'text',
+                'text' => $instructions
             ]
-        ],
-        [
-            'type' => 'text',
-            'text' => $instructions
-        ]
-    ];
+        ];
+    } else {
+        // PDF: use document content block
+        $messageContent = [
+            [
+                'type' => 'document',
+                'source' => [
+                    'type' => 'base64',
+                    'media_type' => 'application/pdf',
+                    'data' => $fileData
+                ]
+            ],
+            [
+                'type' => 'text',
+                'text' => $instructions
+            ]
+        ];
+    }
 } else {
     // Text layer available: send extracted text only (much cheaper)
     $messageContent = [
