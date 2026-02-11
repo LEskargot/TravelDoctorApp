@@ -82,13 +82,13 @@ if ($strippedLen < 50) {
 
 // Build the extraction prompt (shared between text and vision modes)
 $instructions = <<<INSTRUCTIONS
-Parse this Swiss pharmaceutical delivery note (bon de livraison). Extract all vaccine/medication products listed.
+Parse this document containing one or more Swiss pharmaceutical delivery notes (bons de livraison). The document may contain multiple pages from different suppliers. Each page is a separate delivery note.
 
-Match each product to EXACTLY one name from this list:
+STEP 1 — Identify each vaccine product and match it to EXACTLY one name from this list:
 $vaccineList
 
-Mapping examples for common delivery note names:
-- "HAVRIX 1440 Erwachsene" or "HAVRIX 1440 adulte" -> "Havrix 1440"
+Name mapping (delivery notes use commercial/German/descriptive names):
+- "HAVRIX 1440 Erwachsene" or "HAVRIX 1440 susp inj" -> "Havrix 1440"
 - "HAVRIX 720 Junior" or "HAVRIX 720 Kinder" -> "Havrix 720"
 - "ENCEPUR N Kinder" or "ENCEPUR enfants" -> "Encepur enfants"
 - "ENCEPUR N Erwachsene" or "ENCEPUR adultes" -> "Encepur adultes"
@@ -100,19 +100,29 @@ Mapping examples for common delivery note names:
 - "ENGERIX-B 20" or "ENGERIX B20" -> "Engerix B-20"
 - "VAXIGRIPTETRA" or "VaxigripTetra" -> "VaxigripTetra"
 - "IPV Polio" or "Imovax Polio" -> "IPV Polio"
+- "RABIPUR VIAL..." or "RABIPUR VACCIN RABIQUE..." -> "Rabipur"
+- "TYPHIM VI SOL INJ..." -> "Typhim"
 
-For each product found, extract:
-- vaccine: the EXACT name from the list above (case-sensitive)
-- lot: the batch/lot number (e.g. "AHAVC169AA", "Y3E772V")
-- expiration: expiration date in YYYY-MM-DD format
-- quantity: number of units/doses delivered (integer)
+Skip products not in the list (e.g. PROQUAD, syringes, diluents).
 
-Skip any products that do not match a name in the list.
+STEP 2 — For each matched product, extract these fields:
+
+- vaccine: the EXACT name from the list (case-sensitive)
+- lot: the batch/lot number. This is a short alphanumeric code like "AHAVC169AA", "FDP00689", "Y3E772V", "5PT27", "3004288".
+  IMPORTANT: The lot number is NOT the product description, NOT the dosage, NOT the packaging info.
+  These are NOT lot numbers: "RABIPUR_VIAL_X1_+PFS_+2N_CH", "25MCG/0.5ML", "SUSP INJ SER PRE", "VACCIN RABIQUE C SOLV".
+  Look for fields labeled "Charge:", "Ch.-B.:", "Lot:", or a code in the format "XXXX / DD.MM.YYYY".
+  If no lot number is present on the delivery note, use "" (empty string).
+- expiration: the expiry date in YYYY-MM-DD format. Look for "Verfall:", "Exp. Date:", "EXP", or a date after a slash following the lot code.
+  If no expiration date is present, use "" (empty string).
+- quantity: number of units delivered (integer). Look for "Menge:", "Pce", "Stk", or a quantity column.
+
+STEP 3 — If the same vaccine appears on multiple pages (different delivery notes), output one entry per occurrence. Do NOT merge them.
 
 Return ONLY a JSON array, no explanation:
-[{"vaccine": "...", "lot": "...", "expiration": "YYYY-MM-DD", "quantity": N}]
+[{"vaccine": "...", "lot": "...", "expiration": "...", "quantity": N}]
 
-If no matching vaccines are found, return an empty array: []
+If no matching vaccines are found, return: []
 INSTRUCTIONS;
 
 // Step 2: Build Claude API request — text-only or full PDF vision
