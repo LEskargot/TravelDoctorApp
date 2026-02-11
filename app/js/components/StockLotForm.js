@@ -74,6 +74,7 @@ export default {
         const pdfError = Vue.ref('');
         const detectedLots = Vue.ref([]); // multi-lot from PDF
         const showMultiLot = Vue.ref(false);
+        const pdfPreviewUrl = Vue.ref(''); // blob URL for PDF preview
 
         const isEditMode = Vue.computed(() => !!props.editLot);
 
@@ -90,6 +91,10 @@ export default {
                 pdfError.value = '';
                 detectedLots.value = [];
                 showMultiLot.value = false;
+                if (pdfPreviewUrl.value) {
+                    URL.revokeObjectURL(pdfPreviewUrl.value);
+                    pdfPreviewUrl.value = '';
+                }
 
                 if (props.editLot) {
                     vaccine.value = props.editLot.vaccine;
@@ -160,6 +165,10 @@ export default {
             pdfProgress.value = '';
             pdfParsing.value = true;
             detectedLots.value = [];
+
+            // Create preview URL for the uploaded PDF
+            if (pdfPreviewUrl.value) URL.revokeObjectURL(pdfPreviewUrl.value);
+            pdfPreviewUrl.value = URL.createObjectURL(file);
 
             let lots = [];
 
@@ -613,22 +622,32 @@ export default {
 
         // ==================== Multi-lot actions ====================
 
+        function cleanupPdfPreview() {
+            if (pdfPreviewUrl.value) {
+                URL.revokeObjectURL(pdfPreviewUrl.value);
+                pdfPreviewUrl.value = '';
+            }
+        }
+
         function saveMultiLots() {
-            const selected = detectedLots.value.filter(l => l.selected);
+            const selected = detectedLots.value.filter(l => l.selected && l.lot);
             const batch = selected.map(l => ({
                 vaccine: l.vaccine,
-                lot: l.lot || '',
+                lot: l.lot,
                 expiration: l.expiration || null,
                 quantity: Number(l.quantity) || 0
             }));
+            if (batch.length === 0) return;
             emit('save-batch', batch);
             showMultiLot.value = false;
             detectedLots.value = [];
+            cleanupPdfPreview();
         }
 
         function cancelMultiLots() {
             showMultiLot.value = false;
             detectedLots.value = [];
+            cleanupPdfPreview();
         }
 
         function onClose() {
@@ -639,7 +658,7 @@ export default {
             vaccine, lot, expiration, quantity,
             vaccineSearch, showVaccineDropdown, vaccineInput,
             filteredVaccines, isEditMode,
-            pdfParsing, pdfProgress, pdfError, detectedLots, showMultiLot,
+            pdfParsing, pdfProgress, pdfError, detectedLots, showMultiLot, pdfPreviewUrl,
             onVaccineInput, selectVaccine, onVaccineBlur,
             onSave, onClose,
             onPdfUpload, saveMultiLots, cancelMultiLots
@@ -648,7 +667,7 @@ export default {
 
     template: `
     <div v-if="visible" class="modal-overlay" @click.self="onClose">
-        <div class="modal-content stock-lot-modal">
+        <div class="modal-content stock-lot-modal" :class="{ 'stock-lot-modal-wide': showMultiLot && pdfPreviewUrl }">
             <div class="modal-header">
                 <h2>{{ isEditMode ? 'Modifier le lot' : 'Ajouter un lot' }}</h2>
                 <button class="modal-close" @click="onClose">&times;</button>
@@ -665,38 +684,49 @@ export default {
                     <span v-if="pdfError" class="pdf-error">{{ pdfError }}</span>
                 </div>
 
-                <!-- Multi-lot review (from PDF) -->
+                <!-- Multi-lot review (from PDF) with side-by-side preview -->
                 <div v-if="showMultiLot" class="multi-lot-review">
-                    <h3>Vaccins detectes dans le PDF</h3>
-                    <p class="multi-lot-hint">Verifiez et completez les informations, puis confirmez.</p>
-
-                    <div v-for="(dl, idx) in detectedLots" :key="idx" class="multi-lot-item">
-                        <div class="multi-lot-check">
-                            <input type="checkbox" v-model="dl.selected" :id="'ml-' + idx">
-                            <label :for="'ml-' + idx" class="multi-lot-name">{{ dl.vaccine }}</label>
+                    <div class="multi-lot-layout">
+                        <!-- PDF preview -->
+                        <div v-if="pdfPreviewUrl" class="pdf-preview-pane">
+                            <iframe :src="pdfPreviewUrl" class="pdf-preview-frame"></iframe>
                         </div>
-                        <div v-if="dl.selected" class="multi-lot-fields">
-                            <div class="stock-form-row">
-                                <label>Lot</label>
-                                <input type="text" v-model="dl.lot" placeholder="Numero de lot">
+
+                        <!-- Detected lots -->
+                        <div class="multi-lot-pane">
+                            <h3>Vaccins detectes</h3>
+                            <p class="multi-lot-hint">Verifiez avec le PDF et corrigez si necessaire.</p>
+
+                            <div v-for="(dl, idx) in detectedLots" :key="idx" class="multi-lot-item">
+                                <div class="multi-lot-check">
+                                    <input type="checkbox" v-model="dl.selected" :id="'ml-' + idx">
+                                    <label :for="'ml-' + idx" class="multi-lot-name">{{ dl.vaccine }}</label>
+                                </div>
+                                <div v-if="dl.selected" class="multi-lot-fields">
+                                    <div class="stock-form-row">
+                                        <label>Lot *</label>
+                                        <input type="text" v-model="dl.lot" placeholder="Numero de lot"
+                                               :class="{ 'input-missing': !dl.lot }">
+                                    </div>
+                                    <div class="stock-form-row">
+                                        <label>Expiration</label>
+                                        <input type="date" v-model="dl.expiration">
+                                    </div>
+                                    <div class="stock-form-row">
+                                        <label>Quantite</label>
+                                        <input type="number" v-model.number="dl.quantity" min="0">
+                                    </div>
+                                </div>
                             </div>
-                            <div class="stock-form-row">
-                                <label>Expiration</label>
-                                <input type="date" v-model="dl.expiration">
-                            </div>
-                            <div class="stock-form-row">
-                                <label>Quantite</label>
-                                <input type="number" v-model.number="dl.quantity" min="0">
+
+                            <div class="stock-form-actions">
+                                <button class="btn-secondary btn-small" @click="cancelMultiLots">Annuler</button>
+                                <button class="btn-success btn-small" @click="saveMultiLots"
+                                        :disabled="!detectedLots.some(l => l.selected && l.lot)">
+                                    Ajouter les lots selectionnes
+                                </button>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="stock-form-actions">
-                        <button class="btn-secondary btn-small" @click="cancelMultiLots">Annuler</button>
-                        <button class="btn-success btn-small" @click="saveMultiLots"
-                                :disabled="!detectedLots.some(l => l.selected)">
-                            Ajouter les lots selectionnes
-                        </button>
                     </div>
                 </div>
 

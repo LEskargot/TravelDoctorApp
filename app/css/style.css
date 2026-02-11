@@ -238,7 +238,6 @@ input:focus, select:focus, textarea:focus {
 /* ==================== ACCORDION ==================== */
 .accordion-section {
     border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 10px;
-    overflow: hidden;
 }
 .accordion-section.active { border-color: #2196F3; }
 .accordion-header {
@@ -307,44 +306,129 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* ==================== VACCINE PANEL ==================== */
-.vaccine-panel h4 { color: #1565C0; margin-bottom: 12px; }
 .vaccine-lot-status {
     font-size: 12px; color: #666; margin-bottom: 10px;
     padding: 6px 10px; background: #f5f5f5; border-radius: 4px;
 }
-.vaccine-checkbox-list {
-    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 15px;
-}
-.vaccine-checkbox-item {
-    display: flex; align-items: center; gap: 6px; font-size: 13px;
-}
-.vaccine-checkbox-item input[type="checkbox"] { width: auto; margin: 0; }
-.vaccine-checkbox-item .expired { text-decoration: line-through; color: #999; }
-.vaccine-checkbox-item .expiring-soon { color: #e65100; }
-.lot-expiry-warning { font-size: 10px; color: #e65100; }
 
-/* Administered vaccines table */
-.vaccine-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
-.vaccine-table th {
-    background: #e3f2fd; color: #1565C0; text-align: left;
-    padding: 8px 10px; font-weight: 600; font-size: 12px;
+/* Vaccine card */
+.vax-card {
+    background: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px;
+    padding: 14px 16px; margin-bottom: 10px; position: relative;
+    transition: border-color 0.2s;
 }
-.vaccine-table td { padding: 8px 10px; border-bottom: 1px solid #eee; }
-.vaccine-table select { width: auto; min-width: 120px; margin: 0; padding: 4px 8px; }
-.vaccine-table .remove-btn {
-    padding: 2px 8px; font-size: 11px; background: #ffebee; color: #c62828;
+.vax-card:hover { border-color: #90caf9; }
+.vax-card.vax-planning { border-left: 4px solid #ff9800; background: #fffaf5; }
+.vax-card.vax-preloaded { border-left: 4px solid #7c4dff; background: #f3f0ff; }
+.vax-card-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 10px;
+}
+.vax-card-title { display: flex; align-items: center; gap: 8px; }
+.vax-card-name { font-weight: 700; font-size: 15px; color: #1565C0; }
+.vax-preloaded-badge {
+    display: inline-block; font-size: 10px; font-weight: 700;
+    padding: 2px 8px; border-radius: 10px;
+    background: #ede7f6; color: #7c4dff; border: 1px solid #d1c4e9;
+}
+.vax-card .remove-btn {
+    padding: 4px 10px; font-size: 12px; background: #ffebee; color: #c62828;
     border: 1px solid #ffcdd2; border-radius: 4px; cursor: pointer;
+    font-weight: 600; transition: background 0.2s;
 }
-.vaccine-table .remove-btn:hover { background: #ffcdd2; }
+.vax-card .remove-btn:hover { background: #ffcdd2; }
 
-/* Boosters section */
-.boosters-section { margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee; }
-.booster-row {
-    display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
-    font-size: 13px; padding: 6px 0;
+/* Administered toggle */
+.vax-toggle {
+    display: flex; align-items: center; gap: 6px; margin-bottom: 10px;
+    font-size: 13px;
 }
-.booster-row label { display: inline; margin: 0; font-weight: 600; min-width: 120px; }
-.booster-row input[type="date"] { width: auto; margin: 0; padding: 4px 8px; }
+.vax-toggle input[type="checkbox"] { width: auto; margin: 0; }
+.vax-toggle label {
+    display: inline; margin: 0; font-weight: 600; color: #333; cursor: pointer;
+}
+.vax-planning-hint { font-size: 11px; color: #e65100; font-weight: 400; margin-left: 4px; }
+
+/* Dose + Lot + Site row */
+.vax-fields {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+    font-size: 13px; flex-wrap: wrap;
+}
+.vax-fields label {
+    display: inline; margin: 0; font-weight: 600; color: #555; white-space: nowrap;
+}
+.vax-fields select {
+    width: auto; margin: 0; padding: 6px 10px; font-size: 13px;
+}
+.vax-dose-select { min-width: 70px; }
+.vax-lot-select { min-width: 240px; flex: 1; }
+.lot-tag-expiring {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    padding: 1px 8px; border-radius: 10px;
+    background: #fff3e0; color: #e65100;
+}
+
+/* Site injection radios */
+.vax-site-group { display: inline-flex; gap: 14px; flex-wrap: wrap; }
+.vax-site-radio {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 13px; color: #555; cursor: pointer; white-space: nowrap;
+}
+.vax-site-radio input[type="radio"] { width: auto; margin: 0; }
+.vax-site-missing { font-size: 11px; color: #e65100; margin-left: 8px; }
+
+/* Boosters inside card */
+.vax-boosters { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #ddd; }
+.vax-boosters-title {
+    font-size: 11px; color: #999; font-weight: 600;
+    text-transform: uppercase; margin-bottom: 6px;
+}
+.vax-booster-line {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 4px;
+    font-size: 13px; color: #555;
+}
+.vax-booster-dose { font-weight: 600; min-width: 60px; color: #333; }
+.vax-booster-interval { min-width: 70px; color: #999; font-size: 12px; }
+.vax-booster-line input[type="date"] { width: auto; margin: 0; padding: 4px 8px; font-size: 13px; }
+.vax-no-booster { font-size: 12px; color: #999; font-style: italic; }
+.vax-add-booster {
+    margin-top: 6px; padding: 3px 10px; font-size: 11px; font-weight: 600;
+    background: #f5f5f5; color: #1565C0; border: 1px dashed #90caf9;
+    border-radius: 4px; cursor: pointer; transition: background 0.2s;
+}
+.vax-add-booster:hover { background: #e3f2fd; }
+
+/* Add vaccine dropdown */
+.vax-dropdown-wrapper { position: relative; margin-bottom: 16px; }
+.vax-add-btn {
+    padding: 12px 20px; background: #e3f2fd; color: #1565C0;
+    border: 2px dashed #90caf9; border-radius: 8px; cursor: pointer;
+    font-size: 14px; font-weight: 600; width: 100%; text-align: center;
+    transition: all 0.2s;
+}
+.vax-add-btn:hover { background: #bbdefb; border-color: #42a5f5; }
+.vax-dropdown {
+    position: absolute; top: 100%; left: 0; right: 0; z-index: 100;
+    background: white; border: 1px solid #ddd; border-radius: 0 0 8px 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15); max-height: 380px; overflow-y: auto;
+}
+.vax-dropdown-search {
+    padding: 8px 12px; border-bottom: 1px solid #eee;
+    position: sticky; top: 0; background: white; z-index: 1;
+}
+.vax-dropdown-search input { margin: 0; padding: 8px 10px; font-size: 13px; }
+.vax-dropdown-group {
+    padding: 6px 12px; font-size: 11px; font-weight: 700; color: #999;
+    text-transform: uppercase; background: #f9f9f9; border-bottom: 1px solid #eee;
+}
+.vax-dropdown-item {
+    padding: 9px 14px; cursor: pointer; font-size: 13px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid #f5f5f5; transition: background 0.1s;
+}
+.vax-dropdown-item:hover { background: #e3f2fd; }
+.vax-dropdown-item.disabled { opacity: 0.35; cursor: not-allowed; }
+.vax-dropdown-meta { font-size: 11px; color: #999; }
 
 /* ==================== PRESCRIPTION PANEL ==================== */
 .prescription-panel h4 { color: #009688; margin-bottom: 12px; }
@@ -554,9 +638,12 @@ input:focus, select:focus, textarea:focus {
 .medical-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .medical-field { margin-bottom: 10px; }
 .medical-field label { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
-.tri-state-select {
-    width: auto; min-width: 120px; padding: 4px 8px; margin: 0; font-size: 13px;
+.radio-group { display: inline-flex; gap: 12px; }
+.radio-inline {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 13px; color: #555; cursor: pointer; white-space: nowrap; margin: 0;
 }
+.radio-inline input[type="radio"] { width: auto; margin: 0; }
 .detail-textarea {
     width: 100%; min-height: 40px; resize: vertical; font-size: 13px;
     padding: 6px 8px; margin-top: 4px;
@@ -603,13 +690,207 @@ input:focus, select:focus, textarea:focus {
     background: none; padding: 2px 0; text-decoration: underline;
 }
 
+/* ==================== HOME ACTION: STOCK ==================== */
+.home-action-stock {
+    background: linear-gradient(135deg, #fce4ec, #f8bbd0);
+    color: #880e4f; border-color: #f48fb1;
+}
+.home-action-stock:hover { background: linear-gradient(135deg, #f8bbd0, #f48fb1); }
+
+/* ==================== STOCK SCREEN ==================== */
+.stock-screen { padding: 10px 0; }
+.stock-header {
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 10px; margin-bottom: 20px;
+}
+.stock-header-left {
+    display: flex; align-items: center; gap: 12px;
+}
+.stock-header-left h1 { margin: 0; font-size: 22px; }
+.stock-header-right {
+    display: flex; gap: 8px; align-items: center;
+}
+
+/* Summary cards */
+.stock-summary {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;
+}
+.stock-stat-card {
+    background: #f5f5f5; border-radius: 8px; padding: 14px 16px;
+    text-align: center; border: 1px solid #e0e0e0;
+}
+.stock-stat-card.stock-stat-warn { background: #fff3e0; border-color: #ffcc80; }
+.stock-stat-card.stock-stat-danger { background: #ffebee; border-color: #ef9a9a; }
+.stock-stat-value { font-size: 28px; font-weight: 700; color: #333; }
+.stock-stat-label { font-size: 12px; color: #666; margin-top: 4px; }
+
+/* Search / controls */
+.stock-controls { margin-bottom: 15px; }
+.stock-search-input {
+    width: 100%; padding: 10px 14px; border: 1px solid #ddd;
+    border-radius: 6px; font-size: 14px;
+}
+
+/* Table */
+.stock-table-wrapper { overflow-x: auto; }
+.stock-table {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+}
+.stock-table th {
+    text-align: left; padding: 10px 12px; background: #f5f5f5;
+    border-bottom: 2px solid #ddd; font-size: 12px; color: #666;
+    text-transform: uppercase; white-space: nowrap;
+}
+.stock-table td { padding: 10px 12px; border-bottom: 1px solid #eee; }
+.stock-table tbody tr:hover { background: #fafafa; }
+
+.stock-cell-vaccine { font-weight: 600; color: #1565C0; }
+.stock-cell-lot { font-family: 'Courier New', monospace; font-size: 13px; }
+.stock-cell-qty { font-weight: 600; min-width: 80px; }
+.stock-cell-actions { white-space: nowrap; }
+
+/* Status rows */
+.stock-status-expired td { background: #fff5f5; }
+.stock-status-expiring td { background: #fffaf0; }
+.stock-status-out_of_stock td { background: #fafafa; color: #999; }
+
+/* Status badges */
+.stock-status-badge {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    padding: 2px 10px; border-radius: 12px; white-space: nowrap;
+}
+.badge-ok { background: #e8f5e9; color: #2e7d32; }
+.badge-low_stock { background: #fff3e0; color: #e65100; }
+.badge-expiring { background: #fff8e1; color: #f57f17; }
+.badge-expired { background: #ffebee; color: #c62828; }
+.badge-out_of_stock { background: #f5f5f5; color: #999; }
+
+/* Action buttons */
+.stock-action-btn {
+    padding: 4px 8px; font-size: 14px; background: #f5f5f5;
+    border: 1px solid #ddd; border-radius: 4px; cursor: pointer;
+    margin-right: 4px; transition: background 0.2s; line-height: 1;
+}
+.stock-action-btn:hover { background: #e3f2fd; }
+.stock-action-delete:hover { background: #ffebee; }
+.stock-confirm-delete { font-size: 12px; color: #c62828; margin-right: 6px; }
+
+/* Inline adjustment */
+.stock-adjust-inline {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.stock-adjust-input {
+    width: 70px; padding: 4px 8px; font-size: 13px;
+    margin: 0; border: 1px solid #90caf9; border-radius: 4px;
+}
+.stock-adjust-reason {
+    width: auto; padding: 4px 8px; font-size: 12px;
+    margin: 0; border: 1px solid #ddd; border-radius: 4px;
+}
+
+/* ==================== PIN MODAL ==================== */
+.pin-modal { max-width: 360px; }
+.pin-description { font-size: 13px; color: #666; margin-bottom: 16px; }
+.pin-field { margin-bottom: 12px; }
+.pin-field label { font-weight: 600; font-size: 13px; }
+.pin-input {
+    width: 100%; padding: 12px; font-size: 24px; text-align: center;
+    letter-spacing: 12px; font-family: 'Courier New', monospace;
+    border: 2px solid #ddd; border-radius: 8px;
+}
+.pin-input:focus { border-color: #667eea; }
+.pin-error { background: #ffebee; color: #c62828; padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; font-size: 13px; }
+.pin-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+.pin-modal-error {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #c62828; color: white; padding: 8px 20px; border-radius: 6px;
+    font-size: 13px; z-index: 3000;
+}
+
+/* ==================== STOCK LOT FORM ==================== */
+.stock-lot-modal { max-width: 500px; }
+.stock-form-row { margin-bottom: 12px; }
+.stock-form-row label { font-weight: 600; font-size: 13px; }
+.stock-form-row input, .stock-form-row select { width: 100%; }
+.stock-form-row-inline { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.stock-form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+
+/* Vaccine autocomplete */
+.stock-vaccine-autocomplete { position: relative; }
+.stock-vaccine-dropdown {
+    position: absolute; top: 100%; left: 0; right: 0; z-index: 100;
+    background: white; border: 1px solid #ddd; border-top: none;
+    border-radius: 0 0 6px 6px; max-height: 200px; overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.stock-vaccine-option {
+    padding: 8px 12px; cursor: pointer; font-size: 13px;
+}
+.stock-vaccine-option:hover { background: #e3f2fd; }
+
+/* PDF upload */
+.pdf-upload-section { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px dashed #ddd; }
+.pdf-upload-btn {
+    display: inline-block; padding: 8px 16px; background: #f5f5f5;
+    border: 1px dashed #bbb; border-radius: 6px; cursor: pointer;
+    font-size: 13px; color: #555; transition: background 0.2s;
+}
+.pdf-upload-label { cursor: pointer; }
+.pdf-upload-btn:hover { background: #e3f2fd; border-color: #90caf9; }
+.pdf-parsing { font-size: 12px; color: #1565C0; margin-left: 10px; }
+.pdf-error { font-size: 12px; color: #c62828; margin-left: 10px; }
+
+/* Wide modal for PDF preview + lot review side by side */
+.stock-lot-modal-wide { max-width: 950px; }
+
+/* Multi-lot review */
+.multi-lot-layout {
+    display: flex; gap: 16px;
+}
+.pdf-preview-pane {
+    flex: 0 0 45%; min-width: 0;
+}
+.pdf-preview-frame {
+    width: 100%; height: 500px; border: 1px solid #ddd; border-radius: 6px;
+}
+.multi-lot-pane {
+    flex: 1; min-width: 0; overflow-y: auto; max-height: 500px;
+}
+.multi-lot-review h3 { font-size: 15px; margin-bottom: 6px; }
+.multi-lot-hint { font-size: 12px; color: #666; margin-bottom: 12px; }
+.multi-lot-item {
+    background: #fafafa; border: 1px solid #e0e0e0; border-radius: 6px;
+    padding: 10px 12px; margin-bottom: 8px;
+}
+.multi-lot-check {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+}
+.multi-lot-check input[type="checkbox"] { width: auto; margin: 0; }
+.multi-lot-name { display: inline; margin: 0; font-weight: 600; color: #1565C0; }
+.multi-lot-fields {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+}
+.multi-lot-fields label { font-size: 11px; }
+.multi-lot-fields input { font-size: 12px; padding: 6px 8px; }
+.multi-lot-fields input.input-missing { border-color: #e57373; background: #fff5f5; }
+
+/* ==================== LOW STOCK BADGE (VaccinePanel) ==================== */
+.lot-tag-low-stock {
+    display: inline-block; font-size: 10px; font-weight: 700;
+    padding: 1px 6px; border-radius: 8px;
+    background: #ffebee; color: #c62828; margin-left: 4px;
+}
+
 /* ==================== RESPONSIVE ==================== */
 @media (max-width: 600px) {
     body { padding: 10px; }
     .container { padding: 15px; }
     .home-actions { flex-direction: column; }
     .home-action-btn { min-width: auto; }
-    .vaccine-checkbox-list { grid-template-columns: 1fr 1fr; }
+    .vax-site-group { flex-direction: column; gap: 6px; }
+    .vax-fields { flex-direction: column; align-items: flex-start; }
+    .vax-lot-select { min-width: auto; width: 100%; }
+    .vax-booster-line { flex-wrap: wrap; }
     .patient-edit-grid { grid-template-columns: 1fr; }
     .search-input-group { flex-direction: column; }
     .button-group { flex-direction: column; }
@@ -621,4 +902,17 @@ input:focus, select:focus, textarea:focus {
     .destination-header { display: none; }
     .voyage-cols { grid-template-columns: 1fr; }
     .medical-grid { grid-template-columns: 1fr; }
+    .stock-summary { grid-template-columns: repeat(2, 1fr); }
+    .stock-header { flex-direction: column; align-items: flex-start; }
+    .stock-header-right { width: 100%; justify-content: flex-end; }
+    .stock-table { font-size: 12px; }
+    .stock-table th, .stock-table td { padding: 8px 6px; }
+    .stock-form-row-inline { grid-template-columns: 1fr; }
+    .multi-lot-fields { grid-template-columns: 1fr; }
+    .multi-lot-layout { flex-direction: column; }
+    .pdf-preview-pane { flex: none; }
+    .pdf-preview-frame { height: 300px; }
+    .multi-lot-pane { max-height: none; }
+    .stock-lot-modal-wide { max-width: 95vw; }
+    .stock-adjust-inline { flex-direction: column; align-items: flex-start; }
 }
