@@ -65,10 +65,15 @@ $pdfPath = $_FILES['pdf']['tmp_name'];
 $extractedText = '';
 $useVision = false;
 
-$pdftotextBin = trim(shell_exec('which pdftotext 2>/dev/null') ?? '');
-if ($pdftotextBin) {
-    $escapedPath = escapeshellarg($pdfPath);
-    $extractedText = shell_exec("$pdftotextBin -layout $escapedPath - 2>/dev/null") ?? '';
+// Check if shell_exec is available (often disabled on shared hosting)
+$shellExecAvailable = function_exists('shell_exec') && !in_array('shell_exec', array_map('trim', explode(',', ini_get('disable_functions'))));
+
+if ($shellExecAvailable) {
+    $pdftotextBin = trim(shell_exec('which pdftotext 2>/dev/null') ?? '');
+    if ($pdftotextBin) {
+        $escapedPath = escapeshellarg($pdfPath);
+        $extractedText = shell_exec("$pdftotextBin -layout $escapedPath - 2>/dev/null") ?? '';
+    }
 }
 
 // If text layer is too sparse (<50 non-whitespace chars), fall back to full PDF vision
