@@ -122,6 +122,26 @@ export async function decryptItems(items) {
     });
 }
 
+// ==================== Delivery Note AI Parsing ====================
+
+export async function parseDeliveryNotePdf(file) {
+    const formData = new FormData();
+    formData.append('pdf', file);
+
+    const token = getPb().authStore.token;
+    const response = await fetch(`${FORM_API_URL}/parse-delivery-note.php`, {
+        method: 'POST',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        body: formData
+        // No Content-Type header — browser sets multipart boundary automatically
+    });
+
+    if (!response.ok) throw new Error(`API error: ${response.status}`);
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error || 'AI parsing failed');
+    return data;
+}
+
 // ==================== Case Medical Snapshot ====================
 
 export async function saveCaseMedical(caseId, medicalData) {
