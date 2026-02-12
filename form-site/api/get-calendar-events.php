@@ -136,20 +136,28 @@ if ($formsResponse && !empty($formsResponse['items'])) {
 
         $formsData[$item['id']] = $formInfo;
 
+        // When multiple forms exist for the same key, prefer submitted over draft
         if (!empty($email)) {
             $emailKey = strtolower(trim($email));
-            $formsByEmail[$emailKey] = $formInfo;
+            if (!isset($formsByEmail[$emailKey]) || $item['status'] === 'submitted') {
+                $formsByEmail[$emailKey] = $formInfo;
+            }
         }
 
         if (!empty($patientName)) {
             $nameKey = normalizeString($patientName);
-            $formsByName[$nameKey] = $formInfo;
+            if (!isset($formsByName[$nameKey]) || $item['status'] === 'submitted') {
+                $formsByName[$nameKey] = $formInfo;
+            }
         }
 
         // Composite name+DOB lookup for stronger matching
         if (!empty($patientName) && !empty($dobIso)) {
             $nameKey = normalizeString($patientName);
-            $formsByNameDob[$nameKey . '|' . $dobIso] = $formInfo;
+            $compositeKey = $nameKey . '|' . $dobIso;
+            if (!isset($formsByNameDob[$compositeKey]) || $item['status'] === 'submitted') {
+                $formsByNameDob[$compositeKey] = $formInfo;
+            }
         }
     }
 }

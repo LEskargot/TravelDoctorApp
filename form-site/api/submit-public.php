@@ -165,6 +165,9 @@ if ($patientId) {
     );
 }
 
+// Cancel stale drafts for the same email (e.g. OneDOC draft when patient submits directly)
+cancelStaleDrafts($adminToken, $patientEmail, $formRecordId);
+
 // Increment rate limit counter
 incrementRateLimit($clientIP);
 
@@ -175,6 +178,43 @@ echo json_encode([
     'success' => true,
     'message' => 'Formulaire enregistré'
 ]);
+
+/**
+ * Cancel stale draft forms for the same email.
+ * When a patient submits directly (not via edit link), any existing OneDOC draft
+ * for the same email becomes stale and should be cancelled to avoid confusion.
+ */
+function cancelStaleDrafts($adminToken, $email, $excludeFormId) {
+    if (empty($email)) return;
+
+    // Find draft forms with matching encrypted email
+    $filter = urlencode("status = 'draft' && id != '{$excludeFormId}'");
+    $drafts = pbRequest(
+        "/api/collections/patient_forms/records?filter={$filter}&perPage=50",
+        'GET',
+        null,
+        $adminToken
+    );
+
+    if (!$drafts || empty($drafts['items'])) return;
+
+    foreach ($drafts['items'] as $draft) {
+        // Decrypt email to compare
+        $draftEmail = '';
+        if (!empty($draft['email_encrypted'])) {
+            $draftEmail = decryptData($draft['email_encrypted']);
+        }
+
+        if (strtolower(trim($draftEmail)) === strtolower(trim($email))) {
+            pbRequest(
+                '/api/collections/patient_forms/records/' . $draft['id'],
+                'PATCH',
+                ['status' => 'cancelled'],
+                $adminToken
+            );
+        }
+    }
+}
 
 /**
  * Find existing patient or create a new one.
