@@ -4,7 +4,7 @@
  * Simple screen-based routing using reactive state.
  * No vue-router needed for this scale of app.
  *
- * Screens: login → location → home → (pending_forms | consultation)
+ * Screens: login → location → dashboard → (consultation | vaccination | stock)
  */
 import { initPocketBase, checkConnection } from './api/pocketbase.js';
 import * as secureApi from './api/secure-api.js';
@@ -43,7 +43,7 @@ const App = {
         const chrono = useChronometer();
 
         // Screen routing
-        const screen = ref('login'); // login | location | home | pending_forms | consultation | vaccination | stock
+        const screen = ref('login'); // login | location | dashboard | consultation | vaccination | stock
         const selectedLocationId = ref('');
         const consultationType = ref('consultation');
         const showTimeline = ref(false);
@@ -81,7 +81,7 @@ const App = {
             if (!selectedLocationId.value) return;
             selectLocation(selectedLocationId.value);
             vaccines.loadLots(selectedLocationId.value);
-            screen.value = 'home';
+            screen.value = 'dashboard';
         }
 
         function onLogout() {
@@ -92,10 +92,6 @@ const App = {
             prescription.clearAll();
             chrono.reset();
             screen.value = 'login';
-        }
-
-        function goToPendingForms() {
-            screen.value = 'pending_forms';
         }
 
         function goToStock() {
@@ -110,13 +106,13 @@ const App = {
             screen.value = 'consultation';
         }
 
-        function returnToHome() {
+        function returnToDashboard() {
             clearPatient();
             clearCases();
             vaccines.clearAll();
             prescription.clearAll();
             chrono.reset();
-            screen.value = 'home';
+            screen.value = 'dashboard';
         }
 
         // ==================== Patient/Case events ====================
@@ -220,11 +216,11 @@ const App = {
         // ==================== Consultation events ====================
 
         function onConsultationSaved() {
-            returnToHome();
+            returnToDashboard();
         }
 
         function onConsultationBack() {
-            returnToHome();
+            returnToDashboard();
         }
 
         // ==================== Timeline ====================
@@ -238,7 +234,7 @@ const App = {
             location, locationName, locations, selectedLocationId,
             currentPatient, consultationType, showTimeline,
             onConfirmLocation, onLogout,
-            goToPendingForms, goToStock, startNewPatient, returnToHome,
+            goToStock, startNewPatient, returnToDashboard,
             onPatientSelected, onStartConsultation,
             onFormSelected, onCalendarSelected, onManualEntry,
             onConsultationSaved, onConsultationBack,
@@ -260,51 +256,59 @@ const App = {
         <div v-else-if="screen === 'location'" class="location-screen">
             <h1>Travel Doctor App</h1>
             <h2>Selectionnez votre lieu de travail</h2>
-            <div class="location-selector">
-                <select v-model="selectedLocationId">
-                    <option value="">-- Choisir --</option>
-                    <option v-for="loc in locations" :key="loc.id" :value="loc.id">
-                        {{ loc.name }}
-                    </option>
-                </select>
-                <button class="btn-success" @click="onConfirmLocation" style="margin-top: 15px;">
-                    Continuer
+            <div class="location-buttons">
+                <button v-for="loc in locations" :key="loc.id"
+                        class="location-btn"
+                        @click="selectedLocationId = loc.id; onConfirmLocation()">
+                    <svg v-if="loc.name.toLowerCase().includes('tour')" class="location-icon" viewBox="0 0 64 80" fill="currentColor">
+                        <rect x="6" y="0" width="8" height="10"/><rect x="20" y="0" width="8" height="10"/><rect x="36" y="0" width="8" height="10"/><rect x="50" y="0" width="8" height="10"/>
+                        <rect x="2" y="10" width="60" height="6"/>
+                        <rect x="8" y="16" width="48" height="44"/>
+                        <rect x="2" y="60" width="60" height="6"/>
+                        <rect x="0" y="66" width="64" height="6"/>
+                        <rect x="24" y="40" width="16" height="26" rx="8" ry="8" fill="#e3edf7"/>
+                    </svg>
+                    <svg v-else class="location-icon" viewBox="0 0 64 80" fill="currentColor">
+                        <path d="M50,8 C50,4 46,0 38,0 C28,0 18,4 12,12 C6,20 4,28 8,34 C12,40 22,42 32,40 C38,39 42,40 44,44 C46,48 44,54 38,60 C32,66 22,68 16,66 C12,64 10,60 14,56" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
+                        <circle cx="52" cy="6" r="5"/>
+                        <path d="M54,2 L60,0 L58,6 Z"/>
+                        <circle cx="12" cy="58" r="4"/>
+                        <path d="M6,62 L4,68 L10,64 Z"/>
+                    </svg>
+                    <span>{{ loc.name }}</span>
                 </button>
             </div>
         </div>
 
-        <!-- HOME -->
-        <div v-else-if="screen === 'home'" class="home-screen">
-            <div class="user-header">
-                <div class="user-info">
+        <!-- DASHBOARD (replaces home + pending_forms) -->
+        <div v-else-if="screen === 'dashboard'" class="dashboard-screen">
+
+            <!-- Toolbar -->
+            <div class="dashboard-toolbar">
+                <div class="toolbar-left">
                     <span class="user-name">{{ userName }}</span>
                     <span class="location-badge">{{ locationName }}</span>
                     <span v-if="isVaccinateur" class="role-badge-vaccinateur">Vaccinateur</span>
                 </div>
-                <button class="logout-btn" @click="onLogout">Deconnexion</button>
+                <div class="toolbar-actions">
+                    <button v-if="!isVaccinateur" class="toolbar-btn toolbar-btn-walkin"
+                            @click="startNewPatient" title="Ajouter un patient sans rendez-vous">
+                        + Patient sans RDV
+                    </button>
+                    <button v-if="!isVaccinateur" class="toolbar-btn toolbar-btn-stock"
+                            @click="goToStock" title="Gestion du stock vaccins">
+                        Gestion Stock
+                    </button>
+                    <button class="toolbar-btn toolbar-btn-logout" @click="onLogout">
+                        Deconnexion
+                    </button>
+                </div>
             </div>
 
-            <h1>Travel Doctor App</h1>
-
-            <!-- Home action buttons -->
-            <div class="home-actions">
-                <button class="home-action-btn home-action-rdv" @click="goToPendingForms">
-                    <span class="home-action-icon">&#128197;</span>
-                    <span class="home-action-label">NOUVEAU RDV</span>
-                </button>
-                <button v-if="!isVaccinateur" class="home-action-btn home-action-new" @click="startNewPatient">
-                    <span class="home-action-icon">&#10133;</span>
-                    <span class="home-action-label">NOUVEAU VOYAGEUR</span>
-                </button>
-                <button v-if="!isVaccinateur" class="home-action-btn home-action-stock" @click="goToStock">
-                    <span class="home-action-icon">&#128218;</span>
-                    <span class="home-action-label">STOCK VACCINS</span>
-                </button>
-            </div>
-
-            <!-- Patient search + case view -->
+            <!-- Patient search (always visible) -->
             <PatientSearch @patient-selected="onPatientSelected" />
 
+            <!-- If patient selected from search: show cases -->
             <template v-if="currentPatient">
                 <div class="patient-actions-bar">
                     <button class="btn-secondary btn-small" @click="toggleTimeline">
@@ -316,29 +320,31 @@ const App = {
                 <PatientHistory />
             </template>
 
+            <!-- Appointment list (PendingForms embedded, no header) -->
+            <template v-if="!currentPatient">
+                <PendingForms :embedded="true"
+                              @form-selected="onFormSelected"
+                              @calendar-selected="onCalendarSelected"
+                              @manual-entry="onManualEntry" />
+            </template>
+
             <TimelineModal :visible="showTimeline" @close="showTimeline = false" />
         </div>
 
         <!-- STOCK -->
-        <StockScreen v-else-if="screen === 'stock'" @back="returnToHome" />
-
-        <!-- PENDING FORMS -->
-        <PendingForms v-else-if="screen === 'pending_forms'"
-                      @form-selected="onFormSelected"
-                      @calendar-selected="onCalendarSelected"
-                      @manual-entry="onManualEntry"
-                      @back="returnToHome" />
+        <StockScreen v-else-if="screen === 'stock'" @back="returnToDashboard" />
 
         <!-- VACCINATION (vaccinateur lean screen) -->
         <VaccinationScreen v-else-if="screen === 'vaccination'"
-                           @saved="returnToHome"
-                           @back="returnToHome" />
+                           @saved="returnToDashboard"
+                           @back="returnToDashboard" />
 
         <!-- CONSULTATION -->
         <ConsultationForm v-else-if="screen === 'consultation'"
                           :consultation-type="consultationType"
                           @saved="onConsultationSaved"
                           @back="onConsultationBack" />
+
     </div>
     `
 };

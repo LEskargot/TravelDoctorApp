@@ -13,6 +13,10 @@ import { formatDateDisplay } from '../utils/formatting.js';
 export default {
     name: 'PendingForms',
 
+    props: {
+        embedded: { type: Boolean, default: false }
+    },
+
     emits: ['form-selected', 'calendar-selected', 'manual-entry', 'back'],
 
     setup(props, { emit }) {
@@ -198,28 +202,29 @@ export default {
             forms, loading, error, searchTerm,
             groupedByDate, sortedDateKeys, today,
             dateLabel, itemState, onClickItem,
-            loadPendingForms, formatDateDisplay, emit, isVaccinateur
+            loadPendingForms, formatDateDisplay, emit, isVaccinateur, props
         };
     },
 
     template: `
     <div class="pending-forms-screen">
-        <button class="btn-secondary btn-small back-btn" @click="emit('back')">Retour</button>
-
-        <h1>Formulaires en attente</h1>
+        <template v-if="!props.embedded">
+            <button class="btn-secondary btn-small back-btn" @click="emit('back')">Retour</button>
+            <h1>Formulaires en attente</h1>
+        </template>
 
         <div class="pending-forms-header">
             <div class="pending-forms-search">
-                <input type="text" v-model="searchTerm" placeholder="Rechercher par nom, date de naissance...">
-                <button class="refresh-btn" @click="loadPendingForms">Actualiser</button>
+                <input type="text" v-model="searchTerm" placeholder="Filtrer par nom, date de naissance...">
+                <button class="refresh-btn" @click="loadPendingForms" title="Actualiser">&#8635;</button>
             </div>
-            <button v-if="!isVaccinateur" class="manual-entry-btn" @click="emit('manual-entry')">
+            <button v-if="!props.embedded && !isVaccinateur" class="manual-entry-btn" @click="emit('manual-entry')">
                 Saisie manuelle (walk-in)
             </button>
         </div>
 
         <!-- Loading -->
-        <div v-if="loading" class="no-forms-message">Chargement des formulaires...</div>
+        <div v-if="loading" class="no-forms-message">Chargement...</div>
 
         <!-- Error -->
         <div v-else-if="error" class="no-forms-message">
@@ -229,7 +234,7 @@ export default {
 
         <!-- Empty -->
         <div v-else-if="sortedDateKeys.length === 0" class="no-forms-message">
-            Aucun formulaire en attente
+            Aucun rendez-vous
         </div>
 
         <!-- Form cards grouped by date -->
@@ -242,27 +247,28 @@ export default {
                 <div v-for="item in groupedByDate[dateKey]" :key="item.form_id || item.patient_name + item.appointment_time"
                      class="form-card"
                      :class="{
-                         'awaiting-card': itemState(item) === 'awaiting_form',
-                         'draft-card': itemState(item) === 'draft'
+                         'status-received': itemState(item) === 'form_received',
+                         'status-awaiting': itemState(item) === 'awaiting_form',
+                         'status-draft': itemState(item) === 'draft'
                      }"
                      @click="onClickItem(item)">
+                    <div v-if="item.appointment_time" class="appointment-time">
+                        {{ item.appointment_time }}
+                    </div>
                     <div class="form-card-info">
                         <div class="form-card-name">{{ item.patient_name || 'Sans nom' }}</div>
                         <div class="form-card-details">
                             <span v-if="item.birthdate || item.dob">{{ formatDateDisplay(item.birthdate || item.dob) }}</span>
-                            <span v-if="item.destination">{{ item.destination }}</span>
-                            <span v-if="item.avs">{{ item.avs }}</span>
+                            <span v-if="item.destination"> &middot; {{ item.destination }}</span>
                         </div>
                     </div>
-                    <div style="text-align: right;">
+                    <div class="form-card-badges">
                         <span v-if="itemState(item) === 'form_received'" class="form-card-badge badge-form-received">FORMULAIRE RECU</span>
-                        <span v-else-if="itemState(item) === 'awaiting_form'" class="form-card-badge badge-awaiting-form">EN ATTENTE DU FORMULAIRE</span>
-                        <span v-else-if="itemState(item) === 'draft'" class="form-card-badge badge-draft">EN ATTENTE</span>
+                        <span v-else-if="itemState(item) === 'awaiting_form'" class="form-card-badge badge-awaiting-form">EN ATTENTE</span>
+                        <span v-else-if="itemState(item) === 'draft'" class="form-card-badge badge-draft">BROUILLON</span>
 
                         <span v-if="item.is_known_patient" class="form-card-badge badge-known">CONNU</span>
                         <span v-else-if="itemState(item) === 'form_received'" class="form-card-badge badge-new">NOUVEAU</span>
-
-                        <div v-if="item.appointment_time" class="form-card-date">{{ item.appointment_time }}</div>
                     </div>
                 </div>
             </div>

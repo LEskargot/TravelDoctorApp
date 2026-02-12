@@ -11,6 +11,14 @@ kobotoolbox_form.xml
 # Planning docs (optional - remove if you want to track)
 PLAN_IMPORT_FORMULAIRES.md
 
+# Delivery notes (scanned PDFs, not code)
+Bulletins_de_livraison/
+tmp_bdl/
+
+# Logs and artifacts
+debug.log
+nul
+
 # OS files
 .DS_Store
 Thumbs.db

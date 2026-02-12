@@ -270,7 +270,6 @@ export default {
                 {{ saving ? 'Sauvegarde...' : 'Sauvegarder consultation' }}
             </button>
             <button class="btn-teal" @click="exportPrescriptionPdf">Generer ordonnance PDF</button>
-            <button class="btn-secondary" @click="emit('back')">Nouvelle consultation</button>
         </div>
     </div>
     `
