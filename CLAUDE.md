@@ -336,24 +336,40 @@ No automated tests. Manual testing required for:
    - **`helpers.php`**: added `normalizePhone()` (strips formatting, removes +41/0041, returns last 9 digits)
    - **`link-form-calendar.php`**: new POST endpoint to manually link form → calendar event via `calendar_event_id`
    - **`FormLinkModal.js`**: new component for practitioner to manually link unmatched calendar events to forms, with similarity scoring (email +40, phone +30, name +20, DOB +20, date +10)
-   - **`PendingForms.js`**: integrated FormLinkModal; clicking "EN ATTENTE" shows link modal when unlinked forms exist
-   - **PocketBase schema**: add `calendar_event_id` (text, optional) field to `patient_forms` collection
-   - **Deploy**: copy `link-form-calendar.php` to server, bump `?v=8`
+   - **`PendingForms.js`**: integrated FormLinkModal; 4 visual states: FORMULAIRE RECU (green/submitted), INVITE (purple/draft linked), EN ATTENTE (orange/no form), BROUILLON (blue/manual draft); clicking INVITE or EN ATTENTE shows link modal when unlinked forms exist
+   - **PocketBase schema**: added `calendar_event_id` (text, optional) field to `patient_forms` collection ✓
+   - **Deploy**: all API files + link-form-calendar.php copied to server, app served from repo at `https://app.traveldoctor.ch`
+
+16. **Practitioner app subdomain** ✓ (2026-02-12)
+   - **DNS**: CNAME `app.traveldoctor.ch` → `traveldoctor.jcloud.ik-server.com` (Infomaniak)
+   - **NGINX load balancer** (node 194010): added `app.traveldoctor.ch` routing to Apache in `/etc/nginx/conf.d/ssl.conf` (`$host` condition) + `/etc/nginx/conf.d/app.traveldoctor.ch.conf` (port 80)
+   - **Apache** (node 194046): vhost in `/etc/httpd/conf.d/app-traveldoctor.conf` serves from `/var/www/webroot/repo/app/` with SSL via Jelastic certs
+   - **Security**: `app/.htaccess` with Options -Indexes + security headers (X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy)
+   - App served directly from git repo — `git pull` updates it instantly, no `cp` needed
+   - Cache bust: bump `?v=N` in `app/index.html`
 
 ### Pending Tasks
 
-1. **Optional improvements**
-   - Add Italian/Spanish translations for share link messages
-   - Add email notification to practitioner when form is submitted
+1. **BUG: Tier 0 manual linking not reflecting in calendar view**
+   - `link-form-calendar.php` API returns success, PocketBase `calendar_event_id` IS saved on the form record
+   - But `get-calendar-events.php` doesn't reflect the change — events keep showing the old email-matched form
+   - Tier 0 code IS deployed on server (verified with `grep`)
+   - **To debug next**: link a form to an event that has `form_id: null` (e.g., Giorgio Savonarola, Mana McBride) and check if `form_id` changes in the response. This isolates whether tier 0 works at all vs being overridden by email matching.
+   - If tier 0 doesn't work at all: add debug logging to `get-calendar-events.php` to trace the matching
 
-2. **Add 2FA for practitioner login**
-   - PocketBase supports OTP (one-time password) MFA — investigate built-in support
-
-3. **Switch from KoBoToolbox to internal form** (when app is ready)
+2. **Switch from KoBoToolbox to internal form** (when app is ready)
    - In `process-onedoc-emails.php`, function `sendFormInvitation()`:
    - Change `$formLink = buildKoboUrl($patientData);`
    - Back to `$formLink = FORM_URL . '/?edit=' . $editToken;`
    - The `buildKoboUrl()` function can then be deleted
+   - Test the full flow: cron creates draft → patient fills form via link → draft becomes submitted → INVITE → FORMULAIRE RECU
+
+3. **Optional improvements**
+   - Add Italian/Spanish translations for share link messages
+   - Add email notification to practitioner when form is submitted
+
+4. **Add 2FA for practitioner login**
+   - PocketBase supports OTP (one-time password) MFA — investigate built-in support
 
 ### Temporary Workaround (2026-02-06)
 
@@ -434,4 +450,4 @@ cp form-site/js/translations.js /var/www/webroot/ROOT/js/translations.js
 cp form-site/css/form.css /var/www/webroot/ROOT/css/form.css
 ```
 
-The practitioner app (`app/`) is served directly from the git repo — no copy needed. Bump `?v=N` in `app/index.html` to bust browser caches.
+The practitioner app (`app/`) is served at `https://app.traveldoctor.ch` directly from the git repo — no copy needed. `git pull` updates it instantly. Bump `?v=N` in `app/index.html` to bust browser caches (currently `?v=10`).
