@@ -67,17 +67,15 @@ export default {
         });
 
         function caseTypeLabel(type) {
-            const labels = { voyage: 'Voyage', rappel_seul: 'Rappel', suivi: 'Suivi' };
+            const labels = { conseil_voyage: 'Conseil avant voyage', conseil_sans_voyage: 'Conseil sans voyage' };
             return labels[type] || type;
         }
 
         function consultTypeLabel(type) {
             const labels = {
+                consultation: 'Consultation',
                 teleconsultation: 'Teleconsultation',
-                vaccination: 'Vaccination',
-                rappel: 'Rappel',
-                suivi: 'Suivi',
-                consultation_voyage: 'Consultation voyage'
+                vaccination: 'Vaccination'
             };
             return labels[type] || type;
         }

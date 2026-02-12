@@ -35,7 +35,7 @@ export default {
         const { user, location, locationName } = useAuth();
 
         const showNewCaseForm = Vue.ref(false);
-        const newCaseType = Vue.ref('voyage');
+        const newCaseType = Vue.ref('conseil_voyage');
         const newCaseDestinations = Vue.ref('');
 
         // Expandable consultation details
@@ -49,7 +49,7 @@ export default {
         async function onCreateCase() {
             if (!currentPatient.value) return;
 
-            const voyage = newCaseType.value === 'voyage' ? {
+            const voyage = newCaseType.value === 'conseil_voyage' ? {
                 destinations: newCaseDestinations.value.split(',').map(d => d.trim()).filter(Boolean),
             } : null;
 
@@ -161,16 +161,15 @@ export default {
         }
 
         function caseTypeLabel(type) {
-            const labels = { voyage: 'Voyage', rappel_seul: 'Rappel', suivi: 'Suivi' };
+            const labels = { conseil_voyage: 'Conseil avant voyage', conseil_sans_voyage: 'Conseil sans voyage' };
             return labels[type] || type;
         }
 
         function consultTypeLabel(type) {
             const labels = {
+                consultation: 'Consultation',
                 teleconsultation: 'Teleconsultation',
-                vaccination: 'Vaccination',
-                rappel: 'Rappel',
-                suivi: 'Suivi'
+                vaccination: 'Vaccination'
             };
             return labels[type] || type;
         }
@@ -244,12 +243,11 @@ export default {
             <div class="form-row">
                 <label>Type:</label>
                 <select v-model="newCaseType">
-                    <option value="voyage">Voyage</option>
-                    <option value="rappel_seul">Rappel seul</option>
-                    <option value="suivi">Suivi</option>
+                    <option value="conseil_voyage">Conseil avant voyage</option>
+                    <option value="conseil_sans_voyage">Conseil sans voyage</option>
                 </select>
             </div>
-            <div v-if="newCaseType === 'voyage'" class="form-row">
+            <div v-if="newCaseType === 'conseil_voyage'" class="form-row">
                 <label>Destinations:</label>
                 <input type="text" v-model="newCaseDestinations"
                        placeholder="Kenya, Tanzanie, ...">
@@ -442,14 +440,14 @@ export default {
 
             <!-- Add consultation buttons -->
             <div v-if="currentCase.status === 'ouvert'" class="add-consultation">
+                <button class="btn-primary" @click="onStartConsultation('consultation')">
+                    Consultation
+                </button>
                 <button class="btn-primary" @click="onStartConsultation('teleconsultation')">
                     Teleconsultation
                 </button>
                 <button class="btn-success" @click="onStartConsultation('vaccination')">
                     Vaccination
-                </button>
-                <button class="btn-secondary" @click="onStartConsultation('rappel')">
-                    Rappel
                 </button>
             </div>
         </div>

@@ -23,10 +23,9 @@ function triLabel(val) {
 }
 
 const TYPE_LABELS = {
+    consultation: 'Consultation',
     teleconsultation: 'Teleconsultation',
-    vaccination: 'Consultation voyage',
-    rappel: 'Rappel',
-    suivi: 'Suivi'
+    vaccination: 'Vaccination'
 };
 
 export default {

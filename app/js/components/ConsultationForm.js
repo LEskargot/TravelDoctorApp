@@ -32,7 +32,7 @@ export default {
     components: { Chronometer, PatientEditForm, VoyageEditor, MedicalEditor, PatientHistory, NotesSection, VaccinePanel, PrescriptionPanel, DossierStatus },
 
     props: {
-        consultationType: { type: String, default: 'teleconsultation' }
+        consultationType: { type: String, default: 'consultation' }
     },
 
     emits: ['saved', 'back'],

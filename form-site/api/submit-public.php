@@ -159,7 +159,7 @@ if ($patientId) {
             'patient_form' => $formRecordId,
             'status' => 'ouvert',
             'opened_at' => date('c'),
-            'type' => 'voyage'
+            'type' => 'conseil_voyage'
         ],
         $adminToken
     );

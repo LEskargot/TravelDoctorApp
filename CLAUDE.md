@@ -79,7 +79,7 @@ Travel Doctor App v1.0 is a single-page web application for managing travel medi
 | Collection | Purpose |
 |------------|---------|
 | `users` | Practitioner accounts (email, password, name, role, default_location) |
-| `locations` | Clinic/site locations (name, address, phone, google_calendar_id) |
+| `locations` | Clinic/site locations (name, address, phone, google_calendar_id, stock_pin) |
 | `patients` | Patient records (nom, dob, contact info, medical_encrypted) |
 | `cases` | Per-visit lifecycle: booking → form → consultation → done (patient, patient_form, type, voyage, status) |
 | `consultations` | Consultation records linked to patient, case, location |
@@ -88,6 +88,7 @@ Travel Doctor App v1.0 is a single-page web application for managing travel medi
 | `boosters_scheduled` | Planned booster dates (linked to case) |
 | `prescriptions` | Medications prescribed (medications_encrypted) |
 | `vaccine_lots` | Vaccine inventory per location |
+| `stock_adjustments` | Audit trail for stock quantity changes (vaccine_lot, previous_qty, new_qty, reason, adjusted_by) |
 | `patient_forms` | Patient intake forms (encrypted, status: draft/submitted/processed/cancelled) |
 | `vaccination_files` | Uploaded vaccination documents |
 

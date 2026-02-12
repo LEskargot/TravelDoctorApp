@@ -44,7 +44,7 @@ const App = {
         // Screen routing
         const screen = ref('login'); // login | location | home | pending_forms | consultation | stock
         const selectedLocationId = ref('');
-        const consultationType = ref('teleconsultation');
+        const consultationType = ref('consultation');
         const showTimeline = ref(false);
         const connectionStatus = ref('connecting');
 
@@ -105,7 +105,7 @@ const App = {
             clearPatient();
             clearCases();
             vaccines.clearAll();
-            consultationType.value = 'vaccination';
+            consultationType.value = 'consultation';
             screen.value = 'consultation';
         }
 
@@ -172,7 +172,7 @@ const App = {
                     formData: fd
                 });
 
-                consultationType.value = 'vaccination';
+                consultationType.value = 'consultation';
                 screen.value = 'consultation';
             } catch (error) {
                 alert('Erreur lors du chargement du formulaire: ' + error.message);
@@ -203,7 +203,7 @@ const App = {
                 }
             });
 
-            consultationType.value = 'vaccination';
+            consultationType.value = 'consultation';
             screen.value = 'consultation';
         }
 
@@ -211,7 +211,7 @@ const App = {
             clearPatient();
             clearCases();
             vaccines.clearAll();
-            consultationType.value = 'vaccination';
+            consultationType.value = 'consultation';
             screen.value = 'consultation';
         }
 
