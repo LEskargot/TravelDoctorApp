@@ -1704,8 +1704,8 @@ async function submitForm() {
         formData.language = currentLang;
 
         let response;
-        if (isEditMode && currentToken) {
-            // Update existing form (no captcha needed)
+        if (currentToken) {
+            // Update existing form (draft or re-edit) — no captcha needed
             response = await fetch(API_URL + '/update-form.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1715,7 +1715,7 @@ async function submitForm() {
                 })
             });
         } else {
-            // New submission with captcha
+            // Brand new submission — captcha required
             response = await fetch(API_URL + '/submit-public.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

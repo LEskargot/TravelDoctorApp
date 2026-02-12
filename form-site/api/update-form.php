@@ -1,8 +1,10 @@
 <?php
 /**
  * Update Form API Endpoint
- * Updates a previously submitted form using the edit token
- * All patient data is encrypted before storage
+ * Updates a form using the edit token.
+ * Handles two cases:
+ *   1. Draft → Submitted: upgrades status, creates patient + case, sends confirmation email
+ *   2. Already submitted → Re-edit: updates data, syncs to linked patient
  */
 
 require_once 'config.php';
@@ -29,6 +31,7 @@ $patientEmail = filter_var($formData['email'] ?? '', FILTER_VALIDATE_EMAIL);
 $patientAvs = $formData['avs'] ?? '';
 $insuranceCardNumber = $formData['insurance_card_number'] ?? '';
 $vaccinationFileIds = $formData['vaccination_file_ids'] ?? [];
+$language = $formData['language'] ?? 'fr';
 
 // Remove file IDs, AVS, and insurance card from form_data to store separately (encrypted)
 unset($formData['vaccination_file_ids']);
@@ -71,6 +74,7 @@ if (!$searchResponse || empty($searchResponse['items'])) {
 }
 
 $formRecord = $searchResponse['items'][0];
+$wasDraft = ($formRecord['status'] === 'draft');
 
 // Extract patient name for display
 $patientName = $formData['full_name'] ?? 'Patient';
@@ -87,6 +91,12 @@ $updateData = [
     'form_data_encrypted' => encryptFormData($formData),
     'updated_at' => date('c')
 ];
+
+// Draft → Submitted: upgrade status
+if ($wasDraft) {
+    $updateData['status'] = 'submitted';
+    $updateData['submitted_at'] = date('c');
+}
 
 // Include vaccination files if provided
 if (!empty($vaccinationFileIds)) {
@@ -119,30 +129,151 @@ if (!empty($vaccinationFileIds)) {
     }
 }
 
-// Sync updated data to linked patient record
-$linkedPatientId = $formRecord['linked_patient'] ?? '';
-if (!empty($linkedPatientId)) {
-    $patientUpdate = [];
+// ==================== Draft → Submitted: create patient + case ====================
+if ($wasDraft) {
+    $patientId = findOrCreatePatient($adminToken, $patientName, $patientEmail, $patientAvs, $formData);
 
-    // Parse name: form uses "Prénom Nom" format
+    if ($patientId) {
+        // Link patient to form
+        pbRequest(
+            "/api/collections/patient_forms/records/{$formRecord['id']}",
+            'PATCH',
+            ['linked_patient' => $patientId],
+            $adminToken
+        );
+
+        // Create case linked to patient and form
+        pbRequest(
+            '/api/collections/cases/records',
+            'POST',
+            [
+                'patient' => $patientId,
+                'patient_form' => $formRecord['id'],
+                'status' => 'ouvert',
+                'opened_at' => date('c'),
+                'type' => 'conseil_voyage'
+            ],
+            $adminToken
+        );
+    }
+
+    // Send confirmation email with edit link
+    sendConfirmationEmail($patientEmail, $editToken, $language);
+}
+
+// ==================== Already submitted: sync patient data ====================
+if (!$wasDraft) {
+    $linkedPatientId = $formRecord['linked_patient'] ?? '';
+    if (!empty($linkedPatientId)) {
+        $patientUpdate = buildPatientUpdate($patientName, $patientEmail, $patientAvs, $formData);
+        pbRequest(
+            '/api/collections/patients/records/' . $linkedPatientId,
+            'PATCH',
+            $patientUpdate,
+            $adminToken
+        );
+    }
+}
+
+echo json_encode([
+    'success' => true,
+    'message' => $wasDraft ? 'Formulaire enregistré' : 'Formulaire mis à jour'
+]);
+
+// ==================== Helper functions ====================
+
+/**
+ * Find existing patient or create a new one.
+ * Matches by AVS first, then DOB + name.
+ */
+function findOrCreatePatient($adminToken, $patientName, $email, $avs, $formData) {
     $nameParts = explode(' ', trim($patientName), 2);
     $prenom = $nameParts[0] ?? '';
     $nom = $nameParts[1] ?? $nameParts[0] ?? '';
-    $patientUpdate['nom'] = $nom;
-    $patientUpdate['prenom'] = $prenom;
 
-    // DOB
+    $dobRaw = $formData['birthdate'] ?? '';
+    $dob = $dobRaw ? date('Y-m-d', strtotime($dobRaw)) : '';
+
+    // 1. Try AVS match
+    if (!empty($avs)) {
+        $avs = sanitizePbFilterValue($avs);
+        $avsFilter = urlencode("avs = '{$avs}'");
+        $search = pbRequest(
+            "/api/collections/patients/records?filter={$avsFilter}&perPage=1",
+            'GET',
+            null,
+            $adminToken
+        );
+        if ($search && !empty($search['items'])) {
+            return $search['items'][0]['id'];
+        }
+    }
+
+    // 2. Try DOB + name match
+    if (!empty($dob) && !empty($patientName)) {
+        $dob = sanitizePbFilterValue($dob);
+        $dobFilter = urlencode("dob = '{$dob}'");
+        $search = pbRequest(
+            "/api/collections/patients/records?filter={$dobFilter}&perPage=50",
+            'GET',
+            null,
+            $adminToken
+        );
+        if ($search && !empty($search['items'])) {
+            foreach ($search['items'] as $patient) {
+                $prenomMatch = normalizedContains($patient['prenom'], $prenom) ||
+                               normalizedContains($prenom, $patient['prenom']);
+                $nomMatch = normalizedContains($patient['nom'], $nom) ||
+                            normalizedContains($nom, $patient['nom']);
+                if ($prenomMatch && $nomMatch) {
+                    return $patient['id'];
+                }
+            }
+        }
+    }
+
+    // 3. No match — create new patient
+    $patientData = buildPatientUpdate($patientName, $email, $avs, $formData);
+    $patientData['dob'] = $dob;
+
+    $newPatient = pbRequest(
+        '/api/collections/patients/records',
+        'POST',
+        $patientData,
+        $adminToken
+    );
+
+    if ($newPatient && !isset($newPatient['code'])) {
+        return $newPatient['id'];
+    }
+
+    error_log('Failed to create patient: ' . json_encode($newPatient));
+    return null;
+}
+
+/**
+ * Build patient field array from form data
+ */
+function buildPatientUpdate($patientName, $email, $avs, $formData) {
+    $nameParts = explode(' ', trim($patientName), 2);
+    $prenom = $nameParts[0] ?? '';
+    $nom = $nameParts[1] ?? $nameParts[0] ?? '';
+
+    $update = [
+        'nom' => $nom,
+        'prenom' => $prenom,
+    ];
+
     $dob = $formData['birthdate'] ?? '';
     if (!empty($dob) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dob)) {
-        $patientUpdate['dob'] = $dob;
+        $update['dob'] = $dob;
     }
 
-    // Email & phone
-    if ($patientEmail) {
-        $patientUpdate['email'] = $patientEmail;
+    if ($email) {
+        $update['email'] = $email;
     }
     if (!empty($formData['phone'])) {
-        $patientUpdate['telephone'] = $formData['phone'];
+        $update['telephone'] = $formData['phone'];
     }
 
     // Address
@@ -152,34 +283,50 @@ if (!empty($linkedPatientId)) {
         $addressParts[] = trim(($formData['postal_code'] ?? '') . ' ' . ($formData['city'] ?? ''));
     }
     if (!empty($addressParts)) {
-        $patientUpdate['adresse'] = implode(', ', $addressParts);
+        $update['adresse'] = implode(', ', $addressParts);
     }
 
     // Gender
     if (!empty($formData['gender'])) {
         $genderMap = ['homme' => 'm', 'femme' => 'f', 'non_binaire' => 'autre', 'autre' => 'autre'];
-        $patientUpdate['sexe'] = $genderMap[$formData['gender']] ?? null;
+        $update['sexe'] = $genderMap[$formData['gender']] ?? null;
     }
 
     // Weight
     if (isset($formData['weight'])) {
-        $patientUpdate['poids'] = (float)$formData['weight'];
+        $update['poids'] = (float)$formData['weight'];
     }
 
     // AVS
-    if (!empty($patientAvs)) {
-        $patientUpdate['avs'] = $patientAvs;
+    if (!empty($avs)) {
+        $update['avs'] = $avs;
     }
 
-    pbRequest(
-        '/api/collections/patients/records/' . $linkedPatientId,
-        'PATCH',
-        $patientUpdate,
-        $adminToken
-    );
+    return $update;
 }
 
-echo json_encode([
-    'success' => true,
-    'message' => 'Formulaire mis à jour'
-]);
+/**
+ * Send confirmation email with edit link
+ */
+function sendConfirmationEmail($email, $editToken, $language) {
+    $editLink = FORM_URL . '/?edit=' . $editToken;
+
+    $subjects = [
+        'fr' => 'Travel Doctor - Confirmation de votre formulaire',
+        'en' => 'Travel Doctor - Form Confirmation',
+        'it' => 'Travel Doctor - Conferma del modulo',
+        'es' => 'Travel Doctor - Confirmación del formulario'
+    ];
+
+    $messages = [
+        'fr' => "Bonjour,\r\n\r\nVotre formulaire patient a été enregistré avec succès.\r\n\r\nSi vous souhaitez modifier vos informations, utilisez ce lien:\r\n{$editLink}\r\n\r\nTravel Doctor",
+        'en' => "Hello,\r\n\r\nYour patient form has been successfully submitted.\r\n\r\nIf you wish to modify your information, use this link:\r\n{$editLink}\r\n\r\nTravel Doctor",
+        'it' => "Buongiorno,\r\n\r\nIl suo modulo paziente è stato registrato con successo.\r\n\r\nSe desidera modificare le sue informazioni, utilizzi questo link:\r\n{$editLink}\r\n\r\nTravel Doctor",
+        'es' => "Hola,\r\n\r\nSu formulario de paciente ha sido registrado con éxito.\r\n\r\nSi desea modificar su información, utilice este enlace:\r\n{$editLink}\r\n\r\nTravel Doctor"
+    ];
+
+    $subject = $subjects[$language] ?? $subjects['fr'];
+    $message = $messages[$language] ?? $messages['fr'];
+
+    smtpMail($email, $subject, $message);
+}
