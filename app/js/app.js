@@ -23,15 +23,16 @@ import ConsultationForm from './components/ConsultationForm.js';
 import PendingForms from './components/PendingForms.js';
 import TimelineModal from './components/TimelineModal.js';
 import StockScreen from './components/StockScreen.js';
+import VaccinationScreen from './components/VaccinationScreen.js';
 
 const { createApp, ref, computed, watch, onMounted } = Vue;
 
 const App = {
-    components: { LoginScreen, PatientSearch, CaseView, PatientHistory, ConsultationForm, PendingForms, TimelineModal, StockScreen },
+    components: { LoginScreen, PatientSearch, CaseView, PatientHistory, ConsultationForm, PendingForms, TimelineModal, StockScreen, VaccinationScreen },
 
     setup() {
         const {
-            isLoggedIn, userName, isAdmin, location, locationName, locations, isOnline,
+            isLoggedIn, userName, isAdmin, isVaccinateur, location, locationName, locations, isOnline,
             loadLocations, selectLocation, restoreSession, logout
         } = useAuth();
 
@@ -42,7 +43,7 @@ const App = {
         const chrono = useChronometer();
 
         // Screen routing
-        const screen = ref('login'); // login | location | home | pending_forms | consultation | stock
+        const screen = ref('login'); // login | location | home | pending_forms | consultation | vaccination | stock
         const selectedLocationId = ref('');
         const consultationType = ref('consultation');
         const showTimeline = ref(false);
@@ -131,7 +132,8 @@ const App = {
             if (currentPatient.value?.id) {
                 await vaccines.loadPendingBoosters(currentPatient.value.id);
             }
-            screen.value = 'consultation';
+            // Vaccinateurs go to the lean vaccination screen
+            screen.value = isVaccinateur.value ? 'vaccination' : 'consultation';
         }
 
         // ==================== Pending forms events ====================
@@ -173,7 +175,7 @@ const App = {
                 });
 
                 consultationType.value = 'consultation';
-                screen.value = 'consultation';
+                screen.value = isVaccinateur.value ? 'vaccination' : 'consultation';
             } catch (error) {
                 alert('Erreur lors du chargement du formulaire: ' + error.message);
             }
@@ -204,7 +206,7 @@ const App = {
             });
 
             consultationType.value = 'consultation';
-            screen.value = 'consultation';
+            screen.value = isVaccinateur.value ? 'vaccination' : 'consultation';
         }
 
         function onManualEntry() {
@@ -232,7 +234,7 @@ const App = {
         }
 
         return {
-            screen, connectionStatus, isLoggedIn, userName, isAdmin,
+            screen, connectionStatus, isLoggedIn, userName, isAdmin, isVaccinateur,
             location, locationName, locations, selectedLocationId,
             currentPatient, consultationType, showTimeline,
             onConfirmLocation, onLogout,
@@ -277,6 +279,7 @@ const App = {
                 <div class="user-info">
                     <span class="user-name">{{ userName }}</span>
                     <span class="location-badge">{{ locationName }}</span>
+                    <span v-if="isVaccinateur" class="role-badge-vaccinateur">Vaccinateur</span>
                 </div>
                 <button class="logout-btn" @click="onLogout">Deconnexion</button>
             </div>
@@ -289,11 +292,11 @@ const App = {
                     <span class="home-action-icon">&#128197;</span>
                     <span class="home-action-label">NOUVEAU RDV</span>
                 </button>
-                <button class="home-action-btn home-action-new" @click="startNewPatient">
+                <button v-if="!isVaccinateur" class="home-action-btn home-action-new" @click="startNewPatient">
                     <span class="home-action-icon">&#10133;</span>
                     <span class="home-action-label">NOUVEAU VOYAGEUR</span>
                 </button>
-                <button class="home-action-btn home-action-stock" @click="goToStock">
+                <button v-if="!isVaccinateur" class="home-action-btn home-action-stock" @click="goToStock">
                     <span class="home-action-icon">&#128218;</span>
                     <span class="home-action-label">STOCK VACCINS</span>
                 </button>
@@ -325,6 +328,11 @@ const App = {
                       @calendar-selected="onCalendarSelected"
                       @manual-entry="onManualEntry"
                       @back="returnToHome" />
+
+        <!-- VACCINATION (vaccinateur lean screen) -->
+        <VaccinationScreen v-else-if="screen === 'vaccination'"
+                           @saved="returnToHome"
+                           @back="returnToHome" />
 
         <!-- CONSULTATION -->
         <ConsultationForm v-else-if="screen === 'consultation'"

@@ -32,7 +32,7 @@ export default {
         const { currentPatient, patientName } = usePatient();
         const { cases, currentCase, consultations, openCases,
                 selectCase, createNewCase, closeCase, addConsultation } = useCase();
-        const { user, location, locationName } = useAuth();
+        const { user, location, locationName, isVaccinateur } = useAuth();
 
         const showNewCaseForm = Vue.ref(false);
         const newCaseType = Vue.ref('conseil_voyage');
@@ -223,7 +223,7 @@ export default {
             formatDate, formatDestinations, getVoyageChips,
             getCaseComorbidities, getCaseAllergies,
             caseStatusLabel, caseTypeLabel, consultTypeLabel,
-            resolveCountry, currentPatient, patientName
+            resolveCountry, currentPatient, patientName, isVaccinateur
         };
     },
 
@@ -233,7 +233,7 @@ export default {
         <!-- Case list -->
         <div class="case-list-header">
             <h3>Dossiers de {{ patientName }}</h3>
-            <button class="btn-primary btn-small" @click="showNewCaseForm = !showNewCaseForm">
+            <button v-if="!isVaccinateur" class="btn-primary btn-small" @click="showNewCaseForm = !showNewCaseForm">
                 + Nouveau dossier
             </button>
         </div>
@@ -294,7 +294,7 @@ export default {
                     </span>
                 </h4>
                 <div class="case-detail-actions">
-                    <button v-if="currentCase.status === 'ouvert'"
+                    <button v-if="currentCase.status === 'ouvert' && !isVaccinateur"
                             class="btn-success btn-small"
                             @click="closeCase(currentCase.id)">
                         Fermer le dossier
@@ -440,12 +440,14 @@ export default {
 
             <!-- Add consultation buttons -->
             <div v-if="currentCase.status === 'ouvert'" class="add-consultation">
-                <button class="btn-primary" @click="onStartConsultation('consultation')">
-                    Consultation
-                </button>
-                <button class="btn-primary" @click="onStartConsultation('teleconsultation')">
-                    Teleconsultation
-                </button>
+                <template v-if="!isVaccinateur">
+                    <button class="btn-primary" @click="onStartConsultation('consultation')">
+                        Consultation
+                    </button>
+                    <button class="btn-primary" @click="onStartConsultation('teleconsultation')">
+                        Teleconsultation
+                    </button>
+                </template>
                 <button class="btn-success" @click="onStartConsultation('vaccination')">
                     Vaccination
                 </button>

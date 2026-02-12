@@ -248,23 +248,33 @@ export function useVaccines() {
                     if (matchingLot && matchingLot.quantity > 0) {
                         const previousQty = matchingLot.quantity;
                         const newQty = previousQty - 1;
-                        await pbApi.updateVaccineLot(matchingLot.id, { quantity: newQty });
-                        await pbApi.createStockAdjustment({
-                            vaccine_lot: matchingLot.id,
-                            previous_qty: previousQty,
-                            new_qty: newQty,
-                            reason: 'administration',
-                            adjusted_by: pbApi.getCurrentUser()?.id,
-                            consultation: consultationId
-                        });
-                        // Update local ref
-                        matchingLot.quantity = newQty;
+                        try {
+                            await pbApi.updateVaccineLot(matchingLot.id, { quantity: newQty });
+                            matchingLot.quantity = newQty;
+                        } catch (e) {
+                            console.warn('Stock decrement failed (permission?):', e.message);
+                        }
+                        try {
+                            await pbApi.createStockAdjustment({
+                                vaccine_lot: matchingLot.id,
+                                previous_qty: previousQty,
+                                new_qty: newQty,
+                                reason: 'administration',
+                                adjusted_by: pbApi.getCurrentUser()?.id
+                            });
+                        } catch (e) {
+                            console.warn('Stock audit trail failed:', e.message, 'details:', JSON.stringify(e.response || e.data || e));
+                        }
                     }
                     // Set vaccine_lot relation on the administered record
                     if (matchingLot) {
-                        await pbApi.updateVaccineAdministered(vaccineRecord.id, {
-                            vaccine_lot: matchingLot.id
-                        });
+                        try {
+                            await pbApi.updateVaccineAdministered(vaccineRecord.id, {
+                                vaccine_lot: matchingLot.id
+                            });
+                        } catch (e) {
+                            console.warn('Vaccine lot link failed:', e.message);
+                        }
                     }
                 }
 

@@ -16,7 +16,7 @@ export default {
     emits: ['form-selected', 'calendar-selected', 'manual-entry', 'back'],
 
     setup(props, { emit }) {
-        const { location } = useAuth();
+        const { location, isVaccinateur } = useAuth();
         const FORM_API_URL = 'https://form.traveldoctor.ch/api';
 
         function authHeaders() {
@@ -198,7 +198,7 @@ export default {
             forms, loading, error, searchTerm,
             groupedByDate, sortedDateKeys, today,
             dateLabel, itemState, onClickItem,
-            loadPendingForms, formatDateDisplay, emit
+            loadPendingForms, formatDateDisplay, emit, isVaccinateur
         };
     },
 
@@ -213,7 +213,7 @@ export default {
                 <input type="text" v-model="searchTerm" placeholder="Rechercher par nom, date de naissance...">
                 <button class="refresh-btn" @click="loadPendingForms">Actualiser</button>
             </div>
-            <button class="manual-entry-btn" @click="emit('manual-entry')">
+            <button v-if="!isVaccinateur" class="manual-entry-btn" @click="emit('manual-entry')">
                 Saisie manuelle (walk-in)
             </button>
         </div>

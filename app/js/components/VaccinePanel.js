@@ -49,12 +49,16 @@ export default {
             const addedNames = new Set(vaccines.value.map(v => v.vaccine));
             return uniqueVaccineNames.value
                 .filter(name => name.toLowerCase().includes(q))
-                .map(name => ({
-                    name,
-                    added: addedNames.has(name),
-                    lotCount: getValidLotsForVaccine(name).length,
-                    doses: getTotalDoses(name)
-                }));
+                .map(name => {
+                    const validLots = getValidLotsForVaccine(name);
+                    const totalStock = validLots.reduce((sum, l) => sum + (l.quantity || 0), 0);
+                    return {
+                        name,
+                        added: addedNames.has(name),
+                        totalStock,
+                        doses: getTotalDoses(name)
+                    };
+                });
         });
 
         const filteredWithoutLots = Vue.computed(() => {
@@ -248,10 +252,7 @@ export default {
                     <div v-for="v in filteredWithLots" :key="v.name"
                          class="vax-dropdown-item" :class="{ disabled: v.added }"
                          @click="!v.added && selectFromDropdown(v.name, true)">
-                        <span>{{ v.name }}
-                            <span v-if="v.doses > 1" style="font-size:11px; color:#888;"> ({{ v.doses }} doses)</span>
-                        </span>
-                        <span class="vax-dropdown-meta">{{ v.lotCount }} lot{{ v.lotCount > 1 ? 's' : '' }}</span>
+                        <span>{{ v.name }}</span>
                     </div>
                 </template>
 
@@ -260,9 +261,7 @@ export default {
                     <div v-for="v in filteredWithoutLots" :key="v.name"
                          class="vax-dropdown-item" :class="{ disabled: v.added }"
                          @click="!v.added && selectFromDropdown(v.name, false)">
-                        <span>{{ v.name }}
-                            <span v-if="v.doses > 1" style="font-size:11px; color:#888;"> ({{ v.doses }} doses)</span>
-                        </span>
+                        <span>{{ v.name }}</span>
                     </div>
                 </template>
             </div>

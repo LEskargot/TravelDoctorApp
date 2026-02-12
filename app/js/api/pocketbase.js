@@ -36,7 +36,8 @@ export function isAuthenticated() {
 }
 
 export function getCurrentUser() {
-    return getPb().authStore.record;
+    // SDK 0.21+ uses 'record', older versions use 'model'
+    return getPb().authStore.record || getPb().authStore.model;
 }
 
 export async function login(email, password) {

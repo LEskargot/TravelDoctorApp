@@ -16,6 +16,7 @@ const isOnline = ref(false);
 export function useAuth() {
     const isLoggedIn = computed(() => !!user.value);
     const isAdmin = computed(() => user.value?.role === 'admin');
+    const isVaccinateur = computed(() => user.value?.role === 'vaccinateur');
     const userName = computed(() => user.value?.name || user.value?.email || '');
 
     async function login(email, password) {
@@ -59,6 +60,7 @@ export function useAuth() {
         isOnline,
         isLoggedIn,
         isAdmin,
+        isVaccinateur,
         userName,
         login,
         logout,
