@@ -15,12 +15,6 @@ const TRI_OPTIONS = [
     { value: 'ne_sais_pas', label: 'Ne sait pas' }
 ];
 
-const VARICELLE_OPTIONS = [
-    { value: 'contractee', label: 'Contractee' },
-    { value: 'vaccinee', label: 'Vaccinee' },
-    { value: 'non', label: 'Non' },
-    { value: 'ne_sais_pas', label: 'Ne sait pas' }
-];
 
 function triLabel(val) {
     if (val === 'oui') return 'Oui';
@@ -64,7 +58,8 @@ export default {
         const dernieresRegles = Vue.ref('');
         const medicaments = Vue.ref('');
         const medicamentsDetails = Vue.ref('');
-        const varicelle = Vue.ref('');
+        const varicelleContractee = Vue.ref('');
+        const varicelleVaccine = Vue.ref('');
         const problemeVaccination = Vue.ref('');
         const problemeVaccinationDetails = Vue.ref('');
         const dengueHistory = Vue.ref('');
@@ -87,19 +82,17 @@ export default {
             dernieresRegles.value = med.dernieresRegles || '';
             medicaments.value = med.medicaments || '';
             medicamentsDetails.value = med.medicamentsDetails || '';
-            // Merged varicelle field — handle both new and legacy data
-            if (med.varicelle) {
-                varicelle.value = med.varicelle;
-            } else if (med.varicelleContractee === 'oui') {
-                varicelle.value = 'contractee';
-            } else if (med.varicelleVaccine === 'oui') {
-                varicelle.value = 'vaccinee';
-            } else if (med.varicelleContractee === 'non' || med.varicelleVaccine === 'non') {
-                varicelle.value = 'non';
-            } else if (med.varicelleContractee === 'ne_sais_pas' || med.varicelleVaccine === 'ne_sais_pas') {
-                varicelle.value = 'ne_sais_pas';
+            // Two separate varicelle fields — with backward compat for legacy merged field
+            if (med.varicelleContractee !== undefined) {
+                varicelleContractee.value = med.varicelleContractee || '';
+                varicelleVaccine.value = med.varicelleVaccine || '';
+            } else if (med.varicelle) {
+                // Legacy: convert merged field back to two fields
+                varicelleContractee.value = med.varicelle === 'contractee' ? 'oui' : 'non';
+                varicelleVaccine.value = med.varicelle === 'vaccinee' ? 'oui' : 'non';
             } else {
-                varicelle.value = '';
+                varicelleContractee.value = '';
+                varicelleVaccine.value = '';
             }
             problemeVaccination.value = med.problemeVaccination || '';
             problemeVaccinationDetails.value = med.problemeVaccinationDetails || '';
@@ -186,7 +179,8 @@ export default {
                 dernieresRegles: dernieresRegles.value,
                 medicaments: medicaments.value,
                 medicamentsDetails: medicamentsDetails.value,
-                varicelle: varicelle.value,
+                varicelleContractee: varicelleContractee.value,
+                varicelleVaccine: varicelleVaccine.value,
                 problemeVaccination: problemeVaccination.value,
                 problemeVaccinationDetails: problemeVaccinationDetails.value,
                 dengueHistory: dengueHistory.value,
@@ -217,11 +211,6 @@ export default {
             allergies.value.filter(a => a !== 'aucune').map(a => FORM_LABELS.allergy_types[a] || a)
         );
 
-        const varicelleLabel = Vue.computed(() => {
-            const opt = VARICELLE_OPTIONS.find(o => o.value === varicelle.value);
-            return opt ? opt.label : '';
-        });
-
         const hasData = Vue.computed(() =>
             comorbidities.value.length > 0 || allergies.value.length > 0 ||
             medicaments.value || grossesse.value || poids.value
@@ -233,12 +222,12 @@ export default {
             allergies, allergyDetails,
             grossesse, contraception, allaitement, dernieresRegles,
             medicaments, medicamentsDetails,
-            varicelle, varicelleLabel,
+            varicelleContractee, varicelleVaccine,
             problemeVaccination, problemeVaccinationDetails,
             dengueHistory, cd4, cd4Date, poids,
             activeComorbidities, activeComorbidityKeys, activeAllergies, hasData,
             toggleArrayItem, toggleComorbidity, toggleAllergy, getMedicalData, finishEditing, triLabel, isImmune,
-            FORM_LABELS, TRI_OPTIONS, VARICELLE_OPTIONS, DETAIL_COMORBIDITIES
+            FORM_LABELS, TRI_OPTIONS, DETAIL_COMORBIDITIES
         };
     },
 
@@ -291,10 +280,11 @@ export default {
                 </div>
 
                 <!-- Vaccination -->
-                <div v-if="varicelle || problemeVaccination || dengueHistory" class="med-group vaccination">
+                <div v-if="varicelleContractee || varicelleVaccine || problemeVaccination || dengueHistory" class="med-group vaccination">
                     <div class="voyage-section-label">Vaccination & Immunite</div>
                     <div class="medical-row">
-                        <span v-if="varicelle" class="medical-tag">Varicelle: {{ varicelleLabel }}</span>
+                        <span v-if="varicelleContractee" class="medical-tag">Varicelle contractee: {{ triLabel(varicelleContractee) }}</span>
+                        <span v-if="varicelleVaccine" class="medical-tag">Vaccin varicelle: {{ triLabel(varicelleVaccine) }}</span>
                         <span v-if="problemeVaccination" :class="['medical-tag', problemeVaccination === 'oui' ? 'immune' : '']">Pb vaccination: {{ triLabel(problemeVaccination) }}<template v-if="problemeVaccinationDetails"> — {{ problemeVaccinationDetails }}</template></span>
                         <span v-if="dengueHistory" class="medical-tag">Dengue: {{ triLabel(dengueHistory) }}</span>
                     </div>
@@ -400,8 +390,12 @@ export default {
             <div class="med-group vaccination">
                 <div class="voyage-section-label">Vaccination & Immunite</div>
                 <div class="medical-field">
-                    <label>Varicelle</label>
-                    <span class="radio-group"><label class="radio-inline" v-for="o in VARICELLE_OPTIONS" :key="o.value"><input type="radio" v-model="varicelle" :value="o.value"> {{ o.label }}</label></span>
+                    <label>Varicelle contractee ?</label>
+                    <span class="radio-group"><label class="radio-inline" v-for="o in TRI_OPTIONS.slice(1)" :key="o.value"><input type="radio" v-model="varicelleContractee" :value="o.value"> {{ o.label }}</label></span>
+                </div>
+                <div class="medical-field">
+                    <label>Vaccin contre la varicelle ?</label>
+                    <span class="radio-group"><label class="radio-inline" v-for="o in TRI_OPTIONS.slice(1)" :key="o.value"><input type="radio" v-model="varicelleVaccine" :value="o.value"> {{ o.label }}</label></span>
                 </div>
 
                 <!-- Vaccination problem -->

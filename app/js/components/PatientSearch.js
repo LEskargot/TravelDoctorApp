@@ -215,7 +215,14 @@ export default {
                     <strong>Dengue anterieure:</strong> Oui
                 </div>
 
-                <div v-if="medicalData?.varicelle" class="medical-row">
+                <div v-if="medicalData?.varicelleContractee" class="medical-row">
+                    <strong>Varicelle contractee:</strong> {{ triLabel(medicalData.varicelleContractee) }}
+                </div>
+                <div v-if="medicalData?.varicelleVaccine" class="medical-row">
+                    <strong>Vaccin varicelle:</strong> {{ triLabel(medicalData.varicelleVaccine) }}
+                </div>
+                <!-- Legacy: single varicelle field -->
+                <div v-if="medicalData?.varicelle && !medicalData?.varicelleContractee" class="medical-row">
                     <strong>Varicelle:</strong>
                     {{ medicalData.varicelle === 'contractee' ? 'Contractee' : medicalData.varicelle === 'vaccinee' ? 'Vaccinee' : medicalData.varicelle === 'non' ? 'Non' : medicalData.varicelle === 'ne_sais_pas' ? 'Ne sait pas' : '' }}
                 </div>

@@ -119,6 +119,66 @@ if (!empty($vaccinationFileIds)) {
     }
 }
 
+// Sync updated data to linked patient record
+$linkedPatientId = $formRecord['linked_patient'] ?? '';
+if (!empty($linkedPatientId)) {
+    $patientUpdate = [];
+
+    // Parse name: form uses "Prénom Nom" format
+    $nameParts = explode(' ', trim($patientName), 2);
+    $prenom = $nameParts[0] ?? '';
+    $nom = $nameParts[1] ?? $nameParts[0] ?? '';
+    $patientUpdate['nom'] = $nom;
+    $patientUpdate['prenom'] = $prenom;
+
+    // DOB
+    $dob = $formData['birthdate'] ?? '';
+    if (!empty($dob) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dob)) {
+        $patientUpdate['dob'] = $dob;
+    }
+
+    // Email & phone
+    if ($patientEmail) {
+        $patientUpdate['email'] = $patientEmail;
+    }
+    if (!empty($formData['phone'])) {
+        $patientUpdate['telephone'] = $formData['phone'];
+    }
+
+    // Address
+    $addressParts = [];
+    if (!empty($formData['street'])) $addressParts[] = $formData['street'];
+    if (!empty($formData['postal_code']) || !empty($formData['city'])) {
+        $addressParts[] = trim(($formData['postal_code'] ?? '') . ' ' . ($formData['city'] ?? ''));
+    }
+    if (!empty($addressParts)) {
+        $patientUpdate['adresse'] = implode(', ', $addressParts);
+    }
+
+    // Gender
+    if (!empty($formData['gender'])) {
+        $genderMap = ['homme' => 'm', 'femme' => 'f', 'non_binaire' => 'autre', 'autre' => 'autre'];
+        $patientUpdate['sexe'] = $genderMap[$formData['gender']] ?? null;
+    }
+
+    // Weight
+    if (isset($formData['weight'])) {
+        $patientUpdate['poids'] = (float)$formData['weight'];
+    }
+
+    // AVS
+    if (!empty($patientAvs)) {
+        $patientUpdate['avs'] = $patientAvs;
+    }
+
+    pbRequest(
+        '/api/collections/patients/records/' . $linkedPatientId,
+        'PATCH',
+        $patientUpdate,
+        $adminToken
+    );
+}
+
 echo json_encode([
     'success' => true,
     'message' => 'Formulaire mis à jour'

@@ -250,7 +250,7 @@ function findOrCreatePatient($adminToken, $patientName, $email, $avs, $formData)
 
     // Set sex
     if (!empty($formData['gender'])) {
-        $genderMap = ['masculin' => 'm', 'feminin' => 'f', 'autre' => 'autre'];
+        $genderMap = ['homme' => 'm', 'femme' => 'f', 'non_binaire' => 'autre', 'autre' => 'autre'];
         $patientData['sexe'] = $genderMap[$formData['gender']] ?? null;
     }
 

@@ -14,6 +14,7 @@ const DRAFT_SAVE_INTERVAL = 30000; // 30 seconds
 let currentStep = 1;
 const totalSteps = 6;
 let currentToken = null;
+let isEditMode = false;
 let uploadedFiles = [];
 let draftSaveTimer = null;
 let formModified = false;
@@ -1559,6 +1560,7 @@ async function loadDraft(editToken) {
 
         if (data.success && data.form_data) {
             currentToken = editToken;
+            isEditMode = !!data.is_submitted;
             populateForm(data.form_data);
 
             if (data.step_reached) {
@@ -1701,14 +1703,28 @@ async function submitForm() {
         formData.vaccination_file_ids = fileIds;
         formData.language = currentLang;
 
-        const response = await fetch(API_URL + '/submit-public.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                captcha_token: currentToken,
-                form_data: formData
-            })
-        });
+        let response;
+        if (isEditMode && currentToken) {
+            // Update existing form (no captcha needed)
+            response = await fetch(API_URL + '/update-form.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    edit_token: currentToken,
+                    form_data: formData
+                })
+            });
+        } else {
+            // New submission with captcha
+            response = await fetch(API_URL + '/submit-public.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    captcha_token: currentToken,
+                    form_data: formData
+                })
+            });
+        }
 
         const data = await response.json();
 

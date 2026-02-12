@@ -100,11 +100,8 @@ export function mapFormToMedical(fd) {
         dernieresRegles: fd.last_menses || '',
         medicaments: fd.takes_medication || '',
         medicamentsDetails: fd.medication_list || '',
-        varicelle: fd.chickenpox_disease === 'oui' ? 'contractee'
-                 : fd.chickenpox_vaccine === 'oui' ? 'vaccinee'
-                 : fd.chickenpox_disease === 'non' && fd.chickenpox_vaccine === 'non' ? 'non'
-                 : fd.chickenpox_disease || fd.chickenpox_vaccine ? 'ne_sais_pas'
-                 : '',
+        varicelleContractee: fd.chickenpox_disease || '',
+        varicelleVaccine: fd.chickenpox_vaccine || '',
         problemeVaccination: fd.vaccination_problem || '',
         problemeVaccinationDetails: fd.vaccination_problem_details || '',
         dengueHistory: fd.dengue_history || '',
