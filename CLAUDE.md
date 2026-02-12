@@ -324,6 +324,22 @@ No automated tests. Manual testing required for:
      - `useVaccines.js`: removed invalid `consultation` field from `createStockAdjustment` (caused 400 error); added try-catch around stock operations so audit trail failures don't block vaccine save
    - **Server fix**: restored `get-observations.php` which had been overwritten with calendar events content on the production server
 
+15. **Improved form-to-calendar-event matching** ✓ (2026-02-12)
+   - **Patient form**: added `appointment_datetime` (datetime-local) + `appointment_location` (select: lausanne/la-tour-de-treme/telemedicine) fields to Step 1
+   - **Translations**: all 4 languages (FR/EN/IT/ES) for appointment fields + error messages
+   - **`form.js`**: collectFormData, validateIdentity, blur validation, identity summary display
+   - **`process-onedoc-emails.php`**: `convertAppointmentToIso()` converts French date to ISO, `mapOnedocLocation()` maps location + detects telemedicine from consultation type
+   - **`update-form.php`**: preserves `onedoc_*` fields when patient submits draft→submitted
+   - **`submit-public.php`**: `findMatchingOnedocDraft()` merges with existing OneDOC draft instead of create+cancel; preserves onedoc_* metadata
+   - **`get-pending-forms.php`**: appointment_datetime fallback when onedoc_appointment empty; filters past-appointment OneDOC drafts from list
+   - **`get-calendar-events.php`**: 6-tier matching (Tier 0: persistent calendar_event_id link, Tier 1: email, Tier 2: phone normalized, Tier 3: appointment datetime+name, Tier 4: name+DOB, Tier 5: name only); returns `unlinked_forms` array
+   - **`helpers.php`**: added `normalizePhone()` (strips formatting, removes +41/0041, returns last 9 digits)
+   - **`link-form-calendar.php`**: new POST endpoint to manually link form → calendar event via `calendar_event_id`
+   - **`FormLinkModal.js`**: new component for practitioner to manually link unmatched calendar events to forms, with similarity scoring (email +40, phone +30, name +20, DOB +20, date +10)
+   - **`PendingForms.js`**: integrated FormLinkModal; clicking "EN ATTENTE" shows link modal when unlinked forms exist
+   - **PocketBase schema**: add `calendar_event_id` (text, optional) field to `patient_forms` collection
+   - **Deploy**: copy `link-form-calendar.php` to server, bump `?v=8`
+
 ### Pending Tasks
 
 1. **Optional improvements**
@@ -406,6 +422,7 @@ cp form-site/api/decrypt-data.php /var/www/webroot/ROOT/api/
 cp form-site/api/get-observations.php /var/www/webroot/ROOT/api/
 cp form-site/api/get-calendar-events.php /var/www/webroot/ROOT/api/
 cp form-site/api/parse-delivery-note.php /var/www/webroot/ROOT/api/
+cp form-site/api/link-form-calendar.php /var/www/webroot/ROOT/api/
 
 # Cron jobs
 cp form-site/cron/process-onedoc-emails.php /var/www/webroot/ROOT/cron/

@@ -9,9 +9,12 @@ import { useAuth } from '../composables/useAuth.js';
 import { getPb } from '../api/pocketbase.js';
 import * as secureApi from '../api/secure-api.js';
 import { formatDateDisplay } from '../utils/formatting.js';
+import FormLinkModal from './FormLinkModal.js';
 
 export default {
     name: 'PendingForms',
+
+    components: { FormLinkModal },
 
     props: {
         embedded: { type: Boolean, default: false }
@@ -33,9 +36,12 @@ export default {
         const forms = Vue.ref([]);
         const calendarEvents = Vue.ref([]);
         const calendarConfigured = Vue.ref(false);
+        const unlinkedForms = Vue.ref([]);
         const loading = Vue.ref(false);
         const error = Vue.ref('');
         const searchTerm = Vue.ref('');
+        const showLinkModal = Vue.ref(false);
+        const linkModalEvent = Vue.ref(null);
 
         // ==================== Load data ====================
 
@@ -60,6 +66,7 @@ export default {
                         if (calData.success) {
                             calendarEvents.value = calData.events || [];
                             calendarConfigured.value = calData.calendar_configured || false;
+                            unlinkedForms.value = calData.unlinked_forms || [];
                         }
                     } catch (e) { /* ignore calendar parse errors */ }
                 }
@@ -190,8 +197,42 @@ export default {
             if (state === 'form_received' && item.form_id) {
                 emit('form-selected', item.form_id);
             } else if (state === 'awaiting_form') {
-                emit('calendar-selected', item);
+                // Show link modal if there are unlinked forms
+                if (unlinkedForms.value.length > 0) {
+                    linkModalEvent.value = item;
+                    showLinkModal.value = true;
+                } else {
+                    emit('calendar-selected', item);
+                }
             }
+        }
+
+        async function onLinkFormToEvent({ formId, calendarEventId }) {
+            showLinkModal.value = false;
+            try {
+                const headers = { ...authHeaders(), 'Content-Type': 'application/json' };
+                const res = await fetch(`${FORM_API_URL}/link-form-calendar.php`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({ form_id: formId, calendar_event_id: calendarEventId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    await loadPendingForms();
+                }
+            } catch (e) {
+                console.error('Link error:', e);
+            }
+        }
+
+        function onSkipLink(calendarEvent) {
+            showLinkModal.value = false;
+            emit('calendar-selected', calendarEvent);
+        }
+
+        function closeLinkModal() {
+            showLinkModal.value = false;
+            linkModalEvent.value = null;
         }
 
         // ==================== Init ====================
@@ -202,7 +243,9 @@ export default {
             forms, loading, error, searchTerm,
             groupedByDate, sortedDateKeys, today,
             dateLabel, itemState, onClickItem,
-            loadPendingForms, formatDateDisplay, emit, isVaccinateur, props
+            loadPendingForms, formatDateDisplay, emit, isVaccinateur, props,
+            showLinkModal, linkModalEvent, unlinkedForms,
+            onLinkFormToEvent, onSkipLink, closeLinkModal
         };
     },
 
@@ -273,6 +316,16 @@ export default {
                 </div>
             </div>
         </template>
+
+        <!-- Manual link modal -->
+        <FormLinkModal
+            v-if="showLinkModal && linkModalEvent"
+            :calendar-event="linkModalEvent"
+            :unlinked-forms="unlinkedForms"
+            @link="onLinkFormToEvent"
+            @skip="onSkipLink"
+            @close="closeLinkModal"
+        />
     </div>
     `
 };

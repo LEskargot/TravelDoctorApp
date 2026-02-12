@@ -59,6 +59,7 @@ $frenchMonths = [
 ];
 
 $forms = [];
+$today = (new DateTime('now', new DateTimeZone('Europe/Zurich')))->format('Y-m-d');
 
 foreach ($response['items'] as $item) {
     // Decrypt patient name
@@ -105,6 +106,22 @@ foreach ($response['items'] as $item) {
         elseif (preg_match('/(\d{2})\.(\d{2})\.(\d{4})\s+(\d{1,2}:\d{2})/', $appt, $am)) {
             $appointmentDate = $am[3] . '-' . $am[2] . '-' . $am[1];
             $appointmentTime = $am[4];
+        }
+    }
+
+    // Fallback: use appointment_datetime from form fields (ISO format "2026-02-05T14:30")
+    if (empty($appointmentDate) && !empty($formData['appointment_datetime'])) {
+        $parts = explode('T', $formData['appointment_datetime']);
+        if (count($parts) === 2) {
+            $appointmentDate = $parts[0];
+            $appointmentTime = substr($parts[1], 0, 5); // "HH:MM"
+        }
+    }
+
+    // Filter stale OneDOC drafts: hide drafts whose appointment date is in the past
+    if ($item['status'] === 'draft' && $item['source'] === 'onedoc' && !empty($appointmentDate)) {
+        if ($appointmentDate < $today) {
+            continue; // Skip past-appointment drafts
         }
     }
 

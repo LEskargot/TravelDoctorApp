@@ -24,11 +24,12 @@ import PendingForms from './components/PendingForms.js';
 import TimelineModal from './components/TimelineModal.js';
 import StockScreen from './components/StockScreen.js';
 import VaccinationScreen from './components/VaccinationScreen.js';
+import FormLinkModal from './components/FormLinkModal.js';
 
 const { createApp, ref, computed, watch, onMounted } = Vue;
 
 const App = {
-    components: { LoginScreen, PatientSearch, CaseView, PatientHistory, ConsultationForm, PendingForms, TimelineModal, StockScreen, VaccinationScreen },
+    components: { LoginScreen, PatientSearch, CaseView, PatientHistory, ConsultationForm, PendingForms, TimelineModal, StockScreen, VaccinationScreen, FormLinkModal },
 
     setup() {
         const {

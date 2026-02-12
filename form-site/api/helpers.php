@@ -48,6 +48,29 @@ function normalizedContains($haystack, $needle) {
     return strpos(normalizeString($haystack), normalizeString($needle)) !== false;
 }
 
+/**
+ * Normalize a phone number for comparison.
+ * Strips formatting, removes +41/0041/leading 0, returns last 9 digits.
+ */
+function normalizePhone($phone) {
+    if (empty($phone)) return '';
+
+    // Strip all non-digit characters
+    $digits = preg_replace('/\D/', '', $phone);
+
+    // Remove country code: 41 (Swiss) or 0041
+    if (str_starts_with($digits, '0041')) {
+        $digits = substr($digits, 4);
+    } elseif (str_starts_with($digits, '41') && strlen($digits) > 10) {
+        $digits = substr($digits, 2);
+    } elseif (str_starts_with($digits, '0')) {
+        $digits = substr($digits, 1);
+    }
+
+    // Return last 9 digits (standard Swiss mobile/landline)
+    return substr($digits, -9);
+}
+
 function corsHeaders() {
     // TODO: restrict when deployed — replace * with actual domains
     // $allowed = ['https://app.traveldoctor.ch', 'https://form.traveldoctor.ch'];

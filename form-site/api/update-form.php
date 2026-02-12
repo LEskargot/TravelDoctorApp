@@ -76,6 +76,17 @@ if (!$searchResponse || empty($searchResponse['items'])) {
 $formRecord = $searchResponse['items'][0];
 $wasDraft = ($formRecord['status'] === 'draft');
 
+// Preserve onedoc_* fields from existing form data (they're not in collectFormData())
+if (!empty($formRecord['form_data_encrypted'])) {
+    $existingFormData = decryptFormData($formRecord['form_data_encrypted']);
+    $onedocFields = ['onedoc_appointment', 'onedoc_location', 'onedoc_consultation', 'onedoc_notes'];
+    foreach ($onedocFields as $field) {
+        if (!empty($existingFormData[$field]) && empty($formData[$field])) {
+            $formData[$field] = $existingFormData[$field];
+        }
+    }
+}
+
 // Extract patient name for display
 $patientName = $formData['full_name'] ?? 'Patient';
 

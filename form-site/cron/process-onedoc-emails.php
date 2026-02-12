@@ -559,6 +559,21 @@ function createPrefilledForm($patientData) {
         'onedoc_location' => $patientData['location']
     ];
 
+    // Convert onedoc appointment to ISO datetime-local for the form field
+    $appointmentIso = convertAppointmentToIso(
+        $patientData['appointment_date'],
+        $patientData['appointment_time']
+    );
+    if ($appointmentIso) {
+        $formData['appointment_datetime'] = $appointmentIso;
+    }
+
+    // Map onedoc location to form select value
+    $formData['appointment_location'] = mapOnedocLocation(
+        $patientData['location'],
+        $patientData['consultation_type']
+    );
+
     // Create form record with encrypted data
     $formRecord = [
         'edit_token' => $editToken,
@@ -810,6 +825,63 @@ function logMessage($message) {
     }
     $logFile = $logDir . '/onedoc-processor.log';
     file_put_contents($logFile, "[$timestamp] $message\n", FILE_APPEND);
+}
+
+/**
+ * Convert OneDOC appointment date+time to ISO datetime-local format (YYYY-MM-DDTHH:MM)
+ * Handles: "5 février 2026" + "12:35" → "2026-02-05T12:35"
+ *          "09.03.2026" + "11:45" → "2026-03-09T11:45"
+ */
+function convertAppointmentToIso($dateStr, $timeStr) {
+    if (empty($dateStr) || empty($timeStr)) return '';
+
+    $frenchMonths = [
+        'janvier'=>1,'février'=>2,'fevrier'=>2,'mars'=>3,'avril'=>4,'mai'=>5,'juin'=>6,
+        'juillet'=>7,'août'=>8,'aout'=>8,'septembre'=>9,'octobre'=>10,'novembre'=>11,'décembre'=>12,'decembre'=>12
+    ];
+
+    // Format 1: "5 février 2026" (French month name from body)
+    if (preg_match('/(\d{1,2})\s+(\w+)\s+(\d{4})/', $dateStr, $m)) {
+        $monthNum = $frenchMonths[strtolower($m[2])] ?? null;
+        if ($monthNum) {
+            return sprintf('%04d-%02d-%02dT%s', $m[3], $monthNum, $m[1], $timeStr);
+        }
+    }
+
+    // Format 2: "09.03.2026" (DD.MM.YYYY from subject)
+    if (preg_match('/(\d{2})\.(\d{2})\.(\d{4})/', $dateStr, $m)) {
+        return sprintf('%s-%s-%sT%s', $m[3], $m[2], $m[1], $timeStr);
+    }
+
+    return '';
+}
+
+/**
+ * Map OneDOC location to form select value
+ * "Lausanne" → "lausanne", "Bulle"/"La Tour-de-Trême" → "la-tour-de-treme"
+ * Telemedicine detected from consultation type containing "visioconférence"
+ */
+function mapOnedocLocation($location, $consultationType = '') {
+    // Check for telemedicine first
+    if (!empty($consultationType) && (
+        stripos($consultationType, 'visioconférence') !== false ||
+        stripos($consultationType, 'visioconference') !== false ||
+        stripos($consultationType, 'vidéo') !== false ||
+        stripos($consultationType, 'video') !== false
+    )) {
+        return 'telemedicine';
+    }
+
+    $loc = strtolower(trim($location));
+    if (strpos($loc, 'lausanne') !== false) {
+        return 'lausanne';
+    }
+    if (strpos($loc, 'bulle') !== false || strpos($loc, 'tour-de-tr') !== false || strpos($loc, 'tour de tr') !== false) {
+        return 'la-tour-de-treme';
+    }
+
+    // Default to lausanne if unrecognized
+    return 'lausanne';
 }
 
 // Run

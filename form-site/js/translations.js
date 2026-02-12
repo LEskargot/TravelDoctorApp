@@ -68,7 +68,12 @@ const TRANSLATIONS = {
       },
       avs: "Numéro AVS",
       avs_placeholder: "756.1234.5678.90",
-      avs_hint: "Permet de retrouver votre dossier facilement"
+      avs_hint: "Permet de retrouver votre dossier facilement",
+      appointment_datetime: "Date et heure du rendez-vous",
+      appointment_datetime_hint: "Date et heure de votre consultation",
+      appointment_location: "Lieu du rendez-vous",
+      appointment_location_placeholder: "Choisir...",
+      appointment_telemedicine: "Télémédecine"
     },
 
     // Step 2: Travel
@@ -444,7 +449,8 @@ const TRANSLATIONS = {
       weight_range: "Le poids doit être entre 2 et 400 kg",
       date_not_future: "Cette date ne peut pas être dans le futur",
       other_required: "Veuillez préciser votre choix",
-      cd4_range: "La valeur CD4 doit être entre 0 et 5000"
+      cd4_range: "La valeur CD4 doit être entre 0 et 5000",
+      appointment_past: "La date du rendez-vous ne peut pas être dans le passé"
     },
 
     // Warnings (soft, non-blocking)
@@ -554,7 +560,12 @@ const TRANSLATIONS = {
       },
       avs: "AVS Number (Swiss Social Security)",
       avs_placeholder: "756.1234.5678.90",
-      avs_hint: "Helps us find your records easily"
+      avs_hint: "Helps us find your records easily",
+      appointment_datetime: "Appointment date and time",
+      appointment_datetime_hint: "Date and time of your consultation",
+      appointment_location: "Appointment location",
+      appointment_location_placeholder: "Select...",
+      appointment_telemedicine: "Telemedicine"
     },
 
     // Step 2: Travel
@@ -915,7 +926,8 @@ const TRANSLATIONS = {
       weight_range: "Weight must be between 2 and 400 kg",
       date_not_future: "This date cannot be in the future",
       other_required: "Please specify your choice",
-      cd4_range: "CD4 value must be between 0 and 5000"
+      cd4_range: "CD4 value must be between 0 and 5000",
+      appointment_past: "The appointment date cannot be in the past"
     },
 
     // Warnings (soft, non-blocking)
@@ -1021,7 +1033,12 @@ const TRANSLATIONS = {
       },
       avs: "Numero AVS",
       avs_placeholder: "756.1234.5678.90",
-      avs_hint: "Permette di ritrovare facilmente il vostro fascicolo"
+      avs_hint: "Permette di ritrovare facilmente il vostro fascicolo",
+      appointment_datetime: "Data e ora dell'appuntamento",
+      appointment_datetime_hint: "Data e ora della consultazione",
+      appointment_location: "Luogo dell'appuntamento",
+      appointment_location_placeholder: "Scegliere...",
+      appointment_telemedicine: "Telemedicina"
     },
 
     // Step 2: Travel
@@ -1388,7 +1405,8 @@ const TRANSLATIONS = {
       weight_range: "Il peso deve essere tra 2 e 400 kg",
       date_not_future: "Questa data non può essere nel futuro",
       other_required: "Si prega di specificare la scelta",
-      cd4_range: "Il valore CD4 deve essere tra 0 e 5000"
+      cd4_range: "Il valore CD4 deve essere tra 0 e 5000",
+      appointment_past: "La data dell'appuntamento non può essere nel passato"
     },
 
     // Warnings (soft, non-blocking)
@@ -1498,7 +1516,12 @@ const TRANSLATIONS = {
       },
       avs: "Número AVS (Seguro Social Suizo)",
       avs_placeholder: "756.1234.5678.90",
-      avs_hint: "Permite encontrar su expediente fácilmente"
+      avs_hint: "Permite encontrar su expediente fácilmente",
+      appointment_datetime: "Fecha y hora de la cita",
+      appointment_datetime_hint: "Fecha y hora de su consulta",
+      appointment_location: "Lugar de la cita",
+      appointment_location_placeholder: "Elegir...",
+      appointment_telemedicine: "Telemedicina"
     },
 
     // Step 2: Travel
@@ -1865,7 +1888,8 @@ const TRANSLATIONS = {
       weight_range: "El peso debe ser entre 2 y 400 kg",
       date_not_future: "Esta fecha no puede ser en el futuro",
       other_required: "Por favor especifique su elección",
-      cd4_range: "El valor CD4 debe estar entre 0 y 5000"
+      cd4_range: "El valor CD4 debe estar entre 0 y 5000",
+      appointment_past: "La fecha de la cita no puede ser en el pasado"
     },
 
     // Warnings (soft, non-blocking)

@@ -108,6 +108,29 @@
                     <span class="optional-badge" data-translate="buttons.optional">Facultatif</span>
                 </div>
 
+                <div class="form-row">
+                    <div class="form-group flex-2">
+                        <label for="appointment_datetime" data-translate="identity.appointment_datetime">
+                            Date et heure du rendez-vous *
+                        </label>
+                        <input type="datetime-local" id="appointment_datetime" name="appointment_datetime" required>
+                        <span class="hint" data-translate="identity.appointment_datetime_hint">Date et heure de votre consultation</span>
+                        <span class="error-message"></span>
+                    </div>
+                    <div class="form-group flex-1">
+                        <label for="appointment_location" data-translate="identity.appointment_location">
+                            Lieu *
+                        </label>
+                        <select id="appointment_location" name="appointment_location" required>
+                            <option value="" data-translate="identity.appointment_location_placeholder">Choisir...</option>
+                            <option value="lausanne">Lausanne</option>
+                            <option value="la-tour-de-treme">La Tour-de-Tr&ecirc;me</option>
+                            <option value="telemedicine" data-translate="identity.appointment_telemedicine">T&eacute;l&eacute;m&eacute;decine</option>
+                        </select>
+                        <span class="error-message"></span>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label for="avs" data-translate="identity.avs">Num&eacute;ro AVS</label>
                     <input type="text" id="avs" name="avs" maxlength="16"

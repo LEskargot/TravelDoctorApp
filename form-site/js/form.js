@@ -281,6 +281,28 @@ function validateIdentity(step) {
         isValid = false;
     }
 
+    // Appointment datetime
+    const appointmentDatetime = step.querySelector('#appointment_datetime');
+    if (!appointmentDatetime.value) {
+        showError(appointmentDatetime, t('errors.required'));
+        isValid = false;
+    } else {
+        const apptDate = new Date(appointmentDatetime.value);
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        if (apptDate < now) {
+            showError(appointmentDatetime, t('errors.appointment_past'));
+            isValid = false;
+        }
+    }
+
+    // Appointment location
+    const appointmentLocation = step.querySelector('#appointment_location');
+    if (!appointmentLocation.value) {
+        showError(appointmentLocation, t('errors.required'));
+        isValid = false;
+    }
+
     // Gender
     const gender = step.querySelector('input[name="gender"]:checked');
     if (!gender) {
@@ -1196,6 +1218,18 @@ function generateIdentitySummary() {
         html += `<p><strong>${t('identity.country')}:</strong> ${getCountryName(data.residence_country, currentLang)}</p>`;
     }
 
+    // Appointment
+    if (data.appointment_datetime) {
+        const dt = new Date(data.appointment_datetime);
+        const dateStr = dt.toLocaleDateString(currentLang === 'fr' ? 'fr-CH' : currentLang, { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const timeStr = dt.toLocaleTimeString(currentLang === 'fr' ? 'fr-CH' : currentLang, { hour: '2-digit', minute: '2-digit' });
+        html += `<p><strong>${t('identity.appointment_datetime')}:</strong> ${dateStr} ${timeStr}</p>`;
+    }
+    if (data.appointment_location) {
+        const locationLabels = { 'lausanne': 'Lausanne', 'la-tour-de-treme': 'La Tour-de-Trême', 'telemedicine': t('identity.appointment_telemedicine') };
+        html += `<p><strong>${t('identity.appointment_location')}:</strong> ${locationLabels[data.appointment_location] || data.appointment_location}</p>`;
+    }
+
     // Map gender values to translation keys
     const genderKeyMap = {
         'femme': 'female',
@@ -1458,7 +1492,9 @@ function collectFormData() {
 
     // Simple fields
     const simpleFields = [
-        'full_name', 'birthdate', 'email', 'phone', 'street', 'postal_code', 'city',
+        'full_name', 'birthdate', 'email', 'phone',
+        'appointment_datetime', 'appointment_location',
+        'street', 'postal_code', 'city',
         'residence_country', 'gender', 'trip_departure', 'trip_return',
         'weight', 'show_reproductive', 'pregnancy',
         'contraception', 'breastfeeding', 'last_menses',
@@ -1870,6 +1906,21 @@ function initBlurValidation() {
                 showError(this, t('errors.date_not_future'));
             } else if (new Date(this.value) < new Date('1900-01-01')) {
                 showError(this, t('errors.invalid_date'));
+            }
+        });
+    }
+
+    // Appointment datetime blur validation
+    const appointmentDatetime = document.getElementById('appointment_datetime');
+    if (appointmentDatetime) {
+        appointmentDatetime.addEventListener('blur', function() {
+            clearFieldError(this);
+            if (!this.value) return;
+            const apptDate = new Date(this.value);
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+            if (apptDate < now) {
+                showWarning(this, t('errors.appointment_past'));
             }
         });
     }

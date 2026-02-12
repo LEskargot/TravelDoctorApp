@@ -87,41 +87,94 @@ if (!$adminToken) {
     exit;
 }
 
-// Generate edit token
-$editToken = bin2hex(random_bytes(32));
-
 // Extract patient name for display
 $patientName = $formData['full_name'] ?? 'Patient';
 
-// Save form to PocketBase with encrypted sensitive data
-$formRecord = [
-    'edit_token' => $editToken,
-    'patient_name' => '[encrypted]',
-    'patient_name_encrypted' => encryptData($patientName),
-    'email' => '[encrypted]',
-    'email_encrypted' => encryptData($patientEmail),
-    'avs_encrypted' => !empty($patientAvs) ? encryptData($patientAvs) : '',
-    'insurance_card_encrypted' => !empty($insuranceCardNumber) ? encryptData($insuranceCardNumber) : '',
-    'form_data' => null,
-    'form_data_encrypted' => encryptFormData($formData),
-    'vaccination_files' => $vaccinationFileIds,
-    'language' => $language,
-    'source' => 'public',
-    'status' => 'submitted',
-    'submitted_at' => date('c')
-];
+// Check if a matching OneDOC draft exists — merge instead of create+cancel
+$existingDraft = findMatchingOnedocDraft($adminToken, $patientEmail);
+$mergedWithDraft = false;
 
-$createResponse = pbRequest(
-    '/api/collections/patient_forms/records',
-    'POST',
-    $formRecord,
-    $adminToken
-);
+if ($existingDraft) {
+    // Preserve onedoc_* fields from draft
+    $draftFormData = [];
+    if (!empty($existingDraft['form_data_encrypted'])) {
+        $draftFormData = decryptFormData($existingDraft['form_data_encrypted']);
+    }
+    $onedocFields = ['onedoc_appointment', 'onedoc_location', 'onedoc_consultation', 'onedoc_notes'];
+    foreach ($onedocFields as $field) {
+        if (!empty($draftFormData[$field]) && empty($formData[$field])) {
+            $formData[$field] = $draftFormData[$field];
+        }
+    }
 
-if (!$createResponse || isset($createResponse['code'])) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Erreur lors de l\'enregistrement']);
-    exit;
+    // Update the existing draft in-place
+    $updateData = [
+        'patient_name' => '[encrypted]',
+        'patient_name_encrypted' => encryptData($patientName),
+        'email' => '[encrypted]',
+        'email_encrypted' => encryptData($patientEmail),
+        'avs_encrypted' => !empty($patientAvs) ? encryptData($patientAvs) : '',
+        'insurance_card_encrypted' => !empty($insuranceCardNumber) ? encryptData($insuranceCardNumber) : '',
+        'form_data' => null,
+        'form_data_encrypted' => encryptFormData($formData),
+        'status' => 'submitted',
+        'submitted_at' => date('c')
+    ];
+    if (!empty($vaccinationFileIds)) {
+        $updateData['vaccination_files'] = $vaccinationFileIds;
+    }
+
+    $createResponse = pbRequest(
+        '/api/collections/patient_forms/records/' . $existingDraft['id'],
+        'PATCH',
+        $updateData,
+        $adminToken
+    );
+
+    if (!$createResponse || isset($createResponse['code'])) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Erreur lors de l\'enregistrement']);
+        exit;
+    }
+
+    $formRecordId = $existingDraft['id'];
+    $editToken = $existingDraft['edit_token'];
+    $mergedWithDraft = true;
+} else {
+    // No matching draft — create new form
+    $editToken = bin2hex(random_bytes(32));
+
+    $formRecord = [
+        'edit_token' => $editToken,
+        'patient_name' => '[encrypted]',
+        'patient_name_encrypted' => encryptData($patientName),
+        'email' => '[encrypted]',
+        'email_encrypted' => encryptData($patientEmail),
+        'avs_encrypted' => !empty($patientAvs) ? encryptData($patientAvs) : '',
+        'insurance_card_encrypted' => !empty($insuranceCardNumber) ? encryptData($insuranceCardNumber) : '',
+        'form_data' => null,
+        'form_data_encrypted' => encryptFormData($formData),
+        'vaccination_files' => $vaccinationFileIds,
+        'language' => $language,
+        'source' => 'public',
+        'status' => 'submitted',
+        'submitted_at' => date('c')
+    ];
+
+    $createResponse = pbRequest(
+        '/api/collections/patient_forms/records',
+        'POST',
+        $formRecord,
+        $adminToken
+    );
+
+    if (!$createResponse || isset($createResponse['code'])) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Erreur lors de l\'enregistrement']);
+        exit;
+    }
+
+    $formRecordId = $createResponse['id'];
 }
 
 // Link vaccination files to this form
@@ -130,13 +183,11 @@ if (!empty($vaccinationFileIds)) {
         pbRequest(
             '/api/collections/vaccination_files/records/' . $fileId,
             'PATCH',
-            ['form_id' => $createResponse['id']],
+            ['form_id' => $formRecordId],
             $adminToken
         );
     }
 }
-
-$formRecordId = $createResponse['id'];
 
 // Find or create patient record
 $patientId = findOrCreatePatient($adminToken, $patientName, $patientEmail, $patientAvs, $formData);
@@ -150,23 +201,34 @@ if ($patientId) {
         $adminToken
     );
 
-    // Create case linked to patient and form
-    pbRequest(
-        '/api/collections/cases/records',
-        'POST',
-        [
-            'patient' => $patientId,
-            'patient_form' => $formRecordId,
-            'status' => 'ouvert',
-            'opened_at' => date('c'),
-            'type' => 'conseil_voyage'
-        ],
+    // Create case linked to patient and form (only if no case already exists from draft)
+    $caseFilter = urlencode("patient_form = '{$formRecordId}'");
+    $existingCase = pbRequest(
+        "/api/collections/cases/records?filter={$caseFilter}&perPage=1",
+        'GET',
+        null,
         $adminToken
     );
+    if (!$existingCase || empty($existingCase['items'])) {
+        pbRequest(
+            '/api/collections/cases/records',
+            'POST',
+            [
+                'patient' => $patientId,
+                'patient_form' => $formRecordId,
+                'status' => 'ouvert',
+                'opened_at' => date('c'),
+                'type' => 'conseil_voyage'
+            ],
+            $adminToken
+        );
+    }
 }
 
-// Cancel stale drafts for the same email (e.g. OneDOC draft when patient submits directly)
-cancelStaleDrafts($adminToken, $patientEmail, $formRecordId);
+// Cancel other stale drafts only if we didn't merge
+if (!$mergedWithDraft) {
+    cancelStaleDrafts($adminToken, $patientEmail, $formRecordId);
+}
 
 // Increment rate limit counter
 incrementRateLimit($clientIP);
@@ -214,6 +276,36 @@ function cancelStaleDrafts($adminToken, $email, $excludeFormId) {
             );
         }
     }
+}
+
+/**
+ * Find a matching OneDOC draft for this email.
+ * Returns the draft record or null if none found.
+ */
+function findMatchingOnedocDraft($adminToken, $email) {
+    if (empty($email)) return null;
+
+    $filter = urlencode("source = 'onedoc' && status = 'draft'");
+    $drafts = pbRequest(
+        "/api/collections/patient_forms/records?filter={$filter}&sort=-created&perPage=50",
+        'GET',
+        null,
+        $adminToken
+    );
+
+    if (!$drafts || empty($drafts['items'])) return null;
+
+    foreach ($drafts['items'] as $draft) {
+        $draftEmail = '';
+        if (!empty($draft['email_encrypted'])) {
+            $draftEmail = decryptData($draft['email_encrypted']);
+        }
+        if (strtolower(trim($draftEmail)) === strtolower(trim($email))) {
+            return $draft;
+        }
+    }
+
+    return null;
 }
 
 /**

@@ -97,11 +97,19 @@ $formsResponse = pbRequest(
     $adminToken
 );
 
-// Build lookup of forms by email and by normalized name
+// Build lookup maps for forms — used for multi-tier matching
 $formsByEmail = [];
+$formsByPhone = [];
 $formsByName = [];
 $formsByNameDob = []; // "normalized_name|YYYY-MM-DD" => formInfo
+$formsByAppointment = []; // "YYYY-MM-DD HH:MM" => formInfo
 $formsData = []; // form_id => decrypted data
+
+// French month names for parsing onedoc_appointment
+$frenchMonths = [
+    'janvier'=>1,'février'=>2,'fevrier'=>2,'mars'=>3,'avril'=>4,'mai'=>5,'juin'=>6,
+    'juillet'=>7,'août'=>8,'aout'=>8,'septembre'=>9,'octobre'=>10,'novembre'=>11,'décembre'=>12,'decembre'=>12
+];
 
 if ($formsResponse && !empty($formsResponse['items'])) {
     foreach ($formsResponse['items'] as $item) {
@@ -112,9 +120,11 @@ if ($formsResponse && !empty($formsResponse['items'])) {
 
         $formData = [];
         $email = '';
+        $phone = '';
         if (!empty($item['form_data_encrypted'])) {
             $formData = decryptFormData($item['form_data_encrypted']);
             $email = $formData['email'] ?? '';
+            $phone = $formData['phone'] ?? '';
         }
 
         // Extract DOB from form data
@@ -125,13 +135,43 @@ if ($formsResponse && !empty($formsResponse['items'])) {
             if ($ts) $dobIso = date('Y-m-d', $ts);
         }
 
+        // Extract appointment date+time from form data
+        $apptDate = '';
+        $apptTime = '';
+        // Priority: appointment_datetime field (ISO format)
+        if (!empty($formData['appointment_datetime'])) {
+            $parts = explode('T', $formData['appointment_datetime']);
+            if (count($parts) === 2) {
+                $apptDate = $parts[0];
+                $apptTime = substr($parts[1], 0, 5);
+            }
+        }
+        // Fallback: onedoc_appointment (French format)
+        if (empty($apptDate) && !empty($formData['onedoc_appointment'])) {
+            $appt = $formData['onedoc_appointment'];
+            if (preg_match('/(\d{1,2})\s+(\w+)\s+(\d{4})\s+(\d{1,2}:\d{2})/', $appt, $am)) {
+                $monthNum = $frenchMonths[strtolower($am[2])] ?? null;
+                if ($monthNum) {
+                    $apptDate = sprintf('%04d-%02d-%02d', $am[3], $monthNum, $am[1]);
+                    $apptTime = $am[4];
+                }
+            } elseif (preg_match('/(\d{2})\.(\d{2})\.(\d{4})\s+(\d{1,2}:\d{2})/', $appt, $am)) {
+                $apptDate = $am[3] . '-' . $am[2] . '-' . $am[1];
+                $apptTime = $am[4];
+            }
+        }
+
         $formInfo = [
             'id' => $item['id'],
             'patient_name' => $patientName,
             'status' => $item['status'],
             'source' => $item['source'],
             'dob' => $dobIso,
-            'email' => $email
+            'email' => $email,
+            'phone' => $phone,
+            'appointment_date' => $apptDate,
+            'appointment_time' => $apptTime,
+            'appointment_location' => $formData['appointment_location'] ?? ''
         ];
 
         $formsData[$item['id']] = $formInfo;
@@ -141,6 +181,16 @@ if ($formsResponse && !empty($formsResponse['items'])) {
             $emailKey = strtolower(trim($email));
             if (!isset($formsByEmail[$emailKey]) || $item['status'] === 'submitted') {
                 $formsByEmail[$emailKey] = $formInfo;
+            }
+        }
+
+        // Phone lookup (normalized)
+        if (!empty($phone)) {
+            $phoneKey = normalizePhone($phone);
+            if (!empty($phoneKey)) {
+                if (!isset($formsByPhone[$phoneKey]) || $item['status'] === 'submitted') {
+                    $formsByPhone[$phoneKey] = $formInfo;
+                }
             }
         }
 
@@ -159,6 +209,14 @@ if ($formsResponse && !empty($formsResponse['items'])) {
                 $formsByNameDob[$compositeKey] = $formInfo;
             }
         }
+
+        // Appointment date+time lookup
+        if (!empty($apptDate) && !empty($apptTime)) {
+            $apptKey = $apptDate . ' ' . $apptTime;
+            if (!isset($formsByAppointment[$apptKey]) || $item['status'] === 'submitted') {
+                $formsByAppointment[$apptKey] = $formInfo;
+            }
+        }
     }
 }
 
@@ -166,12 +224,32 @@ if ($formsResponse && !empty($formsResponse['items'])) {
 $events = [];
 $matchedFormIds = [];
 
+// Build persistent link map: calendar_event_id → formInfo (Tier 0)
+$formsByCalendarEventId = [];
+if ($formsResponse && !empty($formsResponse['items'])) {
+    foreach ($formsResponse['items'] as $item) {
+        if (!empty($item['calendar_event_id'])) {
+            $formsByCalendarEventId[$item['calendar_event_id']] = $formsData[$item['id']] ?? null;
+        }
+    }
+}
+
 foreach ($calendarEvents as $event) {
     $formId = null;
     $formStatus = null;
 
-    // Match by email first (most reliable)
-    if (!empty($event['email'])) {
+    // Tier 0: Persistent link (manual linking via link-form-calendar.php)
+    if (!empty($event['calendar_event_id']) && isset($formsByCalendarEventId[$event['calendar_event_id']])) {
+        $match = $formsByCalendarEventId[$event['calendar_event_id']];
+        if ($match) {
+            $formId = $match['id'];
+            $formStatus = $match['status'];
+            $matchedFormIds[] = $formId;
+        }
+    }
+
+    // Tier 1: Match by email (most reliable)
+    if (!$formId && !empty($event['email'])) {
         $emailKey = strtolower(trim($event['email']));
         if (isset($formsByEmail[$emailKey])) {
             $match = $formsByEmail[$emailKey];
@@ -181,7 +259,35 @@ foreach ($calendarEvents as $event) {
         }
     }
 
-    // If no email match, try name + DOB composite match (strong)
+    // Tier 2: Match by phone (normalized)
+    if (!$formId && !empty($event['phone'])) {
+        $phoneKey = normalizePhone($event['phone']);
+        if (!empty($phoneKey) && isset($formsByPhone[$phoneKey])) {
+            $match = $formsByPhone[$phoneKey];
+            $formId = $match['id'];
+            $formStatus = $match['status'];
+            $matchedFormIds[] = $formId;
+        }
+    }
+
+    // Tier 3: Match by appointment date+time + name
+    if (!$formId && !empty($event['appointment_date']) && !empty($event['appointment_time']) && !empty($event['patient_name'])) {
+        $apptKey = $event['appointment_date'] . ' ' . $event['appointment_time'];
+        if (isset($formsByAppointment[$apptKey])) {
+            $match = $formsByAppointment[$apptKey];
+            // Verify name also matches (loosely) to avoid false positives on same time slot
+            $cleanName = preg_replace('/^\[OD\]\s*-?\s*/i', '', $event['patient_name']);
+            $calNameNorm = normalizeString($cleanName);
+            $formNameNorm = normalizeString($match['patient_name']);
+            if ($calNameNorm === $formNameNorm || normalizedContains($calNameNorm, $formNameNorm) || normalizedContains($formNameNorm, $calNameNorm)) {
+                $formId = $match['id'];
+                $formStatus = $match['status'];
+                $matchedFormIds[] = $formId;
+            }
+        }
+    }
+
+    // Tier 4: Match by name + DOB composite (strong)
     if (!$formId && !empty($event['patient_name']) && !empty($event['dob'])) {
         $cleanName = preg_replace('/^\[OD\]\s*-?\s*/i', '', $event['patient_name']);
         $compositeKey = normalizeString($cleanName) . '|' . $event['dob'];
@@ -193,7 +299,7 @@ foreach ($calendarEvents as $event) {
         }
     }
 
-    // Fallback: name-only match
+    // Tier 5: Fallback — name-only match (weakest)
     if (!$formId && !empty($event['patient_name'])) {
         $cleanName = preg_replace('/^\[OD\]\s*-?\s*/i', '', $event['patient_name']);
         $nameKey = normalizeString($cleanName);
@@ -268,9 +374,27 @@ foreach ($calendarEvents as $event) {
     ];
 }
 
+// Build unlinked forms list (forms not matched to any calendar event)
+$unlinkedForms = [];
+foreach ($formsData as $fId => $fInfo) {
+    if (!in_array($fId, $matchedFormIds)) {
+        $unlinkedForms[] = [
+            'id' => $fInfo['id'],
+            'patient_name' => $fInfo['patient_name'],
+            'dob' => $fInfo['dob'],
+            'email' => $fInfo['email'],
+            'phone' => $fInfo['phone'] ?? '',
+            'appointment_date' => $fInfo['appointment_date'] ?? '',
+            'appointment_time' => $fInfo['appointment_time'] ?? '',
+            'status' => $fInfo['status']
+        ];
+    }
+}
+
 echo json_encode([
     'success' => true,
     'events' => $events,
     'calendar_configured' => true,
-    'matched_form_ids' => $matchedFormIds
+    'matched_form_ids' => $matchedFormIds,
+    'unlinked_forms' => $unlinkedForms
 ]);
