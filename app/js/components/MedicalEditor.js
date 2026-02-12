@@ -15,6 +15,13 @@ const TRI_OPTIONS = [
     { value: 'ne_sais_pas', label: 'Ne sait pas' }
 ];
 
+const VARICELLE_OPTIONS = [
+    { value: 'contractee', label: 'Contractee' },
+    { value: 'vaccinee', label: 'Vaccinee' },
+    { value: 'non', label: 'Non' },
+    { value: 'ne_sais_pas', label: 'Ne sait pas' }
+];
+
 function triLabel(val) {
     if (val === 'oui') return 'Oui';
     if (val === 'non') return 'Non';
@@ -57,8 +64,7 @@ export default {
         const dernieresRegles = Vue.ref('');
         const medicaments = Vue.ref('');
         const medicamentsDetails = Vue.ref('');
-        const varicelleContractee = Vue.ref('');
-        const varicelleVaccine = Vue.ref('');
+        const varicelle = Vue.ref('');
         const problemeVaccination = Vue.ref('');
         const problemeVaccinationDetails = Vue.ref('');
         const dengueHistory = Vue.ref('');
@@ -81,8 +87,20 @@ export default {
             dernieresRegles.value = med.dernieresRegles || '';
             medicaments.value = med.medicaments || '';
             medicamentsDetails.value = med.medicamentsDetails || '';
-            varicelleContractee.value = med.varicelleContractee || '';
-            varicelleVaccine.value = med.varicelleVaccine || '';
+            // Merged varicelle field — handle both new and legacy data
+            if (med.varicelle) {
+                varicelle.value = med.varicelle;
+            } else if (med.varicelleContractee === 'oui') {
+                varicelle.value = 'contractee';
+            } else if (med.varicelleVaccine === 'oui') {
+                varicelle.value = 'vaccinee';
+            } else if (med.varicelleContractee === 'non' || med.varicelleVaccine === 'non') {
+                varicelle.value = 'non';
+            } else if (med.varicelleContractee === 'ne_sais_pas' || med.varicelleVaccine === 'ne_sais_pas') {
+                varicelle.value = 'ne_sais_pas';
+            } else {
+                varicelle.value = '';
+            }
             problemeVaccination.value = med.problemeVaccination || '';
             problemeVaccinationDetails.value = med.problemeVaccinationDetails || '';
             dengueHistory.value = med.dengueHistory || '';
@@ -168,8 +186,7 @@ export default {
                 dernieresRegles: dernieresRegles.value,
                 medicaments: medicaments.value,
                 medicamentsDetails: medicamentsDetails.value,
-                varicelleContractee: varicelleContractee.value,
-                varicelleVaccine: varicelleVaccine.value,
+                varicelle: varicelle.value,
                 problemeVaccination: problemeVaccination.value,
                 problemeVaccinationDetails: problemeVaccinationDetails.value,
                 dengueHistory: dengueHistory.value,
@@ -200,6 +217,11 @@ export default {
             allergies.value.filter(a => a !== 'aucune').map(a => FORM_LABELS.allergy_types[a] || a)
         );
 
+        const varicelleLabel = Vue.computed(() => {
+            const opt = VARICELLE_OPTIONS.find(o => o.value === varicelle.value);
+            return opt ? opt.label : '';
+        });
+
         const hasData = Vue.computed(() =>
             comorbidities.value.length > 0 || allergies.value.length > 0 ||
             medicaments.value || grossesse.value || poids.value
@@ -211,12 +233,12 @@ export default {
             allergies, allergyDetails,
             grossesse, contraception, allaitement, dernieresRegles,
             medicaments, medicamentsDetails,
-            varicelleContractee, varicelleVaccine,
+            varicelle, varicelleLabel,
             problemeVaccination, problemeVaccinationDetails,
             dengueHistory, cd4, cd4Date, poids,
-            activeComorbidities, activeAllergies, hasData,
+            activeComorbidities, activeComorbidityKeys, activeAllergies, hasData,
             toggleArrayItem, toggleComorbidity, toggleAllergy, getMedicalData, finishEditing, triLabel, isImmune,
-            FORM_LABELS, TRI_OPTIONS, DETAIL_COMORBIDITIES
+            FORM_LABELS, TRI_OPTIONS, VARICELLE_OPTIONS, DETAIL_COMORBIDITIES
         };
     },
 
@@ -235,11 +257,8 @@ export default {
                     <div class="voyage-section-label">Comorbidites</div>
                     <div class="medical-row">
                         <span v-for="(c, idx) in activeComorbidities" :key="idx"
-                              :class="['medical-tag', isImmune(idx) ? 'immune' : 'allergy']">{{ c }}</span>
+                              :class="['medical-tag', isImmune(idx) ? 'immune' : 'allergy']">{{ c }}<template v-if="comorbidityDetails[activeComorbidityKeys[idx]]"> — {{ comorbidityDetails[activeComorbidityKeys[idx]] }}</template><template v-if="activeComorbidityKeys[idx] === 'psychiatrique' && psychiatricDetails"> — {{ psychiatricDetails }}</template><template v-if="activeComorbidityKeys[idx] === 'vih' && cd4"> — CD4: {{ cd4 }}<template v-if="cd4Date"> ({{ cd4Date }})</template></template></span>
                         <span v-if="comorbidityOther" class="medical-tag allergy">{{ comorbidityOther }}</span>
-                        <template v-if="cd4">
-                            <span class="medical-tag immune">CD4: {{ cd4 }}<template v-if="cd4Date"> ({{ cd4Date }})</template></span>
-                        </template>
                     </div>
                 </div>
 
@@ -272,11 +291,10 @@ export default {
                 </div>
 
                 <!-- Vaccination -->
-                <div v-if="varicelleContractee || varicelleVaccine || problemeVaccination || dengueHistory" class="med-group vaccination">
+                <div v-if="varicelle || problemeVaccination || dengueHistory" class="med-group vaccination">
                     <div class="voyage-section-label">Vaccination & Immunite</div>
                     <div class="medical-row">
-                        <span v-if="varicelleContractee" class="medical-tag">Varicelle: {{ triLabel(varicelleContractee) }}</span>
-                        <span v-if="varicelleVaccine" class="medical-tag">Vaccinee: {{ triLabel(varicelleVaccine) }}</span>
+                        <span v-if="varicelle" class="medical-tag">Varicelle: {{ varicelleLabel }}</span>
                         <span v-if="problemeVaccination" :class="['medical-tag', problemeVaccination === 'oui' ? 'immune' : '']">Pb vaccination: {{ triLabel(problemeVaccination) }}<template v-if="problemeVaccinationDetails"> — {{ problemeVaccinationDetails }}</template></span>
                         <span v-if="dengueHistory" class="medical-tag">Dengue: {{ triLabel(dengueHistory) }}</span>
                     </div>
@@ -305,33 +323,25 @@ export default {
                                 <input v-if="DETAIL_COMORBIDITIES.includes(key) && comorbidities.includes(key)"
                                        type="text" class="detail-input"
                                        v-model="comorbidityDetails[key]" placeholder="Details...">
+                                <template v-if="key === 'vih' && comorbidities.includes('vih')">
+                                    <input type="number" class="detail-input" v-model="cd4" placeholder="CD4" style="max-width: 80px;">
+                                    <input type="date" class="detail-input" v-model="cd4Date" style="max-width: 130px;">
+                                </template>
+                                <input v-if="key === 'psychiatrique' && comorbidities.includes('psychiatrique')"
+                                       type="text" class="detail-input"
+                                       v-model="psychiatricDetails" placeholder="Details...">
+                                <input v-if="key === 'autre' && comorbidities.includes('autre')"
+                                       type="text" class="detail-input"
+                                       v-model="comorbidityOther" placeholder="Preciser...">
                             </div>
                         </template>
-                    </div>
-                    <input v-if="comorbidities.includes('autre')" type="text" v-model="comorbidityOther"
-                           placeholder="Autre comorbidite..." style="margin-top: 4px;">
-                    <input v-if="comorbidities.includes('psychiatrique')" type="text" v-model="psychiatricDetails"
-                           placeholder="Details psychiatriques..." style="margin-top: 4px;">
-                </div>
-
-                <!-- CD4 (shown when HIV selected) -->
-                <div v-if="comorbidities.includes('vih')" class="medical-grid" style="margin-top: 6px;">
-                    <div class="medical-field">
-                        <label>Taux CD4</label>
-                        <input type="number" v-model="cd4" placeholder="ex: 450" style="margin: 0;">
-                    </div>
-                    <div class="medical-field">
-                        <label>Date CD4</label>
-                        <input type="date" v-model="cd4Date" style="margin: 0;">
                     </div>
                 </div>
 
                 <!-- Recent chemotherapy -->
                 <div v-if="comorbidities.some(c => ['cancer', 'hematologie', 'rhumatologie', 'thymus'].includes(c))" class="medical-field">
                     <label>Chimiotherapie recente</label>
-                    <select v-model="recentChemotherapy" class="tri-state-select">
-                        <option v-for="o in TRI_OPTIONS" :value="o.value">{{ o.label }}</option>
-                    </select>
+                    <span class="radio-group"><label class="radio-inline" v-for="o in TRI_OPTIONS.slice(1)" :key="o.value"><input type="radio" v-model="recentChemotherapy" :value="o.value"> {{ o.label }}</label></span>
                 </div>
             </div>
 
@@ -357,9 +367,7 @@ export default {
                 <div class="voyage-section-label">Medicaments</div>
                 <div class="medical-field">
                     <label>Prend des medicaments</label>
-                    <select v-model="medicaments" class="tri-state-select">
-                        <option v-for="o in TRI_OPTIONS" :value="o.value">{{ o.label }}</option>
-                    </select>
+                    <span class="radio-group"><label class="radio-inline" v-for="o in TRI_OPTIONS.slice(1)" :key="o.value"><input type="radio" v-model="medicaments" :value="o.value"> {{ o.label }}</label></span>
                     <textarea v-if="medicaments === 'oui'" v-model="medicamentsDetails"
                               class="detail-textarea" placeholder="Liste des medicaments..."></textarea>
                 </div>
@@ -371,21 +379,15 @@ export default {
                 <div class="medical-grid">
                     <div class="medical-field">
                         <label>Grossesse</label>
-                        <select v-model="grossesse" class="tri-state-select">
-                            <option v-for="o in TRI_OPTIONS" :value="o.value">{{ o.label }}</option>
-                        </select>
+                        <span class="radio-group"><label class="radio-inline" v-for="o in TRI_OPTIONS.slice(1)" :key="o.value"><input type="radio" v-model="grossesse" :value="o.value"> {{ o.label }}</label></span>
                     </div>
                     <div class="medical-field">
                         <label>Contraception</label>
-                        <select v-model="contraception" class="tri-state-select">
-                            <option v-for="o in TRI_OPTIONS" :value="o.value">{{ o.label }}</option>
-                        </select>
+                        <span class="radio-group"><label class="radio-inline" v-for="o in TRI_OPTIONS.slice(1)" :key="o.value"><input type="radio" v-model="contraception" :value="o.value"> {{ o.label }}</label></span>
                     </div>
                     <div class="medical-field">
                         <label>Allaitement</label>
-                        <select v-model="allaitement" class="tri-state-select">
-                            <option v-for="o in TRI_OPTIONS" :value="o.value">{{ o.label }}</option>
-                        </select>
+                        <span class="radio-group"><label class="radio-inline" v-for="o in TRI_OPTIONS.slice(1)" :key="o.value"><input type="radio" v-model="allaitement" :value="o.value"> {{ o.label }}</label></span>
                     </div>
                     <div class="medical-field">
                         <label>Dernieres regles</label>
@@ -397,27 +399,15 @@ export default {
             <!-- Vaccination -->
             <div class="med-group vaccination">
                 <div class="voyage-section-label">Vaccination & Immunite</div>
-                <div class="medical-grid">
-                    <div class="medical-field">
-                        <label>Varicelle contractee</label>
-                        <select v-model="varicelleContractee" class="tri-state-select">
-                            <option v-for="o in TRI_OPTIONS" :value="o.value">{{ o.label }}</option>
-                        </select>
-                    </div>
-                    <div class="medical-field">
-                        <label>Varicelle vaccinee</label>
-                        <select v-model="varicelleVaccine" class="tri-state-select">
-                            <option v-for="o in TRI_OPTIONS" :value="o.value">{{ o.label }}</option>
-                        </select>
-                    </div>
+                <div class="medical-field">
+                    <label>Varicelle</label>
+                    <span class="radio-group"><label class="radio-inline" v-for="o in VARICELLE_OPTIONS" :key="o.value"><input type="radio" v-model="varicelle" :value="o.value"> {{ o.label }}</label></span>
                 </div>
 
                 <!-- Vaccination problem -->
                 <div class="medical-field">
                     <label>Probleme de vaccination</label>
-                    <select v-model="problemeVaccination" class="tri-state-select">
-                        <option v-for="o in TRI_OPTIONS" :value="o.value">{{ o.label }}</option>
-                    </select>
+                    <span class="radio-group"><label class="radio-inline" v-for="o in TRI_OPTIONS.slice(1)" :key="o.value"><input type="radio" v-model="problemeVaccination" :value="o.value"> {{ o.label }}</label></span>
                     <textarea v-if="problemeVaccination === 'oui'" v-model="problemeVaccinationDetails"
                               class="detail-textarea" placeholder="Details du probleme..."></textarea>
                 </div>
@@ -425,9 +415,7 @@ export default {
                 <!-- Dengue -->
                 <div class="medical-field">
                     <label>Antecedent de dengue</label>
-                    <select v-model="dengueHistory" class="tri-state-select">
-                        <option v-for="o in TRI_OPTIONS" :value="o.value">{{ o.label }}</option>
-                    </select>
+                    <span class="radio-group"><label class="radio-inline" v-for="o in TRI_OPTIONS.slice(1)" :key="o.value"><input type="radio" v-model="dengueHistory" :value="o.value"> {{ o.label }}</label></span>
                 </div>
             </div>
 

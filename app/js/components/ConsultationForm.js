@@ -124,11 +124,8 @@ export default {
                     status: 'termine'
                 });
 
-                // Save vaccines
-                await vaccines.saveAdministeredVaccines(patientId, consultation.id);
-
-                // Save boosters
-                await vaccines.saveScheduledBoosters(patientId, currentCase.value?.id);
+                // Save vaccines + boosters (unified)
+                await vaccines.saveVaccines(patientId, consultation.id, currentCase.value?.id);
 
                 // Save prescription (via PHP, encrypted)
                 await prescription.savePrescription(patientId, consultation.id);
@@ -148,8 +145,11 @@ export default {
                             duration: chrono.finalTime.value,
                             notes: notes.value
                         },
-                        vaccines: vaccines.administeredVaccines.value.map(v => ({ vaccine: v.vaccine, lot: v.lot })),
-                        boosters: vaccines.plannedBoosters.value.map(b => ({ vaccine: b.vaccine, date1: b.booster1Date, date2: b.booster2Date })),
+                        vaccines: vaccines.vaccines.value.map(v => ({
+                            vaccine: v.vaccine, administered: v.administered,
+                            dose: v.doseNumber, lot: v.lot, site: v.site,
+                            boosters: v.boosters.map(b => ({ dose: b.dose, date: b.date }))
+                        })),
                         medications: prescription.selectedMedications.value.map(m => ({ name: m.name, dosing: m.dosing }))
                     };
                     downloadJson(backupData, makeBackupFilename(`${formData.nom} ${formData.prenom}`, formData.dob));

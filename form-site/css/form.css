@@ -534,6 +534,86 @@ textarea::placeholder {
   border-top: none;
 }
 
+/* Trip Dates Row */
+.trip-dates-row {
+  display: flex;
+  gap: 15px;
+}
+
+.trip-dates-row .date-field-wrapper {
+  flex: 1;
+}
+
+.trip-dates-row .date-field-wrapper > label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 4px;
+}
+
+/* Flexible dates checkbox */
+.flexible-dates-group {
+  margin-bottom: 15px;
+}
+
+.flexible-dates-group .checkbox-label {
+  font-style: italic;
+  color: var(--navy);
+}
+
+/* Duration dropdown in destination row (hidden by default) */
+.destination-duration {
+  display: none;
+}
+
+.destination-duration select {
+  width: 100%;
+  padding: 10px;
+}
+
+/* When flexible mode is active */
+.flexible-mode .destination-dates {
+  display: none !important;
+}
+
+.flexible-mode .destination-duration {
+  display: block;
+}
+
+/* Flexible mode header adjustments */
+.flexible-mode .destination-header {
+  grid-template-columns: 1.5fr 1fr auto;
+}
+
+.flexible-mode .destination-header .dest-header-dates {
+  display: none;
+}
+
+.flexible-mode .destination-header .dest-header-duration {
+  display: block;
+}
+
+.dest-header-duration {
+  display: none;
+}
+
+/* Flexible mode destination fields layout */
+.flexible-mode .destination-fields {
+  grid-template-columns: 1.5fr 1fr auto;
+}
+
+@media (max-width: 600px) {
+  .trip-dates-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .flexible-mode .destination-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Destination Row */
 #destinations-container {
   display: flex;

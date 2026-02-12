@@ -14,8 +14,20 @@ function daysBetween(d1, d2) {
     return diff > 0 ? `${diff}j` : '';
 }
 
+const DURATION_LABELS = {
+    few_days: 'Quelques jours',
+    less_1_week: '< 1 semaine',
+    '1_2_weeks': '1-2 semaines',
+    '2_3_weeks': '2-3 semaines',
+    '1_month': '~1 mois',
+    '1_2_months': '1-2 mois',
+    '2_3_months': '2-3 mois',
+    '3_6_months': '3-6 mois',
+    over_6_months: '> 6 mois'
+};
+
 function emptyDest() {
-    return { country: '', departure: '', return: '', _searchText: '' };
+    return { country: '', departure: '', return: '', estimated_duration: '', _searchText: '' };
 }
 
 export default {
@@ -26,6 +38,9 @@ export default {
 
         const isEditing = Vue.ref(false);
 
+        const tripDeparture = Vue.ref('');
+        const tripReturn = Vue.ref('');
+        const flexibleDates = Vue.ref(false);
         const destinations = Vue.ref([emptyDest()]);
         const nature = Vue.ref([]);
         const natureAutre = Vue.ref('');
@@ -42,9 +57,13 @@ export default {
 
         function loadFromVoyage(voyage) {
             if (!voyage) return;
+            tripDeparture.value = voyage.tripDeparture || '';
+            tripReturn.value = voyage.tripReturn || '';
+            flexibleDates.value = voyage.flexibleDates || false;
             if (voyage.destinations?.length) {
                 destinations.value = voyage.destinations.map(d => ({
                     ...d,
+                    estimated_duration: d.estimated_duration || '',
                     _searchText: getCountryName(d.country)
                 }));
             }
@@ -107,9 +126,14 @@ export default {
 
         function getVoyageData() {
             return {
+                tripDeparture: tripDeparture.value,
+                tripReturn: tripReturn.value,
+                flexibleDates: flexibleDates.value,
                 destinations: destinations.value
                     .filter(d => d.country)
-                    .map(({ country, departure, return: ret }) => ({ country, departure, return: ret })),
+                    .map(({ country, departure, return: ret, estimated_duration }) => ({
+                        country, departure, return: ret, estimated_duration: estimated_duration || ''
+                    })),
                 nature: nature.value,
                 natureAutre: natureAutre.value,
                 hebergement: hebergement.value,
@@ -236,7 +260,8 @@ export default {
         }
 
         return {
-            isEditing, destinations, nature, natureAutre,
+            isEditing, tripDeparture, tripReturn, flexibleDates,
+            destinations, nature, natureAutre,
             hebergement, hebergementAutre, activites, activitesAutre,
             zonesRurales, hasData,
             activeDropdown, suggestions, highlightIdx,
@@ -244,7 +269,7 @@ export default {
             getVoyageData, getCountryName, daysBetween, formatDateDisplay,
             onCountryInput, onCountryFocus, onCountryBlur, onCountryKeydown,
             selectCountry, getDateWarnings,
-            FORM_LABELS
+            FORM_LABELS, DURATION_LABELS
         };
     },
 
@@ -258,9 +283,17 @@ export default {
         <!-- Compact view -->
         <div v-if="!isEditing" class="voyage-compact">
             <template v-if="hasData">
+                <div v-if="tripDeparture || tripReturn" class="dest-line" style="margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid #eee;">
+                    <strong>Voyage :</strong>
+                    {{ formatDateDisplay(tripDeparture) }} \u2013 {{ formatDateDisplay(tripReturn) }}
+                    <span v-if="daysBetween(tripDeparture, tripReturn)" style="color: #999;">({{ daysBetween(tripDeparture, tripReturn) }})</span>
+                </div>
                 <div v-for="d in destinations" :key="d.country + d.departure" class="dest-line">
                     <strong>{{ getCountryName(d.country) || d.country }}</strong>
-                    <template v-if="d.departure">
+                    <template v-if="flexibleDates && d.estimated_duration">
+                        <span style="color: #666;"> (~{{ DURATION_LABELS[d.estimated_duration] || d.estimated_duration }})</span>
+                    </template>
+                    <template v-else-if="d.departure">
                         : {{ formatDateDisplay(d.departure) }} \u2013 {{ formatDateDisplay(d.return) }}
                         <span v-if="daysBetween(d.departure, d.return)" style="color: #999;">({{ daysBetween(d.departure, d.return) }})</span>
                     </template>
@@ -297,8 +330,31 @@ export default {
 
         <!-- Edit view -->
         <div v-else>
+            <!-- Trip dates -->
+            <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                <div style="flex: 1;">
+                    <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 2px;">Depart du voyage</label>
+                    <input type="date" v-model="tripDeparture" style="width: 100%;">
+                </div>
+                <div style="flex: 1;">
+                    <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 2px;">Retour du voyage</label>
+                    <input type="date" v-model="tripReturn" style="width: 100%;">
+                </div>
+            </div>
+            <label style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 12px; padding: 6px 14px; background: #f0f7ff; border: 1px solid #b8d4f0; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--navy, #36597A);">
+                <input type="checkbox" v-model="flexibleDates" style="width: 16px; height: 16px; accent-color: #12AD98;">
+                Dates flexibles par pays
+            </label>
+
             <div class="destination-header">
-                <span>Pays</span><span>Depart</span><span>Retour</span><span></span>
+                <span>Pays</span>
+                <template v-if="!flexibleDates">
+                    <span>Depart</span><span>Retour</span>
+                </template>
+                <template v-else>
+                    <span>Duree estimee</span>
+                </template>
+                <span></span>
             </div>
             <div v-for="(d, idx) in destinations" :key="idx" class="destination-row">
                 <div class="country-autocomplete-wrapper">
@@ -320,11 +376,19 @@ export default {
                         </div>
                     </div>
                 </div>
-                <input type="date" v-model="d.departure">
-                <input type="date" v-model="d.return">
+                <template v-if="!flexibleDates">
+                    <input type="date" v-model="d.departure">
+                    <input type="date" v-model="d.return">
+                </template>
+                <template v-else>
+                    <select v-model="d.estimated_duration">
+                        <option value="">--</option>
+                        <option v-for="(label, key) in DURATION_LABELS" :key="key" :value="key">{{ label }}</option>
+                    </select>
+                </template>
                 <button class="remove-dest" @click="removeDestination(idx)"
                         :disabled="destinations.length <= 1">\u2715</button>
-                <div v-if="getDateWarnings(d).length" class="date-warnings">
+                <div v-if="!flexibleDates && getDateWarnings(d).length" class="date-warnings">
                     <span v-for="w in getDateWarnings(d)" :key="w.text"
                           :class="'date-warning-' + w.type">
                         {{ w.text }}

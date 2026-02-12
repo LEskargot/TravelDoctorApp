@@ -22,11 +22,12 @@ import PatientHistory from './components/PatientHistory.js';
 import ConsultationForm from './components/ConsultationForm.js';
 import PendingForms from './components/PendingForms.js';
 import TimelineModal from './components/TimelineModal.js';
+import StockScreen from './components/StockScreen.js';
 
 const { createApp, ref, computed, watch, onMounted } = Vue;
 
 const App = {
-    components: { LoginScreen, PatientSearch, CaseView, PatientHistory, ConsultationForm, PendingForms, TimelineModal },
+    components: { LoginScreen, PatientSearch, CaseView, PatientHistory, ConsultationForm, PendingForms, TimelineModal, StockScreen },
 
     setup() {
         const {
@@ -41,7 +42,7 @@ const App = {
         const chrono = useChronometer();
 
         // Screen routing
-        const screen = ref('login'); // login | location | home | pending_forms | consultation
+        const screen = ref('login'); // login | location | home | pending_forms | consultation | stock
         const selectedLocationId = ref('');
         const consultationType = ref('teleconsultation');
         const showTimeline = ref(false);
@@ -49,9 +50,6 @@ const App = {
 
         // Watch login state for auto-transition
         watch(isLoggedIn, (loggedIn) => {
-            if (loggedIn && screen.value === 'login') {
-                screen.value = 'location';
-            }
             if (!loggedIn) {
                 screen.value = 'login';
             }
@@ -71,7 +69,6 @@ const App = {
                     screen.value = 'location';
                 } catch (e) {
                     console.error('Failed to load locations on restore:', e);
-                    // Still show location screen — user can retry
                     screen.value = 'location';
                 }
             }
@@ -82,6 +79,7 @@ const App = {
         function onConfirmLocation() {
             if (!selectedLocationId.value) return;
             selectLocation(selectedLocationId.value);
+            vaccines.loadLots(selectedLocationId.value);
             screen.value = 'home';
         }
 
@@ -99,9 +97,14 @@ const App = {
             screen.value = 'pending_forms';
         }
 
+        function goToStock() {
+            screen.value = 'stock';
+        }
+
         function startNewPatient() {
             clearPatient();
             clearCases();
+            vaccines.clearAll();
             consultationType.value = 'vaccination';
             screen.value = 'consultation';
         }
@@ -121,8 +124,13 @@ const App = {
             // Patient loaded — CaseView will appear with their cases
         }
 
-        function onStartConsultation(details) {
+        async function onStartConsultation(details) {
             consultationType.value = details.type;
+            vaccines.clearAll();
+            // Pre-load pending boosters for this patient
+            if (currentPatient.value?.id) {
+                await vaccines.loadPendingBoosters(currentPatient.value.id);
+            }
             screen.value = 'consultation';
         }
 
@@ -143,6 +151,12 @@ const App = {
                     if (formResult.case_id) {
                         await selectCase(formResult.case_id);
                     }
+                }
+
+                // Pre-load pending boosters for this patient
+                vaccines.clearAll();
+                if (formResult.existing_patient?.id) {
+                    await vaccines.loadPendingBoosters(formResult.existing_patient.id);
                 }
 
                 // Store form reference for marking as processed after save
@@ -166,10 +180,12 @@ const App = {
         }
 
         async function onCalendarSelected(event) {
+            vaccines.clearAll();
             // Load patient if known, otherwise clear
             if (event.is_known_patient && event.existing_patient_id) {
                 await selectPatient(event.existing_patient_id);
                 await loadCasesForPatient(event.existing_patient_id);
+                await vaccines.loadPendingBoosters(event.existing_patient_id);
             } else {
                 clearPatient();
                 clearCases();
@@ -194,6 +210,7 @@ const App = {
         function onManualEntry() {
             clearPatient();
             clearCases();
+            vaccines.clearAll();
             consultationType.value = 'vaccination';
             screen.value = 'consultation';
         }
@@ -219,7 +236,7 @@ const App = {
             location, locationName, locations, selectedLocationId,
             currentPatient, consultationType, showTimeline,
             onConfirmLocation, onLogout,
-            goToPendingForms, startNewPatient, returnToHome,
+            goToPendingForms, goToStock, startNewPatient, returnToHome,
             onPatientSelected, onStartConsultation,
             onFormSelected, onCalendarSelected, onManualEntry,
             onConsultationSaved, onConsultationBack,
@@ -235,7 +252,7 @@ const App = {
 
     <div class="container">
         <!-- LOGIN -->
-        <LoginScreen v-if="screen === 'login'" />
+        <LoginScreen v-if="screen === 'login'" @logged-in="screen = 'location'" />
 
         <!-- LOCATION SELECTION -->
         <div v-else-if="screen === 'location'" class="location-screen">
@@ -276,6 +293,10 @@ const App = {
                     <span class="home-action-icon">&#10133;</span>
                     <span class="home-action-label">NOUVEAU VOYAGEUR</span>
                 </button>
+                <button class="home-action-btn home-action-stock" @click="goToStock">
+                    <span class="home-action-icon">&#128218;</span>
+                    <span class="home-action-label">STOCK VACCINS</span>
+                </button>
             </div>
 
             <!-- Patient search + case view -->
@@ -294,6 +315,9 @@ const App = {
 
             <TimelineModal :visible="showTimeline" @close="showTimeline = false" />
         </div>
+
+        <!-- STOCK -->
+        <StockScreen v-else-if="screen === 'stock'" @back="returnToHome" />
 
         <!-- PENDING FORMS -->
         <PendingForms v-else-if="screen === 'pending_forms'"

@@ -53,6 +53,10 @@ export async function fetchLocations() {
     return await getPb().collection('locations').getFullList({ sort: 'name' });
 }
 
+export async function updateLocation(id, data) {
+    return await getPb().collection('locations').update(id, data);
+}
+
 // ==================== Patients (non-sensitive fields only) ====================
 
 export async function searchPatients(query) {
@@ -126,8 +130,38 @@ export async function getVaccinesForConsultation(consultationId) {
     });
 }
 
+export async function createVaccineLot(data) {
+    return await getPb().collection('vaccine_lots').create(data);
+}
+
+export async function updateVaccineLot(id, data) {
+    return await getPb().collection('vaccine_lots').update(id, data);
+}
+
+export async function deleteVaccineLot(id) {
+    return await getPb().collection('vaccine_lots').delete(id);
+}
+
 export async function createVaccineAdministered(data) {
     return await getPb().collection('vaccines_administered').create(data);
+}
+
+export async function updateVaccineAdministered(id, data) {
+    return await getPb().collection('vaccines_administered').update(id, data);
+}
+
+// ==================== Stock Adjustments ====================
+
+export async function createStockAdjustment(data) {
+    return await getPb().collection('stock_adjustments').create(data);
+}
+
+export async function getStockAdjustments(lotId) {
+    return await getPb().collection('stock_adjustments').getFullList({
+        filter: `vaccine_lot = "${lotId}"`,
+        sort: '-created',
+        expand: 'adjusted_by'
+    });
 }
 
 // ==================== Boosters ====================
@@ -139,6 +173,17 @@ export async function getBoostersForPatient(patientId) {
     });
 }
 
+export async function getPendingBoosters(patientId) {
+    return await getPb().collection('boosters_scheduled').getFullList({
+        filter: `patient = "${patientId}" && status = "a_planifier"`,
+        sort: 'vaccine_name,dose_number'
+    });
+}
+
 export async function createBooster(data) {
     return await getPb().collection('boosters_scheduled').create(data);
+}
+
+export async function updateBooster(id, data) {
+    return await getPb().collection('boosters_scheduled').update(id, data);
 }

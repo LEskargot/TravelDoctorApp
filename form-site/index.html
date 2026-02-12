@@ -168,13 +168,36 @@
             <div class="form-step" data-step="2">
                 <h2 class="step-title" data-translate="steps.travel">Voyage</h2>
 
+                <div class="form-group trip-dates-group">
+                    <label data-translate="travel.trip_dates">Dates du voyage *</label>
+                    <div class="trip-dates-row">
+                        <div class="date-field-wrapper">
+                            <label for="trip-departure" data-translate="travel.trip_departure">D&eacute;part du voyage</label>
+                            <input type="date" id="trip-departure" name="trip_departure" required>
+                        </div>
+                        <div class="date-field-wrapper">
+                            <label for="trip-return" data-translate="travel.trip_return">Retour du voyage</label>
+                            <input type="date" id="trip-return" name="trip_return" required>
+                        </div>
+                    </div>
+                    <span class="error-message"></span>
+                </div>
+
+                <div class="form-group flexible-dates-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="flexible-dates" name="flexible_dates" onchange="toggleFlexibleDates()">
+                        <span data-translate="travel.flexible_dates">Je ne connais pas encore les dates exactes par pays</span>
+                    </label>
+                </div>
+
                 <div class="form-group">
                     <label data-translate="travel.destinations">Pays de destination *</label>
                     <div id="destinations-container">
                         <div class="destination-header" id="destination-header">
                             <span data-translate="travel.country">Pays</span>
-                            <span data-translate="travel.departure">D&eacute;part</span>
-                            <span data-translate="travel.return">Retour</span>
+                            <span class="dest-header-dates" data-translate="travel.departure">D&eacute;part</span>
+                            <span class="dest-header-dates" data-translate="travel.return">Retour</span>
+                            <span class="dest-header-duration" data-translate="travel.estimated_duration">Dur&eacute;e estim&eacute;e</span>
                             <span></span>
                         </div>
                         <div class="destination-row" data-index="0">
@@ -186,15 +209,30 @@
                                     <input type="hidden" class="destination-country" name="destinations[0][country]">
                                     <div class="autocomplete-dropdown"></div>
                                 </div>
-                                <div class="date-field-wrapper">
+                                <div class="date-field-wrapper destination-dates">
                                     <label class="mobile-label" data-translate="travel.departure">D&eacute;part</label>
                                     <input type="date" class="destination-departure" name="destinations[0][departure]"
                                            aria-label="Date de d&eacute;part">
                                 </div>
-                                <div class="date-field-wrapper">
+                                <div class="date-field-wrapper destination-dates">
                                     <label class="mobile-label" data-translate="travel.return">Retour</label>
                                     <input type="date" class="destination-return" name="destinations[0][return]"
                                            aria-label="Date de retour">
+                                </div>
+                                <div class="destination-duration">
+                                    <label class="mobile-label" data-translate="travel.estimated_duration">Dur&eacute;e estim&eacute;e</label>
+                                    <select class="destination-estimated-duration" name="destinations[0][estimated_duration]">
+                                        <option value="">--</option>
+                                        <option value="few_days" data-translate="travel.duration_options.few_days">Quelques jours</option>
+                                        <option value="less_1_week" data-translate="travel.duration_options.less_1_week">&lt; 1 semaine</option>
+                                        <option value="1_2_weeks" data-translate="travel.duration_options.1_2_weeks">1 &agrave; 2 semaines</option>
+                                        <option value="2_3_weeks" data-translate="travel.duration_options.2_3_weeks">2 &agrave; 3 semaines</option>
+                                        <option value="1_month" data-translate="travel.duration_options.1_month">~1 mois</option>
+                                        <option value="1_2_months" data-translate="travel.duration_options.1_2_months">1 &agrave; 2 mois</option>
+                                        <option value="2_3_months" data-translate="travel.duration_options.2_3_months">2 &agrave; 3 mois</option>
+                                        <option value="3_6_months" data-translate="travel.duration_options.3_6_months">3 &agrave; 6 mois</option>
+                                        <option value="over_6_months" data-translate="travel.duration_options.over_6_months">&gt; 6 mois</option>
+                                    </select>
                                 </div>
                                 <button type="button" class="btn-remove-destination" onclick="removeDestination(this)" style="display:none;">
                                     &times;

@@ -1,9 +1,10 @@
 /**
- * Vaccines composable
- * Manages vaccine lots, administered vaccines, and booster scheduling
+ * Vaccines composable — Unified workflow
  *
- * Before: ~400 lines of global state + innerHTML rendering (lines 2845-2993)
- * After: reactive arrays, computed properties, no DOM access
+ * Each vaccine = a card with: name, administered toggle, dose, lot, site, boosters.
+ * Modes: administered (in-cabinet) or planned (teleconsultation).
+ * Planned vaccines persist as boosters_scheduled (status=a_planifier) and
+ * pre-load into the panel when the patient returns.
  */
 import * as pbApi from '../api/pocketbase.js';
 import { VACCINE_SCHEDULES } from '../data/vaccine-schedules.js';
@@ -11,8 +12,10 @@ import { VACCINE_SCHEDULES } from '../data/vaccine-schedules.js';
 const { ref, computed } = Vue;
 
 const vaccineLots = ref([]);
-const administeredVaccines = ref([]);
-const plannedBoosters = ref([]);
+const vaccines = ref([]);
+let nextId = 1;
+
+const ALL_VACCINE_NAMES = Object.keys(VACCINE_SCHEDULES).sort();
 
 export function useVaccines() {
 
@@ -30,7 +33,8 @@ export function useVaccines() {
             id: r.id,
             vaccine: r.vaccine,
             lot: r.lot,
-            expiration: r.expiration ? new Date(r.expiration) : null
+            expiration: r.expiration ? new Date(r.expiration) : null,
+            quantity: r.quantity ?? 0
         }));
     }
 
@@ -39,7 +43,15 @@ export function useVaccines() {
     }
 
     function getValidLotsForVaccine(vaccineName) {
-        return getLotsForVaccine(vaccineName).filter(l => !isLotExpired(l.expiration));
+        return getLotsForVaccine(vaccineName).filter(l => !isLotExpired(l.expiration) && l.quantity !== 0);
+    }
+
+    function isLotLowStock(lot, threshold = 5) {
+        return lot.quantity > 0 && lot.quantity <= threshold;
+    }
+
+    function hasLots(vaccineName) {
+        return uniqueVaccineNames.value.includes(vaccineName);
     }
 
     // ==================== Expiration helpers ====================
@@ -66,119 +78,256 @@ export function useVaccines() {
         return Math.ceil((new Date(expirationDate) - today) / (1000 * 60 * 60 * 24));
     }
 
-    // ==================== Administered vaccines ====================
+    // ==================== Schedule helpers ====================
 
-    function toggleVaccine(vaccineName) {
-        const idx = administeredVaccines.value.findIndex(v => v.vaccine === vaccineName);
-        if (idx === -1) {
-            const validLots = getValidLotsForVaccine(vaccineName);
-            administeredVaccines.value.push({
-                vaccine: vaccineName,
-                lot: validLots.length > 0 ? validLots[0].lot : '',
-                id: Date.now() + Math.random()
-            });
-        } else {
-            administeredVaccines.value.splice(idx, 1);
-        }
+    function getSchedule(vaccineName) {
+        return VACCINE_SCHEDULES[vaccineName]?.boosters || [];
     }
 
-    function isVaccineSelected(vaccineName) {
-        return administeredVaccines.value.some(v => v.vaccine === vaccineName);
-    }
-
-    function updateLot(id, newLot) {
-        const item = administeredVaccines.value.find(v => v.id === id);
-        if (item) item.lot = newLot;
-    }
-
-    function removeVaccine(id) {
-        administeredVaccines.value = administeredVaccines.value.filter(v => v.id !== id);
-    }
-
-    // ==================== Boosters ====================
-
-    const vaccineScheduleList = computed(() =>
-        Object.keys(VACCINE_SCHEDULES).map(name => ({
-            name,
-            boosters: VACCINE_SCHEDULES[name].boosters,
-            booster1Interval: VACCINE_SCHEDULES[name].boosters[0]?.interval || null,
-            booster2Interval: VACCINE_SCHEDULES[name].boosters[1]?.interval || null
-        }))
-    );
-
-    const hasSecondBooster = computed(() =>
-        plannedBoosters.value.some(b => b.booster2Date)
-    );
-
-    function toggleBooster(vaccineName) {
-        const idx = plannedBoosters.value.findIndex(b => b.vaccine === vaccineName);
-        if (idx === -1) {
-            const schedule = VACCINE_SCHEDULES[vaccineName];
-            const today = new Date();
-            let booster1Date = null, booster2Date = null, booster3Date = null;
-            if (schedule?.boosters[0]) booster1Date = calculateBoosterDate(today, schedule.boosters[0].days);
-            if (schedule?.boosters[1]) booster2Date = calculateBoosterDate(today, schedule.boosters[1].days);
-            if (schedule?.boosters[2]) booster3Date = calculateBoosterDate(today, schedule.boosters[2].days);
-            plannedBoosters.value.push({
-                vaccine: vaccineName,
-                booster1Date,
-                booster2Date,
-                booster3Date,
-                id: Date.now() + Math.random()
-            });
-        } else {
-            plannedBoosters.value.splice(idx, 1);
-        }
-    }
-
-    function isBoosterSelected(vaccineName) {
-        return plannedBoosters.value.some(b => b.vaccine === vaccineName);
-    }
-
-    function updateBoosterDate(id, boosterNum, date) {
-        const item = plannedBoosters.value.find(b => b.id === id);
-        if (!item) return;
-        if (boosterNum === 1) item.booster1Date = date;
-        else if (boosterNum === 2) item.booster2Date = date;
-        else if (boosterNum === 3) item.booster3Date = date;
-    }
-
-    function removeBooster(id) {
-        plannedBoosters.value = plannedBoosters.value.filter(b => b.id !== id);
+    function getTotalDoses(vaccineName) {
+        return 1 + getSchedule(vaccineName).length;
     }
 
     function calculateBoosterDate(fromDate, days) {
-        const date = new Date(fromDate);
-        date.setDate(date.getDate() + days);
-        return date.toISOString().split('T')[0];
+        const d = new Date(fromDate);
+        d.setDate(d.getDate() + days);
+        return d.toISOString().split('T')[0];
     }
 
-    // ==================== Save helpers ====================
+    /**
+     * Build remaining boosters after doseNumber.
+     * administered=true: dates pre-filled from today.
+     * administered=false: dates empty.
+     */
+    function buildBoosters(vaccineName, doseNumber, administered) {
+        const schedule = getSchedule(vaccineName);
+        const today = new Date();
+        const result = [];
+        for (const b of schedule) {
+            if (b.dose > doseNumber) {
+                result.push({
+                    dose: b.dose,
+                    interval: b.interval,
+                    date: administered ? calculateBoosterDate(today, b.days) : '',
+                    manual: false
+                });
+            }
+        }
+        return result;
+    }
 
-    async function saveAdministeredVaccines(patientId, consultationId) {
-        for (const vaccine of administeredVaccines.value) {
-            await pbApi.createVaccineAdministered({
-                patient: patientId,
-                consultation: consultationId,
-                vaccine_name: vaccine.vaccine,
-                lot: vaccine.lot,
-                date: new Date().toISOString().split('T')[0]
-            });
+    // ==================== Vaccine card operations ====================
+
+    function addVaccine(vaccineName, administered) {
+        // Don't add duplicates
+        if (vaccines.value.some(v => v.vaccine === vaccineName)) return;
+
+        const validLots = administered ? getValidLotsForVaccine(vaccineName) : [];
+        vaccines.value.push({
+            vaccine: vaccineName,
+            administered,
+            doseNumber: 1,
+            lot: validLots.length > 0 ? validLots[0].lot : '',
+            site: '',
+            boosters: buildBoosters(vaccineName, 1, administered),
+            preloaded: false,
+            preloadedBoosterIds: [],
+            id: nextId++
+        });
+    }
+
+    function removeVaccine(id) {
+        vaccines.value = vaccines.value.filter(v => v.id !== id);
+    }
+
+    function changeDoseNumber(vax, newDose) {
+        vax.doseNumber = newDose;
+        vax.boosters = buildBoosters(vax.vaccine, newDose, vax.administered);
+    }
+
+    function onAdministeredToggle(vax) {
+        if (vax.administered) {
+            const validLots = getValidLotsForVaccine(vax.vaccine);
+            vax.lot = validLots.length > 0 ? validLots[0].lot : '';
+        } else {
+            vax.lot = '';
+            vax.site = '';
+        }
+        vax.boosters = buildBoosters(vax.vaccine, vax.doseNumber, vax.administered);
+    }
+
+    function updateLot(vax, newLot) {
+        vax.lot = newLot;
+    }
+
+    function updateSite(vax, site) {
+        vax.site = site;
+    }
+
+    function addManualBooster(vax) {
+        const lastDose = vax.boosters.length > 0
+            ? Math.max(...vax.boosters.map(b => b.dose))
+            : vax.doseNumber;
+        vax.boosters.push({
+            dose: lastDose + 1,
+            interval: 'manuel',
+            date: '',
+            manual: true
+        });
+    }
+
+    function removeBooster(vax, index) {
+        vax.boosters.splice(index, 1);
+    }
+
+    // ==================== Load pending boosters from DB ====================
+
+    async function loadPendingBoosters(patientId) {
+        if (!patientId) return;
+        try {
+            const records = await pbApi.getPendingBoosters(patientId);
+            if (records.length === 0) return;
+
+            // Group by vaccine_name
+            const grouped = {};
+            for (const r of records) {
+                if (!grouped[r.vaccine_name]) grouped[r.vaccine_name] = [];
+                grouped[r.vaccine_name].push(r);
+            }
+
+            // Create a card per vaccine
+            for (const [vaccineName, boosters] of Object.entries(grouped)) {
+                // Skip if already added
+                if (vaccines.value.some(v => v.vaccine === vaccineName)) continue;
+
+                // Sort by dose_number
+                boosters.sort((a, b) => (a.dose_number || 1) - (b.dose_number || 1));
+
+                const minDose = boosters[0].dose_number || 1;
+                const validLots = getValidLotsForVaccine(vaccineName);
+                const hasAvailableLots = validLots.length > 0;
+
+                vaccines.value.push({
+                    vaccine: vaccineName,
+                    administered: hasAvailableLots, // auto-check if lots available
+                    doseNumber: minDose,
+                    lot: hasAvailableLots ? validLots[0].lot : '',
+                    site: '',
+                    boosters: buildBoosters(vaccineName, minDose, hasAvailableLots),
+                    preloaded: true,
+                    preloadedBoosterIds: boosters.map(b => b.id),
+                    id: nextId++
+                });
+            }
+        } catch (e) {
+            console.error('Failed to load pending boosters:', e);
         }
     }
 
-    async function saveScheduledBoosters(patientId, caseId) {
-        for (const booster of plannedBoosters.value) {
-            const dueDates = [booster.booster1Date, booster.booster2Date, booster.booster3Date].filter(Boolean);
-            for (let i = 0; i < dueDates.length; i++) {
+    // ==================== Save ====================
+
+    async function saveVaccines(patientId, consultationId, caseId) {
+        for (const vax of vaccines.value) {
+            if (vax.administered) {
+                // --- Administered vaccine ---
+                const vaccineRecord = await pbApi.createVaccineAdministered({
+                    patient: patientId,
+                    consultation: consultationId,
+                    vaccine_name: vax.vaccine,
+                    lot: vax.lot,
+                    site_injection: vax.site || '',
+                    dose_number: vax.doseNumber,
+                    date: new Date().toISOString().split('T')[0]
+                });
+
+                // Auto-decrement stock + audit trail
+                if (vax.lot) {
+                    const matchingLot = vaccineLots.value.find(
+                        l => l.vaccine === vax.vaccine && l.lot === vax.lot
+                    );
+                    if (matchingLot && matchingLot.quantity > 0) {
+                        const previousQty = matchingLot.quantity;
+                        const newQty = previousQty - 1;
+                        await pbApi.updateVaccineLot(matchingLot.id, { quantity: newQty });
+                        await pbApi.createStockAdjustment({
+                            vaccine_lot: matchingLot.id,
+                            previous_qty: previousQty,
+                            new_qty: newQty,
+                            reason: 'administration',
+                            adjusted_by: pbApi.getCurrentUser()?.id,
+                            consultation: consultationId
+                        });
+                        // Update local ref
+                        matchingLot.quantity = newQty;
+                    }
+                    // Set vaccine_lot relation on the administered record
+                    if (matchingLot) {
+                        await pbApi.updateVaccineAdministered(vaccineRecord.id, {
+                            vaccine_lot: matchingLot.id
+                        });
+                    }
+                }
+
+                if (vax.preloaded && vax.preloadedBoosterIds.length > 0) {
+                    // Update pre-loaded boosters
+                    // First booster ID = the administered dose -> complete
+                    await pbApi.updateBooster(vax.preloadedBoosterIds[0], {
+                        status: 'complete',
+                        vaccine_administered: vaccineRecord.id
+                    });
+
+                    // Remaining pre-loaded boosters -> planifie with dates
+                    const schedule = getSchedule(vax.vaccine);
+                    let boosterIdx = 1;
+                    for (const b of schedule) {
+                        if (b.dose > vax.doseNumber && boosterIdx < vax.preloadedBoosterIds.length) {
+                            const boosterDate = vax.boosters.find(bst => bst.dose === b.dose)?.date || null;
+                            await pbApi.updateBooster(vax.preloadedBoosterIds[boosterIdx], {
+                                due_date: boosterDate || calculateBoosterDate(new Date(), b.days),
+                                status: 'planifie',
+                                vaccine_administered: vaccineRecord.id
+                            });
+                            boosterIdx++;
+                        }
+                    }
+                } else {
+                    // Direct administration: create new boosters for remaining doses
+                    for (const b of vax.boosters) {
+                        await pbApi.createBooster({
+                            patient: patientId,
+                            case: caseId || null,
+                            vaccine_name: vax.vaccine,
+                            vaccine_administered: vaccineRecord.id,
+                            due_date: b.date || null,
+                            dose_number: b.dose,
+                            status: b.date ? 'planifie' : 'a_planifier'
+                        });
+                    }
+                }
+            } else {
+                // --- Planned vaccine (teleconsultation) ---
+                // Create booster for the planned dose itself
                 await pbApi.createBooster({
                     patient: patientId,
                     case: caseId || null,
-                    vaccine_name: booster.vaccine,
-                    due_date: dueDates[i],
-                    dose_number: i + 2,
-                    status: 'planifie'
+                    vaccine_name: vax.vaccine,
+                    vaccine_administered: null,
+                    due_date: null,
+                    dose_number: vax.doseNumber,
+                    status: 'a_planifier'
                 });
+                // Create boosters for remaining doses
+                for (const b of vax.boosters) {
+                    await pbApi.createBooster({
+                        patient: patientId,
+                        case: caseId || null,
+                        vaccine_name: vax.vaccine,
+                        vaccine_administered: null,
+                        due_date: null,
+                        dose_number: b.dose,
+                        status: 'a_planifier'
+                    });
+                }
             }
         }
     }
@@ -186,34 +335,35 @@ export function useVaccines() {
     // ==================== Reset ====================
 
     function clearAll() {
-        administeredVaccines.value = [];
-        plannedBoosters.value = [];
+        vaccines.value = [];
     }
 
     return {
         vaccineLots,
-        administeredVaccines,
-        plannedBoosters,
+        vaccines,
+        allVaccineNames: ALL_VACCINE_NAMES,
         uniqueVaccineNames,
         lotsCount,
-        vaccineScheduleList,
-        hasSecondBooster,
         loadLots,
         getLotsForVaccine,
         getValidLotsForVaccine,
+        hasLots,
         isLotExpired,
         isLotExpiringSoon,
+        isLotLowStock,
         getDaysUntilExpiry,
-        toggleVaccine,
-        isVaccineSelected,
-        updateLot,
+        getSchedule,
+        getTotalDoses,
+        addVaccine,
         removeVaccine,
-        toggleBooster,
-        isBoosterSelected,
-        updateBoosterDate,
+        changeDoseNumber,
+        onAdministeredToggle,
+        updateLot,
+        updateSite,
+        addManualBooster,
         removeBooster,
-        saveAdministeredVaccines,
-        saveScheduledBoosters,
+        loadPendingBoosters,
+        saveVaccines,
         clearAll
     };
 }

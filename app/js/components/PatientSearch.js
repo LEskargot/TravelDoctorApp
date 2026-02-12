@@ -215,10 +215,9 @@ export default {
                     <strong>Dengue anterieure:</strong> Oui
                 </div>
 
-                <div v-if="medicalData?.varicelleContractee === 'oui' || medicalData?.varicelleVaccine === 'oui'" class="medical-row">
+                <div v-if="medicalData?.varicelle" class="medical-row">
                     <strong>Varicelle:</strong>
-                    <template v-if="medicalData.varicelleContractee === 'oui'"> Contractee</template>
-                    <template v-if="medicalData.varicelleVaccine === 'oui'"> Vaccinee</template>
+                    {{ medicalData.varicelle === 'contractee' ? 'Contractee' : medicalData.varicelle === 'vaccinee' ? 'Vaccinee' : medicalData.varicelle === 'non' ? 'Non' : medicalData.varicelle === 'ne_sais_pas' ? 'Ne sait pas' : '' }}
                 </div>
 
                 <div v-if="latestCd4" class="medical-row">

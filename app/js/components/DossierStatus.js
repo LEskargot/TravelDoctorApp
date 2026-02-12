@@ -1,9 +1,6 @@
 /**
  * Dossier Status Component
  * Summary of what's been filled in the current consultation
- *
- * Before: updateDossierStatus() doing getElementById x5 (lines 3543-3591)
- * After: fully computed from reactive state
  */
 import { useVaccines } from '../composables/useVaccines.js';
 import { usePrescription } from '../composables/usePrescription.js';
@@ -18,8 +15,15 @@ export default {
     },
 
     setup(props) {
-        const { administeredVaccines, plannedBoosters } = useVaccines();
+        const { vaccines } = useVaccines();
         const { selectedMedications } = usePrescription();
+
+        const administeredCount = Vue.computed(() =>
+            vaccines.value.filter(v => v.administered).length
+        );
+        const plannedCount = Vue.computed(() =>
+            vaccines.value.filter(v => !v.administered).length
+        );
 
         const items = Vue.computed(() => [
             {
@@ -32,18 +36,13 @@ export default {
             },
             {
                 icon: 'vaccines',
-                label: 'Vaccins administres',
-                ready: administeredVaccines.value.length > 0,
-                detail: administeredVaccines.value.length > 0
-                    ? `${administeredVaccines.value.length} vaccin(s)`
-                    : 'aucun'
-            },
-            {
-                icon: 'boosters',
-                label: 'Rappels planifies',
-                ready: plannedBoosters.value.length > 0,
-                detail: plannedBoosters.value.length > 0
-                    ? `${plannedBoosters.value.length} rappel(s)`
+                label: 'Vaccins',
+                ready: vaccines.value.length > 0,
+                detail: vaccines.value.length > 0
+                    ? [
+                        administeredCount.value > 0 ? `${administeredCount.value} administre(s)` : '',
+                        plannedCount.value > 0 ? `${plannedCount.value} planifie(s)` : ''
+                      ].filter(Boolean).join(', ')
                     : 'aucun'
             },
             {

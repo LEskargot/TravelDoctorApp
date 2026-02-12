@@ -82,26 +82,44 @@ export default {
 
             // Load details if not already loaded
             if (!consultDetails.value[consultId]?.loaded) {
-                consultDetails.value[consultId] = { vaccines: [], prescriptions: [], loaded: false };
+                consultDetails.value[consultId] = { vaccines: [], plannedVaccines: [], prescriptions: [], loaded: false };
+
+                // Find the consultation to get its case ID
+                const consult = consultations.value.find(c => c.id === consultId);
+                const caseId = consult?.case || currentCase.value?.id;
+
                 try {
-                    const [vaccines, prescRes] = await Promise.all([
+                    const [vaccines, prescRes, boosters] = await Promise.all([
                         pbApi.getVaccinesForConsultation(consultId).catch(() => []),
                         currentPatient.value?.id
                             ? secureApi.getPrescriptions(currentPatient.value.id).catch(() => null)
-                            : Promise.resolve(null)
+                            : Promise.resolve(null),
+                        caseId
+                            ? pbApi.getBoostersForPatient(currentPatient.value?.id).catch(() => [])
+                            : Promise.resolve([])
                     ]);
                     // Filter prescriptions to this consultation
                     const allRx = prescRes?.prescriptions || [];
                     const consultRx = allRx.filter(p => p.consultation === consultId);
 
+                    // Planned vaccines: boosters with status=a_planifier for this case, dose 1
+                    const plannedVaccines = caseId
+                        ? [...new Set(
+                            boosters
+                                .filter(b => b.case === caseId && b.status === 'a_planifier')
+                                .map(b => b.vaccine_name)
+                          )]
+                        : [];
+
                     consultDetails.value[consultId] = {
                         vaccines,
+                        plannedVaccines,
                         prescriptions: consultRx,
                         loaded: true
                     };
                 } catch (e) {
                     console.error('Failed to load consultation details:', e);
-                    consultDetails.value[consultId] = { vaccines: [], prescriptions: [], loaded: true };
+                    consultDetails.value[consultId] = { vaccines: [], plannedVaccines: [], prescriptions: [], loaded: true };
                 }
             }
         }
@@ -387,10 +405,17 @@ export default {
                             <div class="history-section-title">Vaccins administres</div>
                             <div class="history-list">
                                 <div v-for="v in consultDetails[consult.id].vaccines" :key="v.id">
-                                    {{ v.vaccine }}
+                                    {{ v.vaccine_name || v.vaccine }}
                                     <span v-if="v.lot" style="color: #999;">(lot: {{ v.lot }})</span>
-                                    <span v-if="v.site" style="color: #999;"> — {{ v.site }}</span>
+                                    <span v-if="v.site_injection" style="color: #999;"> — {{ v.site_injection }}</span>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div v-if="consultDetails[consult.id]?.plannedVaccines?.length" class="history-section">
+                            <div class="history-section-title">Vaccins planifies</div>
+                            <div class="history-list">
+                                {{ consultDetails[consult.id].plannedVaccines.join(', ') }}
                             </div>
                         </div>
 

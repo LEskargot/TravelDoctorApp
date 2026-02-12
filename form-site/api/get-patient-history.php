@@ -185,29 +185,49 @@ $boosters = pbRequest(
 
 $boostersList = [];
 $overdueBoosters = [];
+$plannedVaccines = []; // Vaccines planned during teleconsultation (status=a_planifier)
 $today = date('Y-m-d');
 
 if ($boosters && !empty($boosters['items'])) {
     foreach ($boosters['items'] as $booster) {
+        $status = $booster['status'] ?? 'planifie';
         $boosterData = [
             'id' => $booster['id'],
             'vaccine_name' => $booster['vaccine_name'],
             'dose_number' => $booster['dose_number'] ?? null,
-            'due_date' => $booster['due_date'],
-            'status' => $booster['status'] ?? 'planifie',
-            'case' => $booster['case'] ?? null
+            'due_date' => $booster['due_date'] ?? null,
+            'status' => $status,
+            'case' => $booster['case'] ?? null,
+            'vaccine_administered' => $booster['vaccine_administered'] ?? null
         ];
 
-        // Check if overdue
-        $isCompleted = ($booster['status'] ?? '') === 'complete';
-        if (!$isCompleted && $booster['due_date'] < $today) {
+        // Check if overdue (only for planifie with a due_date)
+        $isCompleted = $status === 'complete';
+        if (!$isCompleted && !empty($booster['due_date']) && $booster['due_date'] < $today) {
             $boosterData['overdue'] = true;
             $overdueBoosters[] = $boosterData;
+        }
+
+        // Collect planned vaccines (a_planifier = from teleconsultation)
+        if ($status === 'a_planifier') {
+            $vacName = $booster['vaccine_name'];
+            if (!isset($plannedVaccines[$vacName])) {
+                $plannedVaccines[$vacName] = [
+                    'vaccine_name' => $vacName,
+                    'case' => $booster['case'] ?? null,
+                    'doses' => []
+                ];
+            }
+            $plannedVaccines[$vacName]['doses'][] = [
+                'id' => $booster['id'],
+                'dose_number' => $booster['dose_number'] ?? null
+            ];
         }
 
         $boostersList[] = $boosterData;
     }
 }
+$plannedVaccines = array_values($plannedVaccines);
 
 // Fetch prescriptions with decrypted medications
 $prescriptionsList = [];
@@ -264,5 +284,6 @@ echo json_encode([
     'vaccines' => $vaccinesList,
     'boosters' => $boostersList,
     'overdue_boosters' => $overdueBoosters,
+    'planned_vaccines' => $plannedVaccines,
     'prescriptions' => $prescriptionsList
 ]);

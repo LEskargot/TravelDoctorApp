@@ -292,8 +292,21 @@ function validateIdentity(step) {
 
 function validateTravel(step) {
     let isValid = true;
+    const isFlexible = document.getElementById('flexible-dates').checked;
 
-    // Destinations
+    // Trip dates (always required)
+    const tripDeparture = step.querySelector('#trip-departure');
+    const tripReturn = step.querySelector('#trip-return');
+
+    if (!tripDeparture.value || !tripReturn.value) {
+        showError(tripDeparture.closest('.form-group'), t('errors.trip_dates_required'));
+        isValid = false;
+    } else if (new Date(tripDeparture.value) > new Date(tripReturn.value)) {
+        showError(tripDeparture.closest('.form-group'), t('errors.trip_departure_before_return'));
+        isValid = false;
+    }
+
+    // Destinations - country alone is sufficient
     const destinations = step.querySelectorAll('.destination-row');
     let hasValidDestination = false;
 
@@ -302,25 +315,31 @@ function validateTravel(step) {
 
     destinations.forEach(row => {
         const country = row.querySelector('.destination-country').value;
-        const departure = row.querySelector('.destination-departure').value;
-        const returnDate = row.querySelector('.destination-return').value;
 
-        if (country && departure && returnDate) {
-            if (new Date(departure) > new Date(returnDate)) {
-                showError(row.querySelector('.destination-departure'), t('errors.departure_after_return'));
-                isValid = false;
-            } else {
-                hasValidDestination = true;
+        if (country) {
+            hasValidDestination = true;
 
-                // Soft warning: departure in the past
-                if (new Date(departure) < now) {
-                    showWarning(row.querySelector('.destination-departure'), t('warnings.date_in_past'));
-                }
+            // Per-country date validation only when NOT in flexible mode
+            if (!isFlexible) {
+                const departure = row.querySelector('.destination-departure').value;
+                const returnDate = row.querySelector('.destination-return').value;
 
-                // Soft warning: trip longer than 2 years
-                const durationDays = (new Date(returnDate) - new Date(departure)) / (1000 * 60 * 60 * 24);
-                if (durationDays > 730) {
-                    showWarning(row.querySelector('.destination-return'), t('warnings.long_duration'));
+                if (departure && returnDate) {
+                    if (new Date(departure) > new Date(returnDate)) {
+                        showError(row.querySelector('.destination-departure'), t('errors.departure_after_return'));
+                        isValid = false;
+                    } else {
+                        // Soft warning: departure in the past
+                        if (new Date(departure) < now) {
+                            showWarning(row.querySelector('.destination-departure'), t('warnings.date_in_past'));
+                        }
+
+                        // Soft warning: trip longer than 2 years
+                        const durationDays = (new Date(returnDate) - new Date(departure)) / (1000 * 60 * 60 * 24);
+                        if (durationDays > 730) {
+                            showWarning(row.querySelector('.destination-return'), t('warnings.long_duration'));
+                        }
+                    }
                 }
             }
         }
@@ -822,6 +841,20 @@ function toggleNoVaccinationCard() {
 }
 
 /**
+ * Flexible Dates Toggle
+ */
+function toggleFlexibleDates() {
+    const isFlexible = document.getElementById('flexible-dates').checked;
+    const container = document.getElementById('destinations-container');
+
+    if (isFlexible) {
+        container.classList.add('flexible-mode');
+    } else {
+        container.classList.remove('flexible-mode');
+    }
+}
+
+/**
  * Destination Management
  */
 let destinationIndex = 1;
@@ -831,6 +864,12 @@ function addDestination() {
     const newRow = document.createElement('div');
     newRow.className = 'destination-row';
     newRow.dataset.index = destinationIndex;
+
+    // Build duration options from translations
+    const durationKeys = ['few_days', 'less_1_week', '1_2_weeks', '2_3_weeks', '1_month', '1_2_months', '2_3_months', '3_6_months', 'over_6_months'];
+    const durationOptionsHtml = durationKeys.map(key =>
+        `<option value="${key}">${t('travel.duration_options.' + key)}</option>`
+    ).join('');
 
     newRow.innerHTML = `
         <div class="destination-fields">
@@ -842,15 +881,22 @@ function addDestination() {
                 <input type="hidden" class="destination-country" name="destinations[${destinationIndex}][country]">
                 <div class="autocomplete-dropdown"></div>
             </div>
-            <div class="date-field-wrapper">
+            <div class="date-field-wrapper destination-dates">
                 <label class="mobile-label">${t('travel.departure')}</label>
                 <input type="date" class="destination-departure" name="destinations[${destinationIndex}][departure]"
                        aria-label="${t('travel.departure')}">
             </div>
-            <div class="date-field-wrapper">
+            <div class="date-field-wrapper destination-dates">
                 <label class="mobile-label">${t('travel.return')}</label>
                 <input type="date" class="destination-return" name="destinations[${destinationIndex}][return]"
                        aria-label="${t('travel.return')}">
+            </div>
+            <div class="destination-duration">
+                <label class="mobile-label">${t('travel.estimated_duration')}</label>
+                <select class="destination-estimated-duration" name="destinations[${destinationIndex}][estimated_duration]">
+                    <option value="">--</option>
+                    ${durationOptionsHtml}
+                </select>
             </div>
             <button type="button" class="btn-remove-destination" onclick="removeDestination(this)">
                 &times;
@@ -1166,12 +1212,26 @@ function generateTravelSummary() {
     const container = document.getElementById('summary-travel');
     const data = collectFormData();
 
-    let html = `<p><strong>${t('travel.destinations')}:</strong></p><ul>`;
+    let html = '';
+
+    // Trip dates
+    if (data.trip_departure || data.trip_return) {
+        html += `<p><strong>${t('travel.trip_dates')}:</strong> ${formatDate(data.trip_departure)} - ${formatDate(data.trip_return)}</p>`;
+    }
+
+    html += `<p><strong>${t('travel.destinations')}:</strong></p><ul>`;
 
     if (data.destinations && data.destinations.length > 0) {
         data.destinations.forEach(dest => {
             if (dest.country) {
-                html += `<li>${getCountryName(dest.country, currentLang)}: ${formatDate(dest.departure)} - ${formatDate(dest.return)}</li>`;
+                let line = getCountryName(dest.country, currentLang);
+                if (data.flexible_dates && dest.estimated_duration) {
+                    const durationLabel = t('travel.duration_options.' + dest.estimated_duration) || dest.estimated_duration;
+                    line += ` (~${durationLabel})`;
+                } else if (dest.departure || dest.return) {
+                    line += `: ${formatDate(dest.departure)} - ${formatDate(dest.return)}`;
+                }
+                html += `<li>${line}</li>`;
             }
         });
     }
@@ -1398,7 +1458,8 @@ function collectFormData() {
     // Simple fields
     const simpleFields = [
         'full_name', 'birthdate', 'email', 'phone', 'street', 'postal_code', 'city',
-        'residence_country', 'gender', 'weight', 'show_reproductive', 'pregnancy',
+        'residence_country', 'gender', 'trip_departure', 'trip_return',
+        'weight', 'show_reproductive', 'pregnancy',
         'contraception', 'breastfeeding', 'last_menses',
         'allergy_detail_oeufs', 'allergy_detail_medicaments', 'allergy_detail_aliments',
         'allergy_detail_environnement', 'allergy_detail_autre',
@@ -1429,18 +1490,24 @@ function collectFormData() {
         data[field] = formData.getAll(field);
     });
 
+    // Flexible dates flag
+    data.flexible_dates = document.getElementById('flexible-dates').checked;
+
     // Destinations
     data.destinations = [];
     document.querySelectorAll('.destination-row').forEach(row => {
         const country = row.querySelector('.destination-country').value;
         const departure = row.querySelector('.destination-departure').value;
         const returnDate = row.querySelector('.destination-return').value;
+        const durationSelect = row.querySelector('.destination-estimated-duration');
+        const estimatedDuration = durationSelect ? durationSelect.value : '';
 
         if (country || departure || returnDate) {
             data.destinations.push({
                 country: country,
                 departure: departure,
-                return: returnDate
+                return: returnDate,
+                estimated_duration: estimatedDuration
             });
         }
     });
@@ -1538,6 +1605,13 @@ function populateForm(data) {
         }
     });
 
+    // Flexible dates checkbox
+    if (data.flexible_dates) {
+        const flexCheckbox = document.getElementById('flexible-dates');
+        flexCheckbox.checked = true;
+        toggleFlexibleDates();
+    }
+
     // Destinations
     if (data.destinations && data.destinations.length > 0) {
         // Clear existing destinations except first
@@ -1562,6 +1636,10 @@ function populateForm(data) {
                 }
                 if (dest.return) {
                     row.querySelector('.destination-return').value = dest.return;
+                }
+                if (dest.estimated_duration) {
+                    const durationSelect = row.querySelector('.destination-estimated-duration');
+                    if (durationSelect) durationSelect.value = dest.estimated_duration;
                 }
             }
         });
@@ -1803,6 +1881,36 @@ function initBlurValidation() {
                 showError(this.closest('.form-group') || this, t('errors.date_not_future'));
             }
         });
+    }
+
+    // Trip dates blur validation
+    const tripDeparture = document.getElementById('trip-departure');
+    const tripReturn = document.getElementById('trip-return');
+    if (tripDeparture && tripReturn) {
+        function validateTripDates() {
+            const group = tripDeparture.closest('.form-group');
+            if (group) {
+                group.classList.remove('has-error', 'has-warning');
+                const errSpan = group.querySelector('.error-message');
+                if (errSpan) errSpan.textContent = '';
+                const warnSpan = group.querySelector('.warning-message');
+                if (warnSpan) warnSpan.remove();
+            }
+            if (tripDeparture.value && tripReturn.value) {
+                if (new Date(tripDeparture.value) > new Date(tripReturn.value)) {
+                    showError(tripDeparture, t('errors.trip_departure_before_return'));
+                }
+            }
+            if (tripDeparture.value) {
+                const now = new Date();
+                now.setHours(0, 0, 0, 0);
+                if (new Date(tripDeparture.value) < now) {
+                    showWarning(tripDeparture, t('warnings.date_in_past'));
+                }
+            }
+        }
+        tripDeparture.addEventListener('blur', validateTripDates);
+        tripReturn.addEventListener('blur', validateTripDates);
     }
 
     // Travel dates blur validation (event delegation)

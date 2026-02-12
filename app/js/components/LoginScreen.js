@@ -11,7 +11,9 @@ import { useAuth } from '../composables/useAuth.js';
 export default {
     name: 'LoginScreen',
 
-    setup() {
+    emits: ['logged-in'],
+
+    setup(props, { emit }) {
         const { login, loadLocations } = useAuth();
         const email = Vue.ref('');
         const password = Vue.ref('');
@@ -30,6 +32,7 @@ export default {
                 await loadLocations();
                 email.value = '';
                 password.value = '';
+                emit('logged-in');
             } catch (e) {
                 error.value = e.message === 'Failed to authenticate.'
                     ? 'Email ou mot de passe incorrect'

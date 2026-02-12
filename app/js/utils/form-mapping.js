@@ -43,6 +43,9 @@ export function mapFormToPatient(fd) {
 export function mapFormToVoyage(fd) {
     if (!fd) return {};
     return {
+        tripDeparture: fd.trip_departure || '',
+        tripReturn: fd.trip_return || '',
+        flexibleDates: fd.flexible_dates || false,
         destinations: fd.destinations || [],
         nature: fd.travel_reason || [],
         natureAutre: fd.travel_reason_other || '',
@@ -97,8 +100,11 @@ export function mapFormToMedical(fd) {
         dernieresRegles: fd.last_menses || '',
         medicaments: fd.takes_medication || '',
         medicamentsDetails: fd.medication_list || '',
-        varicelleContractee: fd.chickenpox_disease || '',
-        varicelleVaccine: fd.chickenpox_vaccine || '',
+        varicelle: fd.chickenpox_disease === 'oui' ? 'contractee'
+                 : fd.chickenpox_vaccine === 'oui' ? 'vaccinee'
+                 : fd.chickenpox_disease === 'non' && fd.chickenpox_vaccine === 'non' ? 'non'
+                 : fd.chickenpox_disease || fd.chickenpox_vaccine ? 'ne_sais_pas'
+                 : '',
         problemeVaccination: fd.vaccination_problem || '',
         problemeVaccinationDetails: fd.vaccination_problem_details || '',
         dengueHistory: fd.dengue_history || '',
