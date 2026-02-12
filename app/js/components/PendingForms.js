@@ -197,11 +197,8 @@ export default {
             const state = itemState(item);
             if (state === 'form_received' && item.form_id) {
                 emit('form-selected', item.form_id);
-            } else if (state === 'draft_linked') {
-                // Draft exists (invitation sent) — proceed with calendar data
-                emit('calendar-selected', item);
-            } else if (state === 'awaiting_form') {
-                // No form at all — show link modal if unlinked forms exist
+            } else if (state === 'draft_linked' || state === 'awaiting_form') {
+                // Show link modal if unlinked forms exist, otherwise proceed with calendar data
                 if (unlinkedForms.value.length > 0) {
                     linkModalEvent.value = item;
                     showLinkModal.value = true;
