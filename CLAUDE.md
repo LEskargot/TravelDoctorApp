@@ -262,6 +262,27 @@ No automated tests. Manual testing required for:
      - Service account JSON key file on server (outside web root)
      - Add `GOOGLE_SERVICE_ACCOUNT_KEY_PATH` to `config-secrets.php`
 
+12. **AI-powered delivery note parsing** ✓ (2026-02-11)
+   - **New PHP endpoint**: `form-site/api/parse-delivery-note.php`
+     - Receives PDF or image (JPEG/PNG) via multipart upload
+     - PDFs: tries `pdftotext` for text extraction (cheap text-only API call), falls back to vision mode
+     - Images: always use vision mode
+     - Sends to Claude API (`claude-sonnet-4-20250514`, temperature=0) with structured extraction prompt
+     - Validates response: vaccine names must match 27-name allowlist, dates validated, quantities clamped
+     - Assistant prefill (`[`) forces JSON array output
+     - Returns `{success, lots, mode}` — mode is "text" or "vision"
+     - On any failure returns `{fallback: true}` so frontend uses local parsing
+   - **`app/js/api/secure-api.js`**: added `parseDeliveryNote(file, fieldName)` — uploads via FormData
+   - **`app/js/components/StockLotForm.js`**:
+     - Two import buttons: "Importer un PDF" + "Photographier" (device camera, `capture="environment"`)
+     - AI-first flow: tries API, falls back to local PDF.js+Tesseract+regex for PDFs
+     - PDF/image preview pane (side-by-side with lot fields) for practitioner verification
+     - Lot number required: empty lots highlighted red, save button disabled
+     - All existing regex parsing functions kept as fallback
+   - **Config**: `ANTHROPIC_API_KEY` must be in `config-secrets.php` on server
+   - **Note**: `pdftotext` (poppler-utils) not installable on Jelastic due to OOM on `yum` — all PDFs use vision mode for now. Functionally fine, slightly higher API cost per call.
+   - **Deploy**: `cp form-site/api/parse-delivery-note.php /var/www/webroot/ROOT/api/`
+
 ### Temporary Workaround (2026-02-06)
 
 **KoBoToolbox prefilled forms**: While waiting for the internal form app to be finalized, the OneDoc email processor sends patients to a prefilled KoBoToolbox form instead of the internal form.
