@@ -4,75 +4,119 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Travel Doctor App v1.0 is a single-page web application for managing travel medicine consultations. It handles patient management, vaccine administration tracking, prescription generation, and document export. The application uses PocketBase as a backend for multi-user data sharing across multiple clinic locations.
+Travel Doctor App is a web application for managing travel medicine consultations. It handles patient management, vaccine administration tracking, prescription generation, and document export. The application uses PocketBase as a backend for multi-user data sharing across multiple clinic locations.
+
+Two versions coexist:
+- **v2.0** (`app/`) — Active development. Modular Vue 3 app with ES modules, composables, and component-based architecture.
+- **v1.0** (`Travel_Doctor_App_v1.0.html`) — Legacy single-file app. Still functional but no longer updated.
 
 ## Development
 
-**No build process required.** Open `Travel Doctor App v1.0.html` directly in a browser to run the application. Edit the HTML file with any text editor to make changes.
+**No build process required.**
+
+- **v2.0**: Open `app/index.html` in a browser. Uses ES modules (`<script type="module">`). Edit files under `app/js/`.
+- **v1.0** (legacy): Open `Travel_Doctor_App_v1.0.html` directly in a browser.
+
+Cache busting: bump the `?v=N` param in `app/index.html` when deploying JS changes.
 
 ### External Libraries (loaded from CDN)
 
-- jsPDF 2.5.1 - PDF generation
-- PDF.js 3.11.174 - PDF text extraction from KoBoToolbox forms
-- jszip 3.10.1 - ZIP archive handling
-- docx 8.5.0 - DOCX document generation
-- xlsx 0.18.5 - Excel file parsing (vaccine lot imports)
+- Vue 3 - Reactive UI framework (global build, used via `Vue.ref`, `Vue.computed`, etc.)
 - PocketBase 0.21.1 - Backend SDK for authentication and data storage
+- jsPDF 2.5.1 - PDF generation
+- PDF.js 3.11.174 - PDF parsing for delivery note import fallback
+- Tesseract.js 5 - OCR fallback for delivery note images
+- xlsx 0.18.5 - Excel file parsing (vaccine lot imports)
 
-## Architecture
+## Architecture (v2.0)
+
+### Directory Structure
+
+```
+app/
+├── index.html              # Entry point
+├── css/style.css           # All styles
+├── js/
+│   ├── app.js              # Root Vue app, screen routing, event wiring
+│   ├── api/
+│   │   ├── pocketbase.js   # PocketBase direct API (non-sensitive data)
+│   │   └── secure-api.js   # PHP API for encrypted data (medical, prescriptions)
+│   ├── composables/        # Shared reactive state (singleton pattern)
+│   │   ├── useAuth.js      # Login, user, location, role detection
+│   │   ├── useCase.js      # Case CRUD, consultation creation
+│   │   ├── usePatient.js   # Patient search, selection, history
+│   │   ├── useVaccines.js  # Vaccine cards, lots, boosters, save logic
+│   │   ├── useStock.js     # Stock management (admin)
+│   │   ├── usePrescription.js  # Prescription management
+│   │   └── useChronometer.js   # Consultation timer
+│   ├── components/         # Vue components (Options API with setup())
+│   │   ├── LoginScreen.js
+│   │   ├── PendingForms.js     # "NOUVEAU RDV" — calendar + forms view
+│   │   ├── PatientSearch.js    # "PATIENT CONNU" — search by name
+│   │   ├── CaseView.js        # Patient cases list, start consultation
+│   │   ├── ConsultationForm.js # Full consultation (practitioner)
+│   │   ├── VaccinationScreen.js # Lean vaccination (vaccinateur)
+│   │   ├── VaccinePanel.js     # Vaccine card workflow (shared)
+│   │   ├── PatientEditForm.js  # Patient demographics editor
+│   │   ├── VoyageEditor.js     # Travel destinations editor
+│   │   ├── MedicalEditor.js    # Medical history editor
+│   │   ├── PrescriptionPanel.js # Medications panel
+│   │   ├── NotesSection.js     # Free-text consultation notes
+│   │   ├── DossierStatus.js    # Case status display
+│   │   ├── Chronometer.js      # Consultation timer display
+│   │   ├── PatientHistory.js   # Past consultations timeline
+│   │   ├── TimelineModal.js    # Detailed timeline view
+│   │   ├── StockScreen.js      # Vaccine stock management
+│   │   ├── StockLotForm.js     # Lot import (PDF/camera + AI parsing)
+│   │   └── PinModal.js         # PIN entry for stock access
+│   ├── data/
+│   │   ├── vaccine-schedules.js # 27 vaccines with booster intervals
+│   │   ├── form-labels.js      # French labels for form field values
+│   │   └── countries.js        # Country code → name mapping
+│   └── utils/
+│       ├── formatting.js       # Date/number formatting helpers
+│       ├── form-mapping.js     # Patient form → app field mapping
+│       ├── pdf-generator.js    # PDF export (consultation, prescription)
+│       └── export-helpers.js   # JSON/DOCX export helpers
+```
 
 ### Application Flow
 
-1. **Login Screen**: Email/password authentication via PocketBase
-2. **Location Selection**: Choose working location (clinic/site) after login
-3. **Home Screen**: Choose between new patient (NOUVEAU VOYAGEUR) or known patient search (PATIENT CONNU)
-4. **Known Patient Path**: Search database for patient -> choose new trip or booster-only visit
-5. **Main Interface**: Accordion-based UI with four sections:
-   - Patient file (Dossier Patient)
-   - Consultation notes (Notes de consultation)
-   - Vaccines & boosters (Vaccins & Rappels)
-   - Prescription (Ordonnance)
-6. **Save**: Consultation saved to PocketBase database with optional JSON backup download
+1. **Login**: Email/password via PocketBase → `useAuth.login()`
+2. **Location Selection**: Choose clinic → `useAuth.selectLocation()`
+3. **Home Screen**: Role-dependent buttons:
+   - Practitioner: NOUVEAU VOYAGEUR, PATIENT CONNU, NOUVEAU RDV, STOCK VACCINS
+   - Vaccinateur: PATIENT CONNU, NOUVEAU RDV only
+4. **Patient Path**:
+   - NOUVEAU RDV → PendingForms (calendar events + pending forms) → select → ConsultationForm or VaccinationScreen
+   - PATIENT CONNU → PatientSearch → CaseView → start consultation/vaccination
+   - NOUVEAU VOYAGEUR → ConsultationForm (new patient)
+5. **Consultation/Vaccination**: Fill form → save → back to home
+6. **Screen routing**: Reactive `screen` ref in `app.js` (no vue-router)
 
-### Key Global Variables
+### Composables (Shared State)
 
-- `pb` - PocketBase instance
-- `currentUser` - Logged-in user name
-- `currentLocation` / `currentLocationName` - Selected work location
-- `selectedPatientId` / `selectedPatientData` - Currently selected patient from DB
-- `extractedKoboData` - Patient data extracted from PDF
-- `selectedMedications` - Medications to prescribe
-- `administeredVaccines` - Selected vaccines with lot info
-- `plannedBoosters` - Calculated booster schedule
-- `vaccineLots` - Available vaccine lots (fetched from DB by location)
-- `loadedPatientJSON` - Patient data in legacy JSON format (for compatibility)
+Composables use Vue 3 `ref`/`computed` at module level (singleton pattern). All components sharing state call the same composable function.
 
-### Core Functions
+| Composable | Shared State |
+|------------|-------------|
+| `useAuth()` | `user`, `location`, `locationName`, `isLoggedIn`, `isAdmin`, `isVaccinateur` |
+| `usePatient()` | `currentPatient`, `patients`, `searchQuery` |
+| `useCase()` | `currentCase`, `cases`, consultations |
+| `useVaccines()` | `vaccines`, `vaccineLots`, lot management, booster scheduling, save logic |
+| `useStock()` | Stock CRUD, adjustments, lot import |
+| `usePrescription()` | Medication selection, dosing |
 
-| Function | Purpose |
-|----------|---------|
-| `handleLogin()` / `handleLogout()` | Authentication |
-| `showLocationSelection()` | Location picker after login |
-| `searchPatients()` | Search patients by name in database |
-| `selectPatientFromSearch()` | Load patient details and history |
-| `saveConsultationToDb()` | Save consultation to PocketBase |
-| `loadVaccineLotsFromDB()` | Fetch vaccine lots for current location |
-| `uploadVaccineLotsToDb()` | Admin: upload lots to database |
-| `handleLegacyJsonImport()` | Admin: migrate old JSON files to DB |
-| `startNewPatient()` | Initialize new consultation |
-| `parseKoboText()` | Extract data from KoBoToolbox PDF |
-| `generatePatientJson()` | Create patient JSON export (backup) |
-| `generateConsultationPdf()` | Export consultation summary PDF |
-| `generatePrescriptionPdf()` | Create prescription PDF (A5/A4) |
-| `renderVaccineCheckboxList()` | Update vaccine selection UI |
-| `calculateBoosterDate()` | Compute recall dates based on vaccine schedules |
+### API Layers
+
+- **`pocketbase.js`** — Direct PocketBase SDK calls for non-sensitive data (patients name/dob, cases, consultations metadata, vaccine lots, boosters, stock)
+- **`secure-api.js`** — Calls PHP endpoints on `form.traveldoctor.ch` for encrypted data (medical history, prescriptions, observations, delivery note parsing). Uses PocketBase auth token for authentication.
 
 ### Data Persistence
 
-- **PocketBase Database**: Primary storage for patients, consultations, vaccines, prescriptions
-- **Location-based vaccine lots**: Each clinic location has its own vaccine lot inventory
-- **JSON backup**: Optional download for offline backup
-- **localStorage**: Fallback for vaccine lots if database unavailable
+- **PocketBase Database**: Primary storage for all data
+- **PHP encryption layer**: Medical data encrypted at rest via `encrypt-data.php` / `decrypt-data.php`
+- **Location-based vaccine lots**: Each clinic has its own inventory
 
 ### PocketBase Collections
 
@@ -94,9 +138,14 @@ Travel Doctor App v1.0 is a single-page web application for managing travel medi
 
 ### Configuration
 
-**IMPORTANT**: Update the `POCKETBASE_URL` constant at the top of the `<script>` section to point to your PocketBase server:
+PocketBase URL is configured in `app/js/api/pocketbase.js`:
 ```javascript
-const POCKETBASE_URL = 'https://your-pocketbase-server.com';
+const POCKETBASE_URL = 'https://db.traveldoctor.ch';
+```
+
+Secure API base URL is in `app/js/api/secure-api.js`:
+```javascript
+const API_BASE = 'https://form.traveldoctor.ch/api';
 ```
 
 ## Vaccine Database
@@ -111,6 +160,7 @@ Predefined medications with automatic pediatric dosing calculations for patients
 
 - **admin**: Can upload vaccine lots, import legacy JSON files, delete data
 - **practitioner**: Can create/update patients, save consultations, view all data
+- **vaccinateur**: Restricted role for external vaccination staff — can only administer vaccines and record them. No patient creation, no case management, no prescriptions, no medical editing, no stock management
 
 ## Testing
 
@@ -129,12 +179,12 @@ No automated tests. Manual testing required for:
 
 - Application language is French
 - Practitioner information comes from logged-in user account
+- PocketBase SDK 0.21.1 uses `authStore.model` (not `authStore.record`) — `getCurrentUser()` handles both
 - File naming convention for JSON backups: `lastname_firstname_dd-mm-yyyy.json`
-- User manual available in `Manuel_Instruction_Travel_Doctor_App v1.0.html`
 
 ---
 
-## Current Work Status (2026-02-04)
+## Current Work Status (2026-02-12)
 
 ### Completed ✓
 
@@ -225,45 +275,16 @@ No automated tests. Manual testing required for:
    - **`displayPatientHistory()`**: updated consultation_type labels (vaccination, teleconsultation, rappel, suivi)
    - **Data flow**: Patient created at form submission → case created → practitioner updates patient/case at consultation save
 
-### Pending Tasks
-
-1. ~~**Set up cron job**~~ ✓ Done (2026-02-06) - runs every 15 min
-
-2. ~~**Re-enable duplicate check**~~ ✓ Done (2026-02-06)
-
-3. ~~**Production testing**~~ ✓ Done (2026-02-06) - Email template validated
-
-4. **Optional improvements**
-   - Add Italian/Spanish translations for share link messages
-   - Add email notification to practitioner when form is submitted
-
-5. **Add 2FA for practitioner login** (Travel Doctor App)
-   - Two-factor authentication required for users logging into the practitioner app
-   - PocketBase supports OTP (one-time password) MFA - investigate built-in support
-
-6. **Switch from KoBoToolbox to internal form** (when app is ready)
-   - In `process-onedoc-emails.php`, function `sendFormInvitation()`:
-   - Change `$formLink = buildKoboUrl($patientData);`
-   - Back to `$formLink = FORM_URL . '/?edit=' . $editToken;`
-   - The `buildKoboUrl()` function can then be deleted
-
-7. **Google Calendar integration for appointment schedule** ✓ (code ready, 2026-02-08)
+12. **Google Calendar integration** ✓ (code ready, 2026-02-08)
    - OneDoc pushes bookings to Google Calendar (one per location: Lausanne, Bulle)
    - Read calendar events via Google Calendar API (service account + JWT, no google/apiclient)
-   - Display today's appointments in "Formulaires en attente" view, grouped by time
+   - Display today's appointments in PendingForms view, grouped by time
    - Match calendar events with PocketBase forms (by email or name)
    - 3 visual states: Formulaire reçu (green), En attente du formulaire (orange), Sans RDV
-   - Calendar = real-time schedule, email processing = kept for form invitations (richer data)
-   - **New files**: `form-site/api/google-calendar.php` (JWT auth helper), `form-site/api/get-calendar-events.php` (endpoint)
-   - **Modified files**: `config.php`, `.htaccess`, `Travel_Doctor_App_v1.0.html`
-   - **Setup required before going live**:
-     - Google Cloud project + Calendar API enabled + service account
-     - Share each calendar with service account email (read-only)
-     - `google_calendar_id` field already in PocketBase `locations` collection (in schema)
-     - Service account JSON key file on server (outside web root)
-     - Add `GOOGLE_SERVICE_ACCOUNT_KEY_PATH` to `config-secrets.php`
+   - **New files**: `form-site/api/google-calendar.php`, `form-site/api/get-calendar-events.php`
+   - **Setup required**: Google Cloud project + service account + calendar sharing + `GOOGLE_SERVICE_ACCOUNT_KEY_PATH` in `config-secrets.php`
 
-12. **AI-powered delivery note parsing** ✓ (2026-02-11)
+13. **AI-powered delivery note parsing** ✓ (2026-02-11)
    - **New PHP endpoint**: `form-site/api/parse-delivery-note.php`
      - Receives PDF or image (JPEG/PNG) via multipart upload
      - PDFs: tries `pdftotext` for text extraction (cheap text-only API call), falls back to vision mode
@@ -283,6 +304,40 @@ No automated tests. Manual testing required for:
    - **Config**: `ANTHROPIC_API_KEY` must be in `config-secrets.php` on server
    - **Note**: `pdftotext` (poppler-utils) not installable on Jelastic due to OOM on `yum` — all PDFs use vision mode for now. Functionally fine, slightly higher API cost per call.
    - **Deploy**: `cp form-site/api/parse-delivery-note.php /var/www/webroot/ROOT/api/`
+
+14. **Vaccinateur role — lean vaccination interface** ✓ (2026-02-12)
+   - **`app/js/composables/useAuth.js`**: added `isVaccinateur` computed (`role === 'vaccinateur'`)
+   - **`app/js/components/VaccinationScreen.js`**: new lean screen with:
+     - Read-only patient summary (name, DOB, age, weight, gender)
+     - Medical alerts panel (vaccination problems, pregnancy, immune comorbidities, allergies, chemotherapy)
+     - Reused VaccinePanel component (with pre-loaded pending boosters)
+     - Optional note textarea
+     - Save: creates consultation (type=vaccination) + saves vaccines with stock decrement
+     - No: PatientEditForm, VoyageEditor, MedicalEditor, PrescriptionPanel, DossierStatus, Chronometer
+   - **`app/js/app.js`**: routes vaccinateur to VaccinationScreen for all paths (onStartConsultation, onFormSelected, onCalendarSelected); hides NOUVEAU VOYAGEUR and STOCK VACCINS home buttons; shows purple "Vaccinateur" role badge
+   - **`app/js/components/CaseView.js`**: hides Nouveau dossier, Fermer le dossier, Consultation, and Teleconsultation buttons for vaccinateur (only Vaccination button remains)
+   - **`app/js/components/PendingForms.js`**: hides Saisie manuelle (walk-in) button for vaccinateur
+   - **`app/js/components/VaccinePanel.js`**: simplified dropdown to show vaccine name only
+   - **`app/css/style.css`**: added `.role-badge-vaccinateur`, `.vaccination-screen`, `.medical-alerts` styles
+   - **Bug fixes during implementation**:
+     - `pocketbase.js`: `getCurrentUser()` now uses `authStore.record || authStore.model` (SDK 0.21.1 uses `model`, not `record`)
+     - `useVaccines.js`: removed invalid `consultation` field from `createStockAdjustment` (caused 400 error); added try-catch around stock operations so audit trail failures don't block vaccine save
+   - **Server fix**: restored `get-observations.php` which had been overwritten with calendar events content on the production server
+
+### Pending Tasks
+
+1. **Optional improvements**
+   - Add Italian/Spanish translations for share link messages
+   - Add email notification to practitioner when form is submitted
+
+2. **Add 2FA for practitioner login**
+   - PocketBase supports OTP (one-time password) MFA — investigate built-in support
+
+3. **Switch from KoBoToolbox to internal form** (when app is ready)
+   - In `process-onedoc-emails.php`, function `sendFormInvitation()`:
+   - Change `$formLink = buildKoboUrl($patientData);`
+   - Back to `$formLink = FORM_URL . '/?edit=' . $editToken;`
+   - The `buildKoboUrl()` function can then be deleted
 
 ### Temporary Workaround (2026-02-06)
 
@@ -336,7 +391,30 @@ OneDoc booking → Email to contact@traveldoctor.ch
 ### Deploy Commands
 
 ```bash
+# Pull latest code
 cd /var/www/webroot/repo && git pull origin main
-cp form-site/cron/process-onedoc-emails.php /var/www/webroot/ROOT/cron/
+
+# Form site API endpoints
 cp form-site/api/helpers.php /var/www/webroot/ROOT/api/
+cp form-site/api/submit-public.php /var/www/webroot/ROOT/api/
+cp form-site/api/decrypt-form.php /var/www/webroot/ROOT/api/
+cp form-site/api/get-pending-forms.php /var/www/webroot/ROOT/api/
+cp form-site/api/get-patient-history.php /var/www/webroot/ROOT/api/
+cp form-site/api/mark-form-processed.php /var/www/webroot/ROOT/api/
+cp form-site/api/encrypt-data.php /var/www/webroot/ROOT/api/
+cp form-site/api/decrypt-data.php /var/www/webroot/ROOT/api/
+cp form-site/api/get-observations.php /var/www/webroot/ROOT/api/
+cp form-site/api/get-calendar-events.php /var/www/webroot/ROOT/api/
+cp form-site/api/parse-delivery-note.php /var/www/webroot/ROOT/api/
+
+# Cron jobs
+cp form-site/cron/process-onedoc-emails.php /var/www/webroot/ROOT/cron/
+
+# Patient form (if updated)
+cp form-site/index.html /var/www/webroot/ROOT/index.html
+cp form-site/js/form.js /var/www/webroot/ROOT/js/form.js
+cp form-site/js/translations.js /var/www/webroot/ROOT/js/translations.js
+cp form-site/css/form.css /var/www/webroot/ROOT/css/form.css
 ```
+
+The practitioner app (`app/`) is served directly from the git repo — no copy needed. Bump `?v=N` in `app/index.html` to bust browser caches.
