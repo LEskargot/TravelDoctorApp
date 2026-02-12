@@ -564,6 +564,7 @@ input:focus, select:focus, textarea:focus {
 .form-card:hover { border-color: #2196F3; background: #f8fbff; }
 .form-card.status-received { border-left: 4px solid #27ae60; }
 .form-card.status-awaiting { border-left: 4px solid #ff9800; }
+.form-card.status-draft-linked { border-left: 4px solid #ce93d8; }
 .form-card.status-draft { border-left: 4px solid #90caf9; }
 .form-card-info { flex: 1; padding: 10px 12px; }
 .form-card-name { font-weight: 600; color: #333; font-size: 14px; }
@@ -584,6 +585,7 @@ input:focus, select:focus, textarea:focus {
 }
 .badge-form-received { background: #e8f5e9; color: #2e7d32; }
 .badge-awaiting-form { background: #fff3e0; color: #e65100; }
+.badge-draft-linked { background: #f3e5f5; color: #7b1fa2; }
 .badge-draft { background: #e3f2fd; color: #1565C0; }
 .badge-new { background: #e8f5e9; color: #2e7d32; }
 .badge-known { background: #e3f2fd; color: #1565C0; }

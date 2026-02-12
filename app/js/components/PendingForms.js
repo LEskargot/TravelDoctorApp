@@ -187,7 +187,7 @@ export default {
 
         function itemState(item) {
             if (item.form_id && item.form_status === 'submitted') return 'form_received';
-            if (item.form_id && item.form_status === 'draft') return 'awaiting_form';
+            if (item.form_id && item.form_status === 'draft') return 'draft_linked';
             if (item.type === 'calendar' && !item.form_id) return 'awaiting_form';
             if (item.type === 'form_only' && item.form_status === 'draft') return 'draft';
             return 'form_received';
@@ -197,8 +197,11 @@ export default {
             const state = itemState(item);
             if (state === 'form_received' && item.form_id) {
                 emit('form-selected', item.form_id);
+            } else if (state === 'draft_linked') {
+                // Draft exists (invitation sent) — proceed with calendar data
+                emit('calendar-selected', item);
             } else if (state === 'awaiting_form') {
-                // Show link modal if there are unlinked forms
+                // No form at all — show link modal if unlinked forms exist
                 if (unlinkedForms.value.length > 0) {
                     linkModalEvent.value = item;
                     showLinkModal.value = true;
@@ -293,6 +296,7 @@ export default {
                      :class="{
                          'status-received': itemState(item) === 'form_received',
                          'status-awaiting': itemState(item) === 'awaiting_form',
+                         'status-draft-linked': itemState(item) === 'draft_linked',
                          'status-draft': itemState(item) === 'draft'
                      }"
                      @click="onClickItem(item)">
@@ -308,6 +312,7 @@ export default {
                     </div>
                     <div class="form-card-badges">
                         <span v-if="itemState(item) === 'form_received'" class="form-card-badge badge-form-received">FORMULAIRE RECU</span>
+                        <span v-else-if="itemState(item) === 'draft_linked'" class="form-card-badge badge-draft-linked">INVITE</span>
                         <span v-else-if="itemState(item) === 'awaiting_form'" class="form-card-badge badge-awaiting-form">EN ATTENTE</span>
                         <span v-else-if="itemState(item) === 'draft'" class="form-card-badge badge-draft">BROUILLON</span>
 
