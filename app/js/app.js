@@ -323,7 +323,6 @@ const App = {
                 </div>
 
                 <CaseView @start-consultation="onStartConsultation" />
-                <PatientHistory />
             </template>
 
             <!-- Appointment list (PendingForms embedded, no header) -->
