@@ -172,7 +172,8 @@ if ($formsResponse && !empty($formsResponse['items'])) {
             'phone' => $phone,
             'appointment_date' => $apptDate,
             'appointment_time' => $apptTime,
-            'appointment_location' => $formData['appointment_location'] ?? ''
+            'appointment_location' => $formData['appointment_location'] ?? '',
+            'linked_patient' => $item['linked_patient'] ?? ''
         ];
 
         $formsData[$item['id']] = $formInfo;
@@ -312,11 +313,16 @@ foreach ($calendarEvents as $event) {
         }
     }
 
-    // Check if patient exists in patients collection
+    // Check if patient exists — first from matched form's linked_patient
     $isKnownPatient = false;
     $existingPatientId = null;
 
-    if (!empty($event['email'])) {
+    if ($formId && !empty($formsData[$formId]['linked_patient'])) {
+        $isKnownPatient = true;
+        $existingPatientId = $formsData[$formId]['linked_patient'];
+    }
+
+    if (!$isKnownPatient && !empty($event['email'])) {
         $emailFilter = urlencode("email = '" . sanitizePbFilterValue($event['email']) . "'");
         $patientSearch = pbRequest(
             "/api/collections/patients/records?filter={$emailFilter}&perPage=1",
