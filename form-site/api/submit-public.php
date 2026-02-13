@@ -29,7 +29,15 @@ $patientEmail = filter_var($formData['email'] ?? '', FILTER_VALIDATE_EMAIL);
 $patientAvs = $formData['avs'] ?? '';
 $insuranceCardNumber = $formData['insurance_card_number'] ?? '';
 $vaccinationFileIds = $formData['vaccination_file_ids'] ?? [];
-$language = $formData['language'] ?? 'fr';
+$language = in_array($formData['language'] ?? '', ['fr', 'en', 'it', 'es'], true)
+    ? $formData['language'] : 'fr';
+
+// Validate vaccination file IDs
+if (!empty($vaccinationFileIds)) {
+    $vaccinationFileIds = array_filter($vaccinationFileIds, function($id) {
+        return preg_match('/^[a-z0-9]{15}$/', $id);
+    });
+}
 
 // Remove file IDs, AVS, and insurance card from form_data to store separately (encrypted)
 unset($formData['vaccination_file_ids']);
@@ -51,7 +59,8 @@ if (!$captchaValid) {
 }
 
 // Check rate limit
-$clientIP = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+$clientIP = $_SERVER['HTTP_X_REAL_IP'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+if (str_contains($clientIP, ',')) $clientIP = trim(explode(',', $clientIP)[0]);
 if (!checkRateLimit($clientIP)) {
     http_response_code(429);
     echo json_encode(['error' => getRateLimitError($language)]);

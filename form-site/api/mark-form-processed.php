@@ -27,7 +27,19 @@ $input = json_decode(file_get_contents('php://input'), true);
 
 $formId = $input['form_id'] ?? '';
 $patientId = $input['patient_id'] ?? null; // ID of patient created/linked
-$action = $input['action'] ?? 'process'; // 'process' or 'delete'
+$action = $input['action'] ?? 'process';
+
+if (!in_array($action, ['process', 'delete'], true)) {
+    http_response_code(400);
+    echo json_encode(['error' => 'Action invalide']);
+    exit;
+}
+
+if ($action === 'delete' && !in_array($authUser['role'] ?? '', ['admin', 'practitioner'], true)) {
+    http_response_code(403);
+    echo json_encode(['error' => 'Accès refusé']);
+    exit;
+}
 
 if (empty($formId)) {
     http_response_code(400);
@@ -71,7 +83,7 @@ if ($action === 'delete') {
         $adminToken
     );
 
-    if ($deleteResponse === false) {
+    if (isset($deleteResponse['code'])) {
         http_response_code(500);
         echo json_encode(['error' => 'Erreur lors de la suppression du formulaire']);
         exit;
