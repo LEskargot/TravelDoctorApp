@@ -317,16 +317,18 @@ function validateTravel(step) {
     let isValid = true;
     const isFlexible = document.getElementById('flexible-dates').checked;
 
-    // Trip dates (always required)
-    const tripDeparture = step.querySelector('#trip-departure');
-    const tripReturn = step.querySelector('#trip-return');
+    // Trip dates (only required when flexible dates is checked)
+    if (isFlexible) {
+        const tripDeparture = step.querySelector('#trip-departure');
+        const tripReturn = step.querySelector('#trip-return');
 
-    if (!tripDeparture.value || !tripReturn.value) {
-        showError(tripDeparture.closest('.form-group'), t('errors.trip_dates_required'));
-        isValid = false;
-    } else if (new Date(tripDeparture.value) > new Date(tripReturn.value)) {
-        showError(tripDeparture.closest('.form-group'), t('errors.trip_departure_before_return'));
-        isValid = false;
+        if (!tripDeparture.value || !tripReturn.value) {
+            showError(tripDeparture.closest('.form-group'), t('errors.trip_dates_required'));
+            isValid = false;
+        } else if (new Date(tripDeparture.value) > new Date(tripReturn.value)) {
+            showError(tripDeparture.closest('.form-group'), t('errors.trip_departure_before_return'));
+            isValid = false;
+        }
     }
 
     // Destinations - country alone is sufficient
@@ -869,11 +871,14 @@ function toggleNoVaccinationCard() {
 function toggleFlexibleDates() {
     const isFlexible = document.getElementById('flexible-dates').checked;
     const container = document.getElementById('destinations-container');
+    const tripDatesGroup = document.querySelector('.trip-dates-group');
 
     if (isFlexible) {
         container.classList.add('flexible-mode');
+        tripDatesGroup.style.display = '';
     } else {
         container.classList.remove('flexible-mode');
+        tripDatesGroup.style.display = 'none';
     }
 }
 

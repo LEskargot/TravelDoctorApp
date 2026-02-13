@@ -191,26 +191,26 @@
             <div class="form-step" data-step="2">
                 <h2 class="step-title" data-translate="steps.travel">Voyage</h2>
 
-                <div class="form-group trip-dates-group">
-                    <label data-translate="travel.trip_dates">Dates du voyage *</label>
-                    <div class="trip-dates-row">
-                        <div class="date-field-wrapper">
-                            <label for="trip-departure" data-translate="travel.trip_departure">D&eacute;part du voyage</label>
-                            <input type="date" id="trip-departure" name="trip_departure" required>
-                        </div>
-                        <div class="date-field-wrapper">
-                            <label for="trip-return" data-translate="travel.trip_return">Retour du voyage</label>
-                            <input type="date" id="trip-return" name="trip_return" required>
-                        </div>
-                    </div>
-                    <span class="error-message"></span>
-                </div>
-
                 <div class="form-group flexible-dates-group">
                     <label class="checkbox-label">
                         <input type="checkbox" id="flexible-dates" name="flexible_dates" onchange="toggleFlexibleDates()">
                         <span data-translate="travel.flexible_dates">Je ne connais pas encore les dates exactes par pays</span>
                     </label>
+                </div>
+
+                <div class="form-group trip-dates-group" style="display:none">
+                    <label data-translate="travel.trip_dates">Dates du voyage *</label>
+                    <div class="trip-dates-row">
+                        <div class="date-field-wrapper">
+                            <label for="trip-departure" data-translate="travel.trip_departure">D&eacute;part du voyage</label>
+                            <input type="date" id="trip-departure" name="trip_departure">
+                        </div>
+                        <div class="date-field-wrapper">
+                            <label for="trip-return" data-translate="travel.trip_return">Retour du voyage</label>
+                            <input type="date" id="trip-return" name="trip_return">
+                        </div>
+                    </div>
+                    <span class="error-message"></span>
                 </div>
 
                 <div class="form-group">
