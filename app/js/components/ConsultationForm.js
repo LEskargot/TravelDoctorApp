@@ -52,6 +52,7 @@ export default {
         const patientEditRef = Vue.ref(null);
         const voyageEditorRef = Vue.ref(null);
         const medicalEditorRef = Vue.ref(null);
+        const notesSectionRef = Vue.ref(null);
 
         // Start chronometer on mount
         Vue.onMounted(() => {
@@ -113,6 +114,17 @@ export default {
                     });
                 }
 
+                // Build notes with conseils prefix
+                const conseils = notesSectionRef.value?.getSelectedConseils() || [];
+                const freeNotes = notes.value || '';
+                let fullNotes = '';
+                if (conseils.length) {
+                    fullNotes = `[CONSEILS] ${conseils.join(' | ')}`;
+                    if (freeNotes) fullNotes += '\n\n' + freeNotes;
+                } else {
+                    fullNotes = freeNotes;
+                }
+
                 // Create consultation with practitioner
                 const consultation = await addConsultation({
                     location: location.value,
@@ -120,7 +132,7 @@ export default {
                     date: new Date().toISOString().split('T')[0],
                     consultation_type: props.consultationType,
                     duration_minutes: chrono.elapsedMinutes.value,
-                    notes: notes.value || null,
+                    notes: fullNotes || null,
                     status: 'termine'
                 });
 
@@ -143,6 +155,7 @@ export default {
                             date: new Date().toISOString().split('T')[0],
                             type: props.consultationType,
                             duration: chrono.finalTime.value,
+                            conseils: conseils,
                             notes: notes.value
                         },
                         vaccines: vaccines.vaccines.value.map(v => ({
@@ -191,7 +204,7 @@ export default {
         return {
             userName, locationName, currentPatient, patientName,
             notes, saving, activeAccordion,
-            patientEditRef, voyageEditorRef, medicalEditorRef,
+            patientEditRef, voyageEditorRef, medicalEditorRef, notesSectionRef,
             toggleAccordion, saveConsultation, exportPrescriptionPdf,
             emit
         };
@@ -232,7 +245,7 @@ export default {
                 <span>Notes de consultation</span>
             </div>
             <div class="accordion-content" v-show="activeAccordion === 'notes'">
-                <NotesSection v-model="notes" />
+                <NotesSection ref="notesSectionRef" v-model="notes" />
             </div>
         </div>
 

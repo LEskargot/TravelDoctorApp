@@ -38,9 +38,10 @@ export default {
         const newCaseType = Vue.ref('conseil_voyage');
         const newCaseDestinations = Vue.ref('');
 
-        // Expandable consultation details
-        const expandedConsultId = Vue.ref(null);
-        const consultDetails = Vue.ref({}); // consultId -> { vaccines, prescriptions, loaded }
+        // Consultation details (auto-loaded, all expanded by default)
+        const collapsedConsults = Vue.ref(new Set());
+        const consultDetails = Vue.ref({}); // consultId -> { vaccines, prescriptions, plannedVaccines, loaded }
+        const detailsLoading = Vue.ref(false);
 
         // Case medical snapshot (decrypted on demand)
         const caseMedical = Vue.ref(null);
@@ -73,60 +74,100 @@ export default {
 
         // ==================== Consultation expand/collapse ====================
 
-        async function toggleConsultation(consultId) {
-            if (expandedConsultId.value === consultId) {
-                expandedConsultId.value = null;
-                return;
-            }
-            expandedConsultId.value = consultId;
+        function toggleConsultation(consultId) {
+            const s = new Set(collapsedConsults.value);
+            if (s.has(consultId)) s.delete(consultId);
+            else s.add(consultId);
+            collapsedConsults.value = s;
+        }
 
-            // Load details if not already loaded
-            if (!consultDetails.value[consultId]?.loaded) {
-                consultDetails.value[consultId] = { vaccines: [], plannedVaccines: [], prescriptions: [], loaded: false };
+        function isExpanded(consultId) {
+            return !collapsedConsults.value.has(consultId);
+        }
 
-                // Find the consultation to get its case ID
-                const consult = consultations.value.find(c => c.id === consultId);
-                const caseId = consult?.case || currentCase.value?.id;
+        // Auto-load details for all consultations in a case
+        async function loadAllConsultationDetails() {
+            const consults = consultations.value;
+            if (!consults.length) return;
 
-                try {
-                    const [vaccines, prescRes, boosters] = await Promise.all([
-                        pbApi.getVaccinesForConsultation(consultId).catch(() => []),
-                        currentPatient.value?.id
-                            ? secureApi.getPrescriptions(currentPatient.value.id).catch(() => null)
-                            : Promise.resolve(null),
-                        caseId
-                            ? pbApi.getBoostersForPatient(currentPatient.value?.id).catch(() => [])
-                            : Promise.resolve([])
-                    ]);
-                    // Filter prescriptions to this consultation
-                    const allRx = prescRes?.prescriptions || [];
-                    const consultRx = allRx.filter(p => p.consultation === consultId);
+            detailsLoading.value = true;
+            const patientId = currentPatient.value?.id;
 
-                    // Planned vaccines: boosters with status=a_planifier for this case, dose 1
+            try {
+                // Fetch all data in parallel (once, not per-consultation)
+                const [allVaccineArrays, prescRes, allBoosters] = await Promise.all([
+                    Promise.all(consults.map(c =>
+                        pbApi.getVaccinesForConsultation(c.id).catch(() => [])
+                    )),
+                    patientId
+                        ? secureApi.getPrescriptions(patientId).catch(() => null)
+                        : Promise.resolve(null),
+                    patientId
+                        ? pbApi.getBoostersForPatient(patientId).catch(() => [])
+                        : Promise.resolve([])
+                ]);
+
+                const allRx = prescRes?.prescriptions || [];
+                const details = {};
+
+                consults.forEach((consult, i) => {
+                    const caseId = consult.case || currentCase.value?.id;
+                    const consultRx = allRx.filter(p => p.consultation === consult.id);
                     const plannedVaccines = caseId
                         ? [...new Set(
-                            boosters
+                            allBoosters
                                 .filter(b => b.case === caseId && b.status === 'a_planifier')
                                 .map(b => b.vaccine_name)
                           )]
                         : [];
 
-                    consultDetails.value[consultId] = {
-                        vaccines,
+                    details[consult.id] = {
+                        vaccines: allVaccineArrays[i] || [],
                         plannedVaccines,
                         prescriptions: consultRx,
                         loaded: true
                     };
-                } catch (e) {
-                    console.error('Failed to load consultation details:', e);
-                    consultDetails.value[consultId] = { vaccines: [], plannedVaccines: [], prescriptions: [], loaded: true };
-                }
+                });
+
+                consultDetails.value = details;
+            } catch (e) {
+                console.error('Failed to load consultation details:', e);
+            } finally {
+                detailsLoading.value = false;
             }
         }
 
-        // Reset expanded state + decrypt medical when case changes
+        // Parse notes field to extract [CONSEILS] prefix
+        function parseConsultNotes(rawNotes) {
+            if (!rawNotes) return { conseils: [], notes: '' };
+            if (rawNotes.startsWith('[CONSEILS]')) {
+                const firstBlank = rawNotes.indexOf('\n\n');
+                const conseilLine = firstBlank > 0
+                    ? rawNotes.substring(10, firstBlank).trim()
+                    : rawNotes.substring(10).trim();
+                const conseils = conseilLine.split('|').map(s => s.trim()).filter(Boolean);
+                const remaining = firstBlank > 0 ? rawNotes.substring(firstBlank + 2).trim() : '';
+                return { conseils, notes: remaining };
+            }
+            return { conseils: [], notes: rawNotes };
+        }
+
+        // Consultation summary helpers
+        function consultSummary(consult) {
+            const d = consultDetails.value[consult.id];
+            const parsed = parseConsultNotes(consult.notes);
+            const tags = [];
+            if (parsed.conseils.length) tags.push(...parsed.conseils);
+            if (parsed.notes) tags.push('Notes');
+            if (d?.vaccines?.length) tags.push(d.vaccines.length + ' vaccin' + (d.vaccines.length > 1 ? 's' : ''));
+            if (d?.prescriptions?.length) tags.push('Ordonnance');
+            if (d?.plannedVaccines?.length) tags.push(d.plannedVaccines.length + ' planifie' + (d.plannedVaccines.length > 1 ? 's' : ''));
+            return tags;
+        }
+
+        // Reset state + decrypt medical + auto-load details when case changes
         Vue.watch(currentCase, async (c) => {
-            expandedConsultId.value = null;
+            collapsedConsults.value = new Set();
             consultDetails.value = {};
             caseMedical.value = null;
 
@@ -143,6 +184,11 @@ export default {
                     caseMedicalLoading.value = false;
                 }
             }
+        });
+
+        // Auto-load consultation details when consultations list changes
+        Vue.watch(consultations, (consults) => {
+            if (consults.length) loadAllConsultationDetails();
         });
 
         // ==================== Formatting ====================
@@ -216,10 +262,10 @@ export default {
         return {
             cases, currentCase, consultations, openCases,
             showNewCaseForm, newCaseType, newCaseDestinations,
-            expandedConsultId, consultDetails,
+            collapsedConsults, consultDetails, detailsLoading,
             caseMedical, caseMedicalLoading,
             selectCase, onCreateCase, closeCase, onStartConsultation,
-            toggleConsultation,
+            toggleConsultation, isExpanded, consultSummary, parseConsultNotes,
             formatDate, formatDestinations, getVoyageChips,
             getCaseComorbidities, getCaseAllergies,
             caseStatusLabel, caseTypeLabel, consultTypeLabel,
@@ -371,34 +417,45 @@ export default {
 
             <div v-for="consult in consultations" :key="consult.id"
                  class="consultation-card"
-                 :class="{ expanded: expandedConsultId === consult.id }"
-                 @click="toggleConsultation(consult.id)">
+                 :class="{ expanded: isExpanded(consult.id) }">
 
-                <div class="consultation-header">
+                <div class="consultation-header" @click="toggleConsultation(consult.id)">
                     <span class="consultation-type">
                         {{ consultTypeLabel(consult.consultation_type) }}
-                        <span v-if="consult.practitioner_name" class="consultation-practitioner">· {{ consult.practitioner_name }}</span>
+                        <span v-if="consult.expand?.practitioner?.name" class="consultation-practitioner">· {{ consult.expand.practitioner.name }}</span>
                     </span>
                     <span class="consultation-date">
                         {{ formatDate(consult.date) }}
                         <template v-if="consult.duration_minutes"> · {{ consult.duration_minutes }} min</template>
-                        <span class="expand-indicator">{{ expandedConsultId === consult.id ? '▼' : '▶' }}</span>
+                        <span class="expand-indicator">{{ isExpanded(consult.id) ? '&#9660;' : '&#9654;' }}</span>
                     </span>
                 </div>
 
-                <!-- Expanded details -->
-                <div v-if="expandedConsultId === consult.id" class="consultation-expand" @click.stop>
+                <!-- Summary chips (always visible) -->
+                <div v-if="consultSummary(consult).length" class="consultation-summary-chips">
+                    <span v-for="tag in consultSummary(consult)" :key="tag" class="summary-chip">{{ tag }}</span>
+                </div>
 
-                    <div v-if="consult.notes" class="history-section">
-                        <div class="history-section-title">Notes</div>
-                        <div class="consultation-notes">{{ consult.notes }}</div>
-                    </div>
+                <!-- Details (expanded by default) -->
+                <div v-if="isExpanded(consult.id)" class="consultation-expand">
 
-                    <div v-if="!consultDetails[consult.id]?.loaded" class="consultation-loading">
+                    <div v-if="detailsLoading && !consultDetails[consult.id]?.loaded" class="consultation-loading">
                         Chargement...
                     </div>
 
                     <template v-else>
+                        <div v-if="parseConsultNotes(consult.notes).conseils.length" class="history-section">
+                            <div class="history-section-title">Conseils donnes</div>
+                            <div class="conseils-chips">
+                                <span v-for="c in parseConsultNotes(consult.notes).conseils" :key="c" class="conseil-chip">{{ c }}</span>
+                            </div>
+                        </div>
+
+                        <div v-if="parseConsultNotes(consult.notes).notes" class="history-section">
+                            <div class="history-section-title">Notes de consultation</div>
+                            <div class="consultation-notes">{{ parseConsultNotes(consult.notes).notes }}</div>
+                        </div>
+
                         <div v-if="consultDetails[consult.id]?.vaccines?.length" class="history-section">
                             <div class="history-section-title">Vaccins administres</div>
                             <div class="history-list">
@@ -430,7 +487,7 @@ export default {
                             </div>
                         </div>
 
-                        <div v-if="!consultDetails[consult.id]?.vaccines?.length && !consultDetails[consult.id]?.prescriptions?.length && !consult.notes"
+                        <div v-if="consultDetails[consult.id]?.loaded && !consultDetails[consult.id]?.vaccines?.length && !consultDetails[consult.id]?.prescriptions?.length && !parseConsultNotes(consult.notes).conseils.length && !parseConsultNotes(consult.notes).notes"
                              class="no-data-message" style="margin-top: 4px;">
                             Aucun detail enregistre
                         </div>

@@ -15,6 +15,7 @@ require_once 'encryption.php';
 require_once 'google-calendar.php';
 
 header('Content-Type: application/json');
+header('Cache-Control: no-store, no-cache, must-revalidate');
 corsHeaders();
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {

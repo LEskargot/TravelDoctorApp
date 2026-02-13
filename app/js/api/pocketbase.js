@@ -101,7 +101,8 @@ export async function updateCase(id, data) {
 export async function getConsultationsForCase(caseId) {
     return await getPb().collection('consultations').getFullList({
         filter: `case = "${caseId}"`,
-        sort: '-date'
+        sort: '-date',
+        expand: 'practitioner'
     });
 }
 

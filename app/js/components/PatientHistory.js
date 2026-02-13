@@ -81,6 +81,20 @@ export default {
             expandedNotes.value[id] = !expandedNotes.value[id];
         }
 
+        function parseConsultNotes(rawNotes) {
+            if (!rawNotes) return { conseils: [], notes: '' };
+            if (rawNotes.startsWith('[CONSEILS]')) {
+                const firstBlank = rawNotes.indexOf('\n\n');
+                const conseilLine = firstBlank > 0
+                    ? rawNotes.substring(10, firstBlank).trim()
+                    : rawNotes.substring(10).trim();
+                const conseils = conseilLine.split('|').map(s => s.trim()).filter(Boolean);
+                const remaining = firstBlank > 0 ? rawNotes.substring(firstBlank + 2).trim() : '';
+                return { conseils, notes: remaining };
+            }
+            return { conseils: [], notes: rawNotes };
+        }
+
         function getVoyageDestinations(caseData) {
             if (!caseData?.voyage?.destinations) return [];
             return caseData.voyage.destinations;
@@ -121,7 +135,7 @@ export default {
 
         return {
             expanded, loading, history, consultations, consultationCount,
-            expandedNotes, loadHistory, toggleNotes,
+            expandedNotes, loadHistory, toggleNotes, parseConsultNotes,
             getVoyageDestinations, getVoyageChips,
             getMedicalComorbidities, getMedicalAllergies,
             formatDateDisplay, triLabel, resolveCountry, TYPE_LABELS
@@ -227,13 +241,21 @@ export default {
                     </div>
                 </div>
 
-                <!-- Notes -->
-                <div v-if="c.notes" class="history-section">
-                    <div class="history-section-title">Notes</div>
-                    <div class="history-notes" :class="{ truncated: !expandedNotes[c.id] && c.notes.length > 200 }">
-                        {{ c.notes }}
+                <!-- Conseils -->
+                <div v-if="parseConsultNotes(c.notes).conseils.length" class="history-section">
+                    <div class="history-section-title">Conseils donnes</div>
+                    <div class="conseils-chips">
+                        <span v-for="cs in parseConsultNotes(c.notes).conseils" :key="cs" class="conseil-chip">{{ cs }}</span>
                     </div>
-                    <button v-if="c.notes.length > 200" class="history-show-more" @click="toggleNotes(c.id)">
+                </div>
+
+                <!-- Notes -->
+                <div v-if="parseConsultNotes(c.notes).notes" class="history-section">
+                    <div class="history-section-title">Notes</div>
+                    <div class="history-notes" :class="{ truncated: !expandedNotes[c.id] && parseConsultNotes(c.notes).notes.length > 200 }">
+                        {{ parseConsultNotes(c.notes).notes }}
+                    </div>
+                    <button v-if="parseConsultNotes(c.notes).notes.length > 200" class="history-show-more" @click="toggleNotes(c.id)">
                         {{ expandedNotes[c.id] ? 'voir moins' : 'voir plus' }}
                     </button>
                 </div>

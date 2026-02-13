@@ -51,8 +51,8 @@ export default {
             try {
                 const headers = authHeaders();
                 const [formsRes, calRes] = await Promise.all([
-                    fetch(`${FORM_API_URL}/get-pending-forms.php`, { headers }),
-                    fetch(`${FORM_API_URL}/get-calendar-events.php?location_id=${location.value}`, { headers })
+                    fetch(`${FORM_API_URL}/get-pending-forms.php`, { headers, cache: 'no-store' }),
+                    fetch(`${FORM_API_URL}/get-calendar-events.php?location_id=${location.value}`, { headers, cache: 'no-store' })
                         .catch(() => null)
                 ]);
 
