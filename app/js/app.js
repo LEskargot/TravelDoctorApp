@@ -21,7 +21,6 @@ import CaseView from './components/CaseView.js';
 import PatientHistory from './components/PatientHistory.js';
 import ConsultationForm from './components/ConsultationForm.js';
 import PendingForms, { invalidatePendingFormsCache } from './components/PendingForms.js';
-import TimelineModal from './components/TimelineModal.js';
 import StockScreen from './components/StockScreen.js';
 import VaccinationScreen from './components/VaccinationScreen.js';
 import FormLinkModal from './components/FormLinkModal.js';
@@ -29,7 +28,7 @@ import FormLinkModal from './components/FormLinkModal.js';
 const { createApp, ref, computed, watch, onMounted } = Vue;
 
 const App = {
-    components: { LoginScreen, PatientSearch, CaseView, PatientHistory, ConsultationForm, PendingForms, TimelineModal, StockScreen, VaccinationScreen, FormLinkModal },
+    components: { LoginScreen, PatientSearch, CaseView, PatientHistory, ConsultationForm, PendingForms, StockScreen, VaccinationScreen, FormLinkModal },
 
     setup() {
         const {
@@ -47,7 +46,6 @@ const App = {
         const screen = ref('login'); // login | location | dashboard | consultation | vaccination | stock
         const selectedLocationId = ref('');
         const consultationType = ref('consultation');
-        const showTimeline = ref(false);
         const connectionStatus = ref('connecting');
 
         // Watch login state for auto-transition
@@ -230,22 +228,15 @@ const App = {
             returnToDashboard();
         }
 
-        // ==================== Timeline ====================
-
-        function toggleTimeline() {
-            showTimeline.value = !showTimeline.value;
-        }
-
         return {
             screen, connectionStatus, isLoggedIn, userName, isAdmin, isVaccinateur,
             location, locationName, locations, selectedLocationId,
-            currentPatient, consultationType, showTimeline,
+            currentPatient, consultationType,
             onConfirmLocation, onLogout,
             goToStock, startNewPatient, returnToDashboard,
             onPatientSelected, onStartConsultation,
             onFormSelected, onCalendarSelected, onManualEntry, onPendingPatientSelected,
-            onConsultationSaved, onConsultationBack,
-            toggleTimeline
+            onConsultationSaved, onConsultationBack
         };
     },
 
@@ -317,12 +308,6 @@ const App = {
 
             <!-- If patient selected from search: show cases -->
             <template v-if="currentPatient">
-                <div class="patient-actions-bar">
-                    <button class="btn-secondary btn-small" @click="toggleTimeline">
-                        Timeline
-                    </button>
-                </div>
-
                 <CaseView @start-consultation="onStartConsultation" />
             </template>
 
@@ -335,7 +320,6 @@ const App = {
                               @patient-selected="onPendingPatientSelected" />
             </template>
 
-            <TimelineModal :visible="showTimeline" @close="showTimeline = false" />
         </div>
 
         <!-- STOCK -->
