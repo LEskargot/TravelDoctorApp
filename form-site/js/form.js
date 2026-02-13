@@ -71,6 +71,9 @@ function initForm() {
     // AVS formatting
     initAvsField();
 
+    // Appointment datetime picker (Flatpickr)
+    initAppointmentPicker();
+
     // Set dynamic date max attributes (today)
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('birthdate').setAttribute('max', today);
@@ -127,6 +130,38 @@ function initAvsField() {
             e.target.setCustomValidity('Format AVS invalide (756.XXXX.XXXX.XX)');
         } else {
             e.target.setCustomValidity('');
+        }
+    });
+}
+
+/**
+ * Initialize Flatpickr on appointment datetime field
+ */
+let appointmentPicker = null;
+const flatpickrLocaleMap = { fr: 'fr', en: 'default', it: 'it', es: 'es' };
+
+function initAppointmentPicker() {
+    const el = document.getElementById('appointment_datetime');
+    if (!el || typeof flatpickr === 'undefined') return;
+
+    appointmentPicker = flatpickr(el, {
+        enableTime: true,
+        time_24hr: true,
+        minuteIncrement: 5,
+        dateFormat: 'Y-m-d\\TH:i',
+        altInput: true,
+        altFormat: 'd.m.Y H:i',
+        locale: flatpickrLocaleMap[currentLang] || 'default',
+        minDate: 'today',
+        onChange: function(selectedDates) {
+            if (selectedDates.length > 0) {
+                const formGroup = el.closest('.form-group');
+                if (formGroup) {
+                    formGroup.classList.remove('has-warning');
+                    const w = formGroup.querySelector('.warning-message');
+                    if (w) w.remove();
+                }
+            }
         }
     });
 }
@@ -284,16 +319,8 @@ function validateIdentity(step) {
     // Appointment datetime
     const appointmentDatetime = step.querySelector('#appointment_datetime');
     if (!appointmentDatetime.value) {
-        showError(appointmentDatetime, t('errors.required'));
+        showError(appointmentDatetime.closest('.form-group'), t('errors.required'));
         isValid = false;
-    } else {
-        const apptDate = new Date(appointmentDatetime.value);
-        const now = new Date();
-        now.setHours(0, 0, 0, 0);
-        if (apptDate < now) {
-            showError(appointmentDatetime, t('errors.appointment_past'));
-            isValid = false;
-        }
     }
 
     // Appointment location
@@ -1637,6 +1664,11 @@ function populateForm(data) {
         }
     });
 
+    // Update Flatpickr with populated appointment datetime
+    if (data.appointment_datetime && appointmentPicker) {
+        appointmentPicker.setDate(data.appointment_datetime, true);
+    }
+
     // Multi-select fields
     ['travel_reason', 'accommodation', 'activities', 'allergy_types',
      'comorbidities', 'referral_source', 'choice_factor'].forEach(field => {
@@ -1894,6 +1926,10 @@ if (originalSetLanguage) {
     window.setLanguage = function(lang) {
         originalSetLanguage(lang);
         updatePlaceholders();
+        // Update Flatpickr locale
+        if (appointmentPicker) {
+            appointmentPicker.set('locale', flatpickrLocaleMap[lang] || 'default');
+        }
     };
 }
 
@@ -1915,20 +1951,7 @@ function initBlurValidation() {
         });
     }
 
-    // Appointment datetime blur validation
-    const appointmentDatetime = document.getElementById('appointment_datetime');
-    if (appointmentDatetime) {
-        appointmentDatetime.addEventListener('blur', function() {
-            clearFieldError(this);
-            if (!this.value) return;
-            const apptDate = new Date(this.value);
-            const now = new Date();
-            now.setHours(0, 0, 0, 0);
-            if (apptDate < now) {
-                showWarning(this, t('errors.appointment_past'));
-            }
-        });
-    }
+    // Appointment datetime: blur validation handled by Flatpickr (minDate: 'today')
 
     // Weight blur validation
     const weight = document.getElementById('weight');
