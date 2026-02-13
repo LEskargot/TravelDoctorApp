@@ -29,6 +29,11 @@ export function useCase() {
     }
 
     async function selectCase(caseId) {
+        if (currentCase.value?.id === caseId) {
+            currentCase.value = null;
+            consultations.value = [];
+            return;
+        }
         currentCase.value = cases.value.find(c => c.id === caseId) || null;
         if (currentCase.value) {
             consultations.value = await pbApi.getConsultationsForCase(caseId);
