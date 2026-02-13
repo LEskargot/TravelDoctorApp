@@ -171,6 +171,13 @@ export default {
             consultDetails.value = {};
             caseMedical.value = null;
 
+            if (c) {
+                Vue.nextTick(() => {
+                    const el = document.querySelector('.case-card.active');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+            }
+
             if (c?.medical_encrypted) {
                 caseMedicalLoading.value = true;
                 try {
