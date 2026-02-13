@@ -110,22 +110,10 @@
 
                 <div class="form-row">
                     <div class="form-group flex-2">
-                        <label data-translate="identity.appointment_datetime">
+                        <label for="appointment_datetime" data-translate="identity.appointment_datetime">
                             Date et heure du rendez-vous *
                         </label>
-                        <div class="appointment-datetime-row">
-                            <div class="date-field-wrapper">
-                                <label for="appointment_date" data-translate="identity.appointment_date">Date</label>
-                                <input type="date" id="appointment_date" required>
-                            </div>
-                            <div class="date-field-wrapper">
-                                <label for="appointment_time" data-translate="identity.appointment_time">Heure</label>
-                                <select id="appointment_time" required>
-                                    <option value="">--:--</option>
-                                </select>
-                            </div>
-                        </div>
-                        <input type="hidden" id="appointment_datetime" name="appointment_datetime">
+                        <input type="datetime-local" id="appointment_datetime" name="appointment_datetime" required>
                         <span class="hint" data-translate="identity.appointment_datetime_hint">Date et heure de votre consultation</span>
                         <span class="error-message"></span>
                     </div>

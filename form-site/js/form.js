@@ -71,38 +71,6 @@ function initForm() {
     // AVS formatting
     initAvsField();
 
-    // Populate appointment time options (07:00 to 20:00, 5-min increments)
-    const timeSelect = document.getElementById('appointment_time');
-    if (timeSelect) {
-        for (let h = 7; h <= 20; h++) {
-            for (let m = 0; m < 60; m += 5) {
-                if (h === 20 && m > 0) break;
-                const hh = String(h).padStart(2, '0');
-                const mm = String(m).padStart(2, '0');
-                const opt = document.createElement('option');
-                opt.value = `${hh}:${mm}`;
-                opt.textContent = `${hh}:${mm}`;
-                timeSelect.appendChild(opt);
-            }
-        }
-    }
-
-    // Sync appointment date + time → hidden datetime field
-    const appointmentDate = document.getElementById('appointment_date');
-    const appointmentTime = document.getElementById('appointment_time');
-    const appointmentHidden = document.getElementById('appointment_datetime');
-    function syncAppointmentDatetime() {
-        if (appointmentDate.value && appointmentTime.value) {
-            appointmentHidden.value = appointmentDate.value + 'T' + appointmentTime.value;
-        } else {
-            appointmentHidden.value = '';
-        }
-    }
-    if (appointmentDate && appointmentTime) {
-        appointmentDate.addEventListener('change', syncAppointmentDatetime);
-        appointmentTime.addEventListener('change', syncAppointmentDatetime);
-    }
-
     // Set dynamic date max attributes (today)
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('birthdate').setAttribute('max', today);
@@ -313,18 +281,17 @@ function validateIdentity(step) {
         isValid = false;
     }
 
-    // Appointment date + time
-    const apptDateField = step.querySelector('#appointment_date');
-    const apptTimeField = step.querySelector('#appointment_time');
-    if (!apptDateField.value || !apptTimeField.value) {
-        showError(apptDateField.closest('.form-group'), t('errors.required'));
+    // Appointment datetime
+    const appointmentDatetime = step.querySelector('#appointment_datetime');
+    if (!appointmentDatetime.value) {
+        showError(appointmentDatetime, t('errors.required'));
         isValid = false;
     } else {
-        const apptDate = new Date(apptDateField.value + 'T' + apptTimeField.value);
+        const apptDate = new Date(appointmentDatetime.value);
         const now = new Date();
         now.setHours(0, 0, 0, 0);
         if (apptDate < now) {
-            showError(apptDateField.closest('.form-group'), t('errors.appointment_past'));
+            showError(appointmentDatetime, t('errors.appointment_past'));
             isValid = false;
         }
     }
@@ -1721,17 +1688,6 @@ function populateForm(data) {
         });
     }
 
-    // Populate appointment date + time from combined datetime
-    if (data.appointment_datetime) {
-        const parts = data.appointment_datetime.split('T');
-        if (parts.length === 2) {
-            const dateEl = document.getElementById('appointment_date');
-            const timeEl = document.getElementById('appointment_time');
-            if (dateEl) dateEl.value = parts[0];
-            if (timeEl) timeEl.value = parts[1].substring(0, 5);
-        }
-    }
-
     // Trigger conditional fields
     const gender = document.querySelector('input[name="gender"]:checked');
     if (gender) handleGenderChange({ target: gender });
@@ -1959,21 +1915,16 @@ function initBlurValidation() {
         });
     }
 
-    // Appointment date blur validation
-    const apptDateBlur = document.getElementById('appointment_date');
-    if (apptDateBlur) {
-        apptDateBlur.addEventListener('blur', function() {
-            const formGroup = this.closest('.form-group');
-            if (formGroup) {
-                formGroup.classList.remove('has-warning');
-                const w = formGroup.querySelector('.warning-message');
-                if (w) w.remove();
-            }
+    // Appointment datetime blur validation
+    const appointmentDatetime = document.getElementById('appointment_datetime');
+    if (appointmentDatetime) {
+        appointmentDatetime.addEventListener('blur', function() {
             clearFieldError(this);
             if (!this.value) return;
+            const apptDate = new Date(this.value);
             const now = new Date();
             now.setHours(0, 0, 0, 0);
-            if (new Date(this.value) < now) {
+            if (apptDate < now) {
                 showWarning(this, t('errors.appointment_past'));
             }
         });
