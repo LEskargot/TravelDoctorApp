@@ -309,8 +309,8 @@ export default {
             Aucun dossier. Creez un nouveau dossier pour commencer.
         </div>
 
-        <div v-for="c in cases" :key="c.id"
-             class="case-card"
+        <template v-for="c in cases" :key="c.id">
+        <div class="case-card"
              :class="{ active: currentCase?.id === c.id, open: c.status === 'ouvert' }"
              @click="selectCase(c.id)">
 
@@ -331,7 +331,7 @@ export default {
         </div>
 
         <!-- Selected case detail -->
-        <div v-if="currentCase" class="case-detail">
+        <div v-if="currentCase?.id === c.id" class="case-detail">
             <div class="case-detail-header">
                 <h4>
                     {{ caseTypeLabel(currentCase.type) }}
@@ -510,6 +510,7 @@ export default {
                 </button>
             </div>
         </div>
+        </template>
     </div>
     `
 };
