@@ -11,6 +11,18 @@ import * as secureApi from '../api/secure-api.js';
 import { formatDateDisplay } from '../utils/formatting.js';
 import FormLinkModal from './FormLinkModal.js';
 
+// Module-level cache — survives component unmount/remount
+const _forms = Vue.ref([]);
+const _calendarEvents = Vue.ref([]);
+const _calendarConfigured = Vue.ref(false);
+const _unlinkedForms = Vue.ref([]);
+let _lastLoaded = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+export function invalidatePendingFormsCache() {
+    _lastLoaded = 0;
+}
+
 export default {
     name: 'PendingForms',
 
@@ -33,10 +45,10 @@ export default {
             } catch { return {}; }
         }
 
-        const forms = Vue.ref([]);
-        const calendarEvents = Vue.ref([]);
-        const calendarConfigured = Vue.ref(false);
-        const unlinkedForms = Vue.ref([]);
+        const forms = _forms;
+        const calendarEvents = _calendarEvents;
+        const calendarConfigured = _calendarConfigured;
+        const unlinkedForms = _unlinkedForms;
         const loading = Vue.ref(false);
         const error = Vue.ref('');
         const searchTerm = Vue.ref('');
@@ -45,7 +57,10 @@ export default {
 
         // ==================== Load data ====================
 
-        async function loadPendingForms() {
+        async function loadPendingForms(force = true) {
+            if (!force && _lastLoaded && (Date.now() - _lastLoaded < CACHE_TTL) && forms.value.length + calendarEvents.value.length > 0) {
+                return; // use cached data
+            }
             loading.value = true;
             error.value = '';
             try {
@@ -70,6 +85,7 @@ export default {
                         }
                     } catch (e) { /* ignore calendar parse errors */ }
                 }
+                _lastLoaded = Date.now();
             } catch (e) {
                 error.value = e.message;
             } finally {
@@ -243,7 +259,7 @@ export default {
 
         // ==================== Init ====================
 
-        Vue.onMounted(() => loadPendingForms());
+        Vue.onMounted(() => loadPendingForms(false));
 
         return {
             forms, loading, error, searchTerm,

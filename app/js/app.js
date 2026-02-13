@@ -20,7 +20,7 @@ import PatientSearch from './components/PatientSearch.js';
 import CaseView from './components/CaseView.js';
 import PatientHistory from './components/PatientHistory.js';
 import ConsultationForm from './components/ConsultationForm.js';
-import PendingForms from './components/PendingForms.js';
+import PendingForms, { invalidatePendingFormsCache } from './components/PendingForms.js';
 import TimelineModal from './components/TimelineModal.js';
 import StockScreen from './components/StockScreen.js';
 import VaccinationScreen from './components/VaccinationScreen.js';
@@ -222,6 +222,7 @@ const App = {
         // ==================== Consultation events ====================
 
         function onConsultationSaved() {
+            invalidatePendingFormsCache();
             returnToDashboard();
         }
 
