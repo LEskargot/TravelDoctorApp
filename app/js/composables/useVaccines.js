@@ -255,13 +255,18 @@ export function useVaccines() {
                             console.warn('Stock decrement failed (permission?):', e.message);
                         }
                         try {
-                            await pbApi.createStockAdjustment({
-                                vaccine_lot: matchingLot.id,
-                                previous_qty: previousQty,
-                                new_qty: newQty,
-                                reason: 'administration',
-                                adjusted_by: pbApi.getCurrentUser()?.id
-                            });
+                            const userId = pbApi.getCurrentUser()?.id;
+                            if (!userId) {
+                                console.warn('No user ID for stock adjustment audit trail — skipping');
+                            } else {
+                                await pbApi.createStockAdjustment({
+                                    vaccine_lot: matchingLot.id,
+                                    previous_qty: previousQty,
+                                    new_qty: newQty,
+                                    reason: 'administration',
+                                    adjusted_by: userId
+                                });
+                            }
                         } catch (e) {
                             console.warn('Stock audit trail failed:', e.message, 'details:', JSON.stringify(e.response || e.data || e));
                         }
