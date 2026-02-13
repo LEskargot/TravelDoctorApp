@@ -208,7 +208,11 @@ export default {
             return IMMUNE_COMORBIDITIES.includes(activeComorbidityKeys.value[idx]);
         }
         const activeAllergies = Vue.computed(() =>
-            allergies.value.filter(a => a !== 'aucune').map(a => FORM_LABELS.allergy_types[a] || a)
+            allergies.value.filter(a => a !== 'aucune').map(a => ({
+                key: a,
+                label: FORM_LABELS.allergy_types[a] || a,
+                detail: allergyDetails.value[a] || ''
+            }))
         );
 
         const hasData = Vue.computed(() =>
@@ -255,7 +259,7 @@ export default {
                 <div v-if="activeAllergies.length" class="med-group allergies">
                     <div class="voyage-section-label">Allergies</div>
                     <div class="medical-row">
-                        <span v-for="a in activeAllergies" class="medical-tag allergy">{{ a }}</span>
+                        <span v-for="a in activeAllergies" :key="a.key" class="medical-tag allergy">{{ a.label }}<template v-if="a.detail"> — {{ a.detail }}</template></span>
                     </div>
                 </div>
 

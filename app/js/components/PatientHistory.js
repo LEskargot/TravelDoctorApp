@@ -123,7 +123,10 @@ export default {
         function getMedicalAllergies(caseData) {
             const med = caseData?.medical;
             if (!med?.allergies) return [];
-            return med.allergies.filter(a => a !== 'aucune').map(a => FORM_LABELS.allergy_types[a] || a);
+            return med.allergies.filter(a => a !== 'aucune').map(a => ({
+                label: FORM_LABELS.allergy_types[a] || a,
+                detail: med.allergyDetails?.[a] || ''
+            }));
         }
 
         // Reset when patient changes
@@ -198,7 +201,7 @@ export default {
                         </div>
                         <div v-if="getMedicalAllergies(c.caseData).length">
                             <strong>Allergies:</strong>
-                            <span v-for="al in getMedicalAllergies(c.caseData)" class="medical-tag allergy">{{ al }}</span>
+                            <span v-for="al in getMedicalAllergies(c.caseData)" :key="al.label" class="medical-tag allergy">{{ al.label }}<template v-if="al.detail"> — {{ al.detail }}</template></span>
                         </div>
                         <div v-if="c.caseData.medical.medicaments">
                             <strong>Medicaments:</strong> {{ triLabel(c.caseData.medical.medicaments) }}
