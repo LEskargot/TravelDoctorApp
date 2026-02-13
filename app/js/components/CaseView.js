@@ -172,10 +172,10 @@ export default {
             caseMedical.value = null;
 
             if (c) {
-                Vue.nextTick(() => {
+                setTimeout(() => {
                     const el = document.querySelector('.case-card.active');
                     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                });
+                }, 50);
             }
 
             if (c?.medical_encrypted) {
