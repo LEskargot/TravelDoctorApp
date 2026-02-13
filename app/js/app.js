@@ -214,6 +214,11 @@ const App = {
             screen.value = 'consultation';
         }
 
+        async function onPendingPatientSelected(patientId) {
+            await selectPatient(patientId);
+            await loadCasesForPatient(patientId);
+        }
+
         // ==================== Consultation events ====================
 
         function onConsultationSaved() {
@@ -237,7 +242,7 @@ const App = {
             onConfirmLocation, onLogout,
             goToStock, startNewPatient, returnToDashboard,
             onPatientSelected, onStartConsultation,
-            onFormSelected, onCalendarSelected, onManualEntry,
+            onFormSelected, onCalendarSelected, onManualEntry, onPendingPatientSelected,
             onConsultationSaved, onConsultationBack,
             toggleTimeline
         };
@@ -326,7 +331,8 @@ const App = {
                 <PendingForms :embedded="true"
                               @form-selected="onFormSelected"
                               @calendar-selected="onCalendarSelected"
-                              @manual-entry="onManualEntry" />
+                              @manual-entry="onManualEntry"
+                              @patient-selected="onPendingPatientSelected" />
             </template>
 
             <TimelineModal :visible="showTimeline" @close="showTimeline = false" />

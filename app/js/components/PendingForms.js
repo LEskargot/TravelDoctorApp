@@ -20,7 +20,7 @@ export default {
         embedded: { type: Boolean, default: false }
     },
 
-    emits: ['form-selected', 'calendar-selected', 'manual-entry', 'back'],
+    emits: ['form-selected', 'calendar-selected', 'manual-entry', 'back', 'patient-selected'],
 
     setup(props, { emit }) {
         const { location, isVaccinateur } = useAuth();
@@ -186,6 +186,7 @@ export default {
         // ==================== Item state ====================
 
         function itemState(item) {
+            if (item.form_id && item.form_status === 'processed') return 'processed';
             if (item.form_id && item.form_status === 'submitted') return 'form_received';
             if (item.form_id && item.form_status === 'draft') return 'draft_linked';
             if (item.type === 'calendar' && !item.form_id) return 'awaiting_form';
@@ -195,6 +196,10 @@ export default {
 
         function onClickItem(item) {
             const state = itemState(item);
+            if (state === 'processed' && item.existing_patient_id) {
+                emit('patient-selected', item.existing_patient_id);
+                return;
+            }
             if (state === 'form_received' && item.form_id) {
                 emit('form-selected', item.form_id);
             } else if (state === 'draft_linked' || state === 'awaiting_form') {
@@ -294,7 +299,8 @@ export default {
                          'status-received': itemState(item) === 'form_received',
                          'status-awaiting': itemState(item) === 'awaiting_form',
                          'status-draft-linked': itemState(item) === 'draft_linked',
-                         'status-draft': itemState(item) === 'draft'
+                         'status-draft': itemState(item) === 'draft',
+                         'status-processed': itemState(item) === 'processed'
                      }"
                      @click="onClickItem(item)">
                     <div v-if="item.appointment_time" class="appointment-time">
@@ -308,7 +314,8 @@ export default {
                         </div>
                     </div>
                     <div class="form-card-badges">
-                        <span v-if="itemState(item) === 'form_received'" class="form-card-badge badge-form-received">FORMULAIRE RECU</span>
+                        <span v-if="itemState(item) === 'processed'" class="form-card-badge badge-processed">TERMINE</span>
+                        <span v-else-if="itemState(item) === 'form_received'" class="form-card-badge badge-form-received">FORMULAIRE RECU</span>
                         <span v-else-if="itemState(item) === 'draft_linked'" class="form-card-badge badge-draft-linked">INVITE</span>
                         <span v-else-if="itemState(item) === 'awaiting_form'" class="form-card-badge badge-awaiting-form">EN ATTENTE</span>
                         <span v-else-if="itemState(item) === 'draft'" class="form-card-badge badge-draft">BROUILLON</span>

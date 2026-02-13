@@ -90,7 +90,7 @@ if ($calendarEvents === null) {
 }
 
 // Fetch pending forms to match against calendar events
-$filter = urlencode("status = 'submitted' || (source = 'onedoc' && status = 'draft')");
+$filter = urlencode("status = 'submitted' || status = 'processed' || (source = 'onedoc' && status = 'draft')");
 $formsResponse = pbRequest(
     "/api/collections/patient_forms/records?filter={$filter}&sort=-created&perPage=100",
     'GET',
@@ -378,7 +378,7 @@ foreach ($calendarEvents as $event) {
 // Build unlinked forms list (forms not matched to any calendar event)
 $unlinkedForms = [];
 foreach ($formsData as $fId => $fInfo) {
-    if (!in_array($fId, $matchedFormIds)) {
+    if (!in_array($fId, $matchedFormIds) && $fInfo['status'] !== 'processed') {
         $unlinkedForms[] = [
             'id' => $fInfo['id'],
             'patient_name' => $fInfo['patient_name'],
