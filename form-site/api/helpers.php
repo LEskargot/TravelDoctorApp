@@ -72,9 +72,12 @@ function normalizePhone($phone) {
 }
 
 function corsHeaders() {
-    // TODO: restrict when deployed — replace * with actual domains
-    // $allowed = ['https://app.traveldoctor.ch', 'https://form.traveldoctor.ch'];
-    header('Access-Control-Allow-Origin: *');
+    $allowed = ['https://app.traveldoctor.ch', 'https://form.traveldoctor.ch'];
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    if (in_array($origin, $allowed, true)) {
+        header("Access-Control-Allow-Origin: $origin");
+        header('Vary: Origin');
+    }
     header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type, Authorization');
 

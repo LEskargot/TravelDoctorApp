@@ -42,7 +42,7 @@ if (!$adminToken) {
 
 $filter = urlencode("patient = '{$patientId}'");
 $response = pbRequest(
-    "/api/collections/observations/records?filter={$filter}&sort=-date",
+    "/api/collections/observations/records?filter={$filter}&sort=-date&perPage=200",
     'GET',
     null,
     $adminToken

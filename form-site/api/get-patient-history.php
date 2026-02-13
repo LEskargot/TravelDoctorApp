@@ -69,7 +69,7 @@ if (!empty($patientResponse['medical_encrypted'])) {
 // Fetch cases for this patient
 $caseFilter = urlencode("patient = '{$patientId}'");
 $casesResponse = pbRequest(
-    "/api/collections/cases/records?filter={$caseFilter}&sort=-opened_at",
+    "/api/collections/cases/records?filter={$caseFilter}&sort=-opened_at&perPage=200",
     'GET',
     null,
     $adminToken
@@ -107,7 +107,7 @@ if ($casesResponse && !empty($casesResponse['items'])) {
 // Fetch consultations
 $consultFilter = urlencode("patient = '{$patientId}'");
 $consultations = pbRequest(
-    "/api/collections/consultations/records?filter={$consultFilter}&sort=-date&expand=location,practitioner",
+    "/api/collections/consultations/records?filter={$consultFilter}&sort=-date&expand=location,practitioner&perPage=200",
     'GET',
     null,
     $adminToken
@@ -154,7 +154,7 @@ $vaccinesList = [];
 if (!empty($consultationIds)) {
     $vaccineFilter = urlencode("consultation IN ('" . implode("','", $consultationIds) . "')");
     $vaccines = pbRequest(
-        "/api/collections/vaccines_administered/records?filter={$vaccineFilter}&sort=-date",
+        "/api/collections/vaccines_administered/records?filter={$vaccineFilter}&sort=-date&perPage=200",
         'GET',
         null,
         $adminToken
@@ -177,7 +177,7 @@ if (!empty($consultationIds)) {
 // Fetch scheduled boosters
 $boosterFilter = urlencode("patient = '{$patientId}'");
 $boosters = pbRequest(
-    "/api/collections/boosters_scheduled/records?filter={$boosterFilter}&sort=due_date",
+    "/api/collections/boosters_scheduled/records?filter={$boosterFilter}&sort=due_date&perPage=200",
     'GET',
     null,
     $adminToken
@@ -234,7 +234,7 @@ $prescriptionsList = [];
 if (!empty($consultationIds)) {
     $prescriptionFilter = urlencode("consultation IN ('" . implode("','", $consultationIds) . "')");
     $prescriptions = pbRequest(
-        "/api/collections/prescriptions/records?filter={$prescriptionFilter}&sort=-created",
+        "/api/collections/prescriptions/records?filter={$prescriptionFilter}&sort=-created&perPage=200",
         'GET',
         null,
         $adminToken
