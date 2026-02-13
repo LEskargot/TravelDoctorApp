@@ -332,20 +332,11 @@ export default {
 
         <!-- Selected case detail -->
         <div v-if="currentCase?.id === c.id" class="case-detail">
-            <div class="case-detail-header">
-                <h4>
-                    {{ caseTypeLabel(currentCase.type) }}
-                    <span v-if="currentCase.voyage?.destinations?.length">
-                        — {{ formatDestinations(currentCase.voyage.destinations) }}
-                    </span>
-                </h4>
-                <div class="case-detail-actions">
-                    <button v-if="currentCase.status === 'ouvert' && !isVaccinateur"
-                            class="btn-success btn-small"
-                            @click="closeCase(currentCase.id)">
-                        Fermer le dossier
-                    </button>
-                </div>
+            <div v-if="currentCase.status === 'ouvert' && !isVaccinateur" class="case-detail-actions">
+                <button class="btn-success btn-small"
+                        @click="closeCase(currentCase.id)">
+                    Fermer le dossier
+                </button>
             </div>
 
             <!-- Voyage details -->
