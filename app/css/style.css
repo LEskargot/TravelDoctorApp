@@ -181,6 +181,13 @@ input:focus, select:focus, textarea:focus {
 .case-detail {
     background: #fafafa; border: 2px solid #2196F3; border-top: 1px solid #e0e0e0;
     border-radius: 0 0 8px 8px; padding: 20px; margin-bottom: 10px;
+    overflow: hidden;
+}
+.case-detail-enter-active { animation: slide-down 0.25s ease-out; }
+.case-detail-leave-active { animation: slide-down 0.2s ease-in reverse; }
+@keyframes slide-down {
+    from { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; }
+    to { opacity: 1; max-height: 1000px; padding-top: 20px; padding-bottom: 20px; }
 }
 .case-detail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
 

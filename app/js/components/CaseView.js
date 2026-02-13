@@ -331,6 +331,7 @@ export default {
         </div>
 
         <!-- Selected case detail -->
+        <Transition name="case-detail">
         <div v-if="currentCase?.id === c.id" class="case-detail">
             <div v-if="currentCase.status === 'ouvert' && !isVaccinateur" class="case-detail-actions">
                 <button class="btn-success btn-small"
@@ -501,6 +502,7 @@ export default {
                 </button>
             </div>
         </div>
+        </Transition>
         </template>
     </div>
     `
