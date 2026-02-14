@@ -229,6 +229,8 @@ export default {
             }
         }
 
+        const linkFeedback = Vue.ref('');
+
         async function onLinkFormToEvent({ formId, calendarEventId }) {
             showLinkModal.value = false;
             try {
@@ -240,10 +242,17 @@ export default {
                 });
                 const data = await res.json();
                 if (data.success) {
+                    linkFeedback.value = 'ok';
+                    setTimeout(() => linkFeedback.value = '', 3000);
                     await loadPendingForms();
+                } else {
+                    linkFeedback.value = 'error';
+                    setTimeout(() => linkFeedback.value = '', 4000);
                 }
             } catch (e) {
                 console.error('Link error:', e);
+                linkFeedback.value = 'error';
+                setTimeout(() => linkFeedback.value = '', 4000);
             }
         }
 
@@ -267,7 +276,7 @@ export default {
             dateLabel, itemState, onClickItem,
             loadPendingForms, formatDateDisplay, emit, isVaccinateur, props,
             showLinkModal, linkModalEvent, unlinkedForms,
-            onLinkFormToEvent, onSkipLink, closeLinkModal
+            onLinkFormToEvent, onSkipLink, closeLinkModal, linkFeedback
         };
     },
 
@@ -352,6 +361,11 @@ export default {
             @skip="onSkipLink"
             @close="closeLinkModal"
         />
+
+        <!-- Link feedback toast -->
+        <div v-if="linkFeedback" class="link-toast" :class="'link-toast-' + linkFeedback">
+            {{ linkFeedback === 'ok' ? 'Formulaire lie avec succes' : 'Erreur lors de la liaison' }}
+        </div>
     </div>
     `
 };

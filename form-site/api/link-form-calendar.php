@@ -53,6 +53,25 @@ if (!$adminToken) {
     exit;
 }
 
+// Clear calendar_event_id from any other forms that had this same value
+$filter = urlencode("calendar_event_id = '" . sanitizePbFilterValue($calendarEventId) . "' && id != '" . sanitizePbFilterValue($formId) . "'");
+$oldLinks = pbRequest(
+    "/api/collections/patient_forms/records?filter={$filter}&perPage=50",
+    'GET',
+    null,
+    $adminToken
+);
+if ($oldLinks && !empty($oldLinks['items'])) {
+    foreach ($oldLinks['items'] as $oldForm) {
+        pbRequest(
+            "/api/collections/patient_forms/records/{$oldForm['id']}",
+            'PATCH',
+            ['calendar_event_id' => ''],
+            $adminToken
+        );
+    }
+}
+
 // Update patient_forms record with calendar_event_id
 $updateResponse = pbRequest(
     "/api/collections/patient_forms/records/{$formId}",

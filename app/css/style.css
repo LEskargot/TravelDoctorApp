@@ -983,6 +983,16 @@ input:focus, select:focus, textarea:focus {
     border-top: 1px solid #eee; justify-content: flex-end;
 }
 
+/* ==================== LINK TOAST ==================== */
+.link-toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    padding: 10px 24px; border-radius: 8px; font-size: 14px; font-weight: 600;
+    z-index: 10000; animation: toast-in 0.3s ease;
+}
+.link-toast-ok { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+.link-toast-error { background: #fce4ec; color: #c62828; border: 1px solid #ef9a9a; }
+@keyframes toast-in { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
 /* ==================== RESPONSIVE ==================== */
 @media (max-width: 600px) {
     body { padding: 10px; }
