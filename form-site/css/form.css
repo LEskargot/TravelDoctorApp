@@ -1248,12 +1248,17 @@ textarea::placeholder {
 
 /* Mobile Optimizations */
 @media (max-width: 600px) {
+  /* Prevent horizontal scroll */
+  html, body { overflow-x: hidden; }
+  body { background: white; }
+
   /* Container: full-width, no card look */
   .form-container { margin: 0; padding: 16px; border-radius: 0; box-shadow: none; }
 
-  /* Prevent iOS zoom on input focus */
+  /* Prevent iOS zoom on input focus (any input < 16px triggers zoom) */
   input[type="text"], input[type="email"], input[type="tel"],
-  input[type="number"], input[type="date"], select, textarea {
+  input[type="number"], input[type="date"], input[type="datetime-local"],
+  select, textarea {
     font-size: 16px;
   }
 
