@@ -1,9 +1,10 @@
 ---
 id: TASK-008
 title: Support linking and resuming draft forms from practitioner view
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-02-14 21:51'
+updated_date: '2026-02-14 22:03'
 labels:
   - feature
   - practitioner-app
@@ -44,3 +45,18 @@ When a patient starts filling a form but doesn't finish (form stays in `draft` s
 - [ ] #3 Missing fields are clearly indicated so the practitioner knows what to complete
 - [ ] #4 Flow works for both consultation and vaccination screens
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Implemented draft form linking and resuming from practitioner view.
+
+**Changes:**
+1. **PendingForms.js** — Split `draft_linked` from `awaiting_form` in click handler. Clicking INVITE now emits `form-selected` directly (same flow as submitted forms), opening the draft in consultation view.
+2. **PendingForms.js** — After successfully linking a form in FormLinkModal, auto-navigates to the linked form via `emit('form-selected', formId)` instead of just reloading the list.
+3. **FormLinkModal.js** — Added status badges (BROUILLON blue / SOUMIS green) next to each form name in the modal list, so practitioners can see form completion state.
+4. **style.css** — Added `.form-status-badge` styles (inline flex badge with draft=blue, submitted=green).
+5. **index.html** — Bumped cache version from v=25 to v=26.
+
+All 64 existing tests pass. No backend changes needed.
+<!-- SECTION:FINAL_SUMMARY:END -->
