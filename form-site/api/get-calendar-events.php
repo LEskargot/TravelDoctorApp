@@ -241,8 +241,8 @@ foreach ($calendarEvents as $event) {
     $formStatus = null;
 
     // Tier 0: Persistent link (manual linking via link-form-calendar.php)
-    if (!empty($event['calendar_event_id']) && isset($formsByCalendarEventId[$event['calendar_event_id']])) {
-        $match = $formsByCalendarEventId[$event['calendar_event_id']];
+    if (!empty($event['id']) && isset($formsByCalendarEventId[$event['id']])) {
+        $match = $formsByCalendarEventId[$event['id']];
         if ($match) {
             $formId = $match['id'];
             $formStatus = $match['status'];
