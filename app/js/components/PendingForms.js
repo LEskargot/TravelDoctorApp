@@ -110,14 +110,18 @@ export default {
                     email: evt.email || '',
                     form_id: evt.form_id || null,
                     form_status: evt.form_status || null,
+                    suggested_form: evt.suggested_form || null,
                     phone: evt.phone || '',
                     is_known_patient: evt.is_known_patient || false,
                     existing_patient_id: evt.existing_patient_id || null,
                     calendar_event_id: evt.calendar_event_id || null
                 };
 
+                // Track matched form IDs (both confirmed and suggested)
+                if (evt.form_id) matchedFormIds.add(evt.form_id);
+                if (evt.suggested_form?.id) matchedFormIds.add(evt.suggested_form.id);
+
                 if (evt.form_id) {
-                    matchedFormIds.add(evt.form_id);
                     const form = forms.value.find(f => f.id === evt.form_id);
                     if (form) {
                         item.birthdate = form.birthdate || item.dob;
@@ -125,6 +129,12 @@ export default {
                         item.avs = form.avs || '';
                         item.is_known_patient = form.is_known_patient;
                         item.existing_patient_id = form.existing_patient_id || item.existing_patient_id;
+                    }
+                } else if (evt.suggested_form?.id) {
+                    const form = forms.value.find(f => f.id === evt.suggested_form.id);
+                    if (form) {
+                        item.birthdate = form.birthdate || item.dob;
+                        item.destination = form.destination || '';
                     }
                 }
                 merged.push(item);
@@ -144,6 +154,7 @@ export default {
                         avs: form.avs || '',
                         form_id: form.id,
                         form_status: form.status,
+                        suggested_form: null,
                         is_known_patient: form.is_known_patient,
                         existing_patient_id: form.existing_patient_id
                     });
@@ -205,10 +216,14 @@ export default {
             if (item.form_id && item.form_status === 'processed') return 'processed';
             if (item.form_id && item.form_status === 'submitted') return 'form_received';
             if (item.form_id && item.form_status === 'draft') return 'draft_linked';
+            if (item.type === 'calendar' && !item.form_id && item.suggested_form) return 'suggested_match';
             if (item.type === 'calendar' && !item.form_id) return 'awaiting_form';
             if (item.type === 'form_only' && item.form_status === 'draft') return 'draft';
             return 'form_received';
         }
+
+        // Confirmation panel for suggested matches
+        const confirmingItem = Vue.ref(null);
 
         function onClickItem(item) {
             const state = itemState(item);
@@ -218,14 +233,58 @@ export default {
             }
             if (state === 'form_received' && item.form_id) {
                 emit('form-selected', item.form_id);
-            } else if (state === 'draft_linked' || state === 'awaiting_form') {
-                // Show link modal if unlinked forms exist, otherwise proceed with calendar data
+            } else if (state === 'draft_linked' && item.form_id) {
+                emit('form-selected', item.form_id);
+            } else if (state === 'suggested_match') {
+                // Toggle confirmation panel
+                const key = item.calendar_event_id || (item.patient_name + item.appointment_time);
+                const currentKey = confirmingItem.value?.calendar_event_id || (confirmingItem.value?.patient_name + confirmingItem.value?.appointment_time);
+                confirmingItem.value = (currentKey === key) ? null : item;
+            } else if (state === 'awaiting_form') {
                 if (unlinkedForms.value.length > 0) {
                     linkModalEvent.value = item;
                     showLinkModal.value = true;
                 } else {
                     emit('calendar-selected', item);
                 }
+            }
+        }
+
+        async function acceptSuggestion(item) {
+            const sf = item.suggested_form;
+            if (!sf) return;
+            confirmingItem.value = null;
+            try {
+                const headers = { ...authHeaders(), 'Content-Type': 'application/json' };
+                const res = await fetch(`${FORM_API_URL}/link-form-calendar.php`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({ form_id: sf.id, calendar_event_id: item.calendar_event_id })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    linkFeedback.value = 'ok';
+                    setTimeout(() => linkFeedback.value = '', 3000);
+                    emit('form-selected', sf.id);
+                } else {
+                    linkFeedback.value = 'error';
+                    setTimeout(() => linkFeedback.value = '', 4000);
+                }
+            } catch (e) {
+                console.error('Accept suggestion error:', e);
+                linkFeedback.value = 'error';
+                setTimeout(() => linkFeedback.value = '', 4000);
+            }
+        }
+
+        function refuseSuggestion(item) {
+            confirmingItem.value = null;
+            // Open FormLinkModal to pick a different form or skip
+            if (unlinkedForms.value.length > 0) {
+                linkModalEvent.value = item;
+                showLinkModal.value = true;
+            } else {
+                emit('calendar-selected', item);
             }
         }
 
@@ -244,7 +303,8 @@ export default {
                 if (data.success) {
                     linkFeedback.value = 'ok';
                     setTimeout(() => linkFeedback.value = '', 3000);
-                    await loadPendingForms();
+                    // Auto-navigate to the linked form
+                    emit('form-selected', formId);
                 } else {
                     linkFeedback.value = 'error';
                     setTimeout(() => linkFeedback.value = '', 4000);
@@ -276,7 +336,8 @@ export default {
             dateLabel, itemState, onClickItem,
             loadPendingForms, formatDateDisplay, emit, isVaccinateur, props,
             showLinkModal, linkModalEvent, unlinkedForms,
-            onLinkFormToEvent, onSkipLink, closeLinkModal, linkFeedback
+            onLinkFormToEvent, onSkipLink, closeLinkModal, linkFeedback,
+            confirmingItem, acceptSuggestion, refuseSuggestion
         };
     },
 
@@ -318,35 +379,52 @@ export default {
                     {{ dateLabel(dateKey) }}
                 </div>
 
-                <div v-for="item in groupedByDate[dateKey]" :key="item.form_id || item.patient_name + item.appointment_time"
-                     class="form-card"
-                     :class="{
-                         'status-received': itemState(item) === 'form_received',
-                         'status-awaiting': itemState(item) === 'awaiting_form',
-                         'status-draft-linked': itemState(item) === 'draft_linked',
-                         'status-draft': itemState(item) === 'draft',
-                         'status-processed': itemState(item) === 'processed'
-                     }"
-                     @click="onClickItem(item)">
-                    <div v-if="item.appointment_time" class="appointment-time">
-                        {{ item.appointment_time }}
-                    </div>
-                    <div class="form-card-info">
-                        <div class="form-card-name">{{ item.patient_name || 'Sans nom' }}</div>
-                        <div class="form-card-details">
-                            <span v-if="item.birthdate || item.dob">{{ formatDateDisplay(item.birthdate || item.dob) }}</span>
-                            <span v-if="item.destination"> &middot; {{ item.destination }}</span>
+                <div v-for="item in groupedByDate[dateKey]" :key="item.form_id || item.calendar_event_id || item.patient_name + item.appointment_time">
+                    <div class="form-card"
+                         :class="{
+                             'status-received': itemState(item) === 'form_received',
+                             'status-awaiting': itemState(item) === 'awaiting_form',
+                             'status-suggested': itemState(item) === 'suggested_match',
+                             'status-draft-linked': itemState(item) === 'draft_linked',
+                             'status-draft': itemState(item) === 'draft',
+                             'status-processed': itemState(item) === 'processed'
+                         }"
+                         @click="onClickItem(item)">
+                        <div v-if="item.appointment_time" class="appointment-time">
+                            {{ item.appointment_time }}
+                        </div>
+                        <div class="form-card-info">
+                            <div class="form-card-name">{{ item.patient_name || 'Sans nom' }}</div>
+                            <div class="form-card-details">
+                                <span v-if="item.birthdate || item.dob">{{ formatDateDisplay(item.birthdate || item.dob) }}</span>
+                                <span v-if="item.destination"> &middot; {{ item.destination }}</span>
+                            </div>
+                        </div>
+                        <div class="form-card-badges">
+                            <span v-if="itemState(item) === 'processed'" class="form-card-badge badge-processed">TERMINE</span>
+                            <span v-else-if="itemState(item) === 'form_received'" class="form-card-badge badge-form-received">FORMULAIRE RECU</span>
+                            <span v-else-if="itemState(item) === 'suggested_match'" class="form-card-badge badge-suggested">SUGGESTION</span>
+                            <span v-else-if="itemState(item) === 'draft_linked'" class="form-card-badge badge-draft-linked">INVITE</span>
+                            <span v-else-if="itemState(item) === 'awaiting_form'" class="form-card-badge badge-awaiting-form">EN ATTENTE</span>
+                            <span v-else-if="itemState(item) === 'draft'" class="form-card-badge badge-draft">BROUILLON</span>
+
+                            <span v-if="item.is_known_patient" class="form-card-badge badge-known">CONNU</span>
+                            <span v-else-if="itemState(item) === 'form_received'" class="form-card-badge badge-new">NOUVEAU</span>
                         </div>
                     </div>
-                    <div class="form-card-badges">
-                        <span v-if="itemState(item) === 'processed'" class="form-card-badge badge-processed">TERMINE</span>
-                        <span v-else-if="itemState(item) === 'form_received'" class="form-card-badge badge-form-received">FORMULAIRE RECU</span>
-                        <span v-else-if="itemState(item) === 'draft_linked'" class="form-card-badge badge-draft-linked">INVITE</span>
-                        <span v-else-if="itemState(item) === 'awaiting_form'" class="form-card-badge badge-awaiting-form">EN ATTENTE</span>
-                        <span v-else-if="itemState(item) === 'draft'" class="form-card-badge badge-draft">BROUILLON</span>
-
-                        <span v-if="item.is_known_patient" class="form-card-badge badge-known">CONNU</span>
-                        <span v-else-if="itemState(item) === 'form_received'" class="form-card-badge badge-new">NOUVEAU</span>
+                    <!-- Suggestion confirmation panel -->
+                    <div v-if="confirmingItem && itemState(item) === 'suggested_match' && (item.calendar_event_id || item.patient_name + item.appointment_time) === (confirmingItem.calendar_event_id || confirmingItem.patient_name + confirmingItem.appointment_time)"
+                         class="suggestion-confirm">
+                        <div class="suggestion-confirm-info">
+                            <strong>Correspondance: {{ item.suggested_form.match_field }}</strong>
+                            <div class="suggestion-confirm-details">
+                                {{ item.suggested_form.status === 'submitted' ? 'Formulaire soumis' : 'Brouillon' }}
+                            </div>
+                        </div>
+                        <div class="suggestion-confirm-actions">
+                            <button class="btn-success btn-small" @click.stop="acceptSuggestion(item)">Accepter</button>
+                            <button class="btn-secondary btn-small" @click.stop="refuseSuggestion(item)">Refuser</button>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -560,6 +560,7 @@ input:focus, select:focus, textarea:focus {
 .form-card.status-received { border-left: 4px solid #27ae60; }
 .form-card.status-awaiting { border-left: 4px solid #ff9800; }
 .form-card.status-draft-linked { border-left: 4px solid #ce93d8; }
+.form-card.status-suggested { border-left: 4px solid #ff9800; }
 .form-card.status-draft { border-left: 4px solid #90caf9; }
 .form-card.status-processed { border-left: 4px solid #6c757d; opacity: 0.5; }
 .form-card-info { flex: 1; padding: 10px 12px; }
@@ -584,6 +585,7 @@ input:focus, select:focus, textarea:focus {
 .badge-draft-linked { background: #f3e5f5; color: #7b1fa2; }
 .badge-draft { background: #e3f2fd; color: #1565C0; }
 .badge-processed { background: #e9ecef; color: #6c757d; }
+.badge-suggested { background: #fff3e0; color: #e65100; }
 .badge-new { background: #e8f5e9; color: #2e7d32; }
 .badge-known { background: #e3f2fd; color: #1565C0; }
 
@@ -969,7 +971,13 @@ input:focus, select:focus, textarea:focus {
 .form-link-item.selected { border-color: #12AD98; background: #f0faf8; }
 .form-link-radio { flex-shrink: 0; width: auto; margin: 0; }
 .form-link-details { flex: 1; min-width: 0; }
-.form-link-name { font-weight: 600; font-size: 14px; }
+.form-link-name { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+.form-status-badge {
+    font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 3px;
+    text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;
+}
+.form-status-badge.status-draft { background: #e3f2fd; color: #1565C0; }
+.form-status-badge.status-submitted { background: #e8f5e9; color: #2e7d32; }
 .form-link-meta { font-size: 12px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .similarity-score {
     flex-shrink: 0; font-size: 11px; font-weight: 700;
@@ -982,6 +990,17 @@ input:focus, select:focus, textarea:focus {
     display: flex; gap: 10px; padding: 16px 20px;
     border-top: 1px solid #eee; justify-content: flex-end;
 }
+
+/* ==================== SUGGESTION CONFIRM ==================== */
+.suggestion-confirm {
+    display: flex; justify-content: space-between; align-items: center;
+    background: #fff8e1; border: 1px solid #ffe082; border-top: none;
+    border-radius: 0 0 8px 8px; padding: 10px 14px; margin-top: -8px; margin-bottom: 8px;
+    font-size: 13px; animation: slide-down 0.15s ease-out;
+}
+.suggestion-confirm-info strong { color: #e65100; }
+.suggestion-confirm-details { color: #888; font-size: 12px; margin-top: 2px; }
+.suggestion-confirm-actions { display: flex; gap: 8px; }
 
 /* ==================== LINK TOAST ==================== */
 .link-toast {

@@ -239,8 +239,10 @@ if ($formsResponse && !empty($formsResponse['items'])) {
 foreach ($calendarEvents as $event) {
     $formId = null;
     $formStatus = null;
+    $suggestedForm = null;
 
     // Tier 0: Persistent link (manual linking via link-form-calendar.php)
+    // Only tier that sets form_id directly (already confirmed by practitioner)
     if (!empty($event['id']) && isset($formsByCalendarEventId[$event['id']])) {
         $match = $formsByCalendarEventId[$event['id']];
         if ($match) {
@@ -250,76 +252,85 @@ foreach ($calendarEvents as $event) {
         }
     }
 
-    // Tier 1: Match by email (most reliable)
-    if (!$formId && !empty($event['email'])) {
-        $emailKey = strtolower(trim($event['email']));
-        if (isset($formsByEmail[$emailKey])) {
-            $match = $formsByEmail[$emailKey];
-            $formId = $match['id'];
-            $formStatus = $match['status'];
-            $matchedFormIds[] = $formId;
+    // Tiers A-E: suggest a form (practitioner must confirm)
+    // Each tier checks dedup: skip forms already matched by Tier 0 or suggested to another event
+    if (!$formId && !$suggestedForm) {
+        // Tier A: Appointment date+time + name (most specific)
+        if (!empty($event['appointment_date']) && !empty($event['appointment_time']) && !empty($event['patient_name'])) {
+            $apptKey = $event['appointment_date'] . ' ' . $event['appointment_time'];
+            if (isset($formsByAppointment[$apptKey])) {
+                $match = $formsByAppointment[$apptKey];
+                if (!in_array($match['id'], $matchedFormIds)) {
+                    $cleanName = preg_replace('/^\[OD\]\s*-?\s*/i', '', $event['patient_name']);
+                    $calNameNorm = normalizeString($cleanName);
+                    $formNameNorm = normalizeString($match['patient_name']);
+                    if ($calNameNorm === $formNameNorm || normalizedContains($calNameNorm, $formNameNorm) || normalizedContains($formNameNorm, $calNameNorm)) {
+                        $suggestedForm = ['id' => $match['id'], 'status' => $match['status'], 'tier' => 'appointment', 'match_field' => 'date+heure+nom'];
+                        $matchedFormIds[] = $match['id'];
+                    }
+                }
+            }
         }
-    }
 
-    // Tier 2: Match by phone (normalized)
-    if (!$formId && !empty($event['phone'])) {
-        $phoneKey = normalizePhone($event['phone']);
-        if (!empty($phoneKey) && isset($formsByPhone[$phoneKey])) {
-            $match = $formsByPhone[$phoneKey];
-            $formId = $match['id'];
-            $formStatus = $match['status'];
-            $matchedFormIds[] = $formId;
+        // Tier B: Email exact match
+        if (!$suggestedForm && !empty($event['email'])) {
+            $emailKey = strtolower(trim($event['email']));
+            if (isset($formsByEmail[$emailKey])) {
+                $match = $formsByEmail[$emailKey];
+                if (!in_array($match['id'], $matchedFormIds)) {
+                    $suggestedForm = ['id' => $match['id'], 'status' => $match['status'], 'tier' => 'email', 'match_field' => 'email'];
+                    $matchedFormIds[] = $match['id'];
+                }
+            }
         }
-    }
 
-    // Tier 3: Match by appointment date+time + name
-    if (!$formId && !empty($event['appointment_date']) && !empty($event['appointment_time']) && !empty($event['patient_name'])) {
-        $apptKey = $event['appointment_date'] . ' ' . $event['appointment_time'];
-        if (isset($formsByAppointment[$apptKey])) {
-            $match = $formsByAppointment[$apptKey];
-            // Verify name also matches (loosely) to avoid false positives on same time slot
+        // Tier C: Phone normalized match
+        if (!$suggestedForm && !empty($event['phone'])) {
+            $phoneKey = normalizePhone($event['phone']);
+            if (!empty($phoneKey) && isset($formsByPhone[$phoneKey])) {
+                $match = $formsByPhone[$phoneKey];
+                if (!in_array($match['id'], $matchedFormIds)) {
+                    $suggestedForm = ['id' => $match['id'], 'status' => $match['status'], 'tier' => 'phone', 'match_field' => 'telephone'];
+                    $matchedFormIds[] = $match['id'];
+                }
+            }
+        }
+
+        // Tier D: Name + DOB composite
+        if (!$suggestedForm && !empty($event['patient_name']) && !empty($event['dob'])) {
             $cleanName = preg_replace('/^\[OD\]\s*-?\s*/i', '', $event['patient_name']);
-            $calNameNorm = normalizeString($cleanName);
-            $formNameNorm = normalizeString($match['patient_name']);
-            if ($calNameNorm === $formNameNorm || normalizedContains($calNameNorm, $formNameNorm) || normalizedContains($formNameNorm, $calNameNorm)) {
-                $formId = $match['id'];
-                $formStatus = $match['status'];
-                $matchedFormIds[] = $formId;
+            $compositeKey = normalizeString($cleanName) . '|' . $event['dob'];
+            if (isset($formsByNameDob[$compositeKey])) {
+                $match = $formsByNameDob[$compositeKey];
+                if (!in_array($match['id'], $matchedFormIds)) {
+                    $suggestedForm = ['id' => $match['id'], 'status' => $match['status'], 'tier' => 'name_dob', 'match_field' => 'nom+date de naissance'];
+                    $matchedFormIds[] = $match['id'];
+                }
+            }
+        }
+
+        // Tier E: Name only (weakest)
+        if (!$suggestedForm && !empty($event['patient_name'])) {
+            $cleanName = preg_replace('/^\[OD\]\s*-?\s*/i', '', $event['patient_name']);
+            $nameKey = normalizeString($cleanName);
+            if (isset($formsByName[$nameKey])) {
+                $match = $formsByName[$nameKey];
+                if (!in_array($match['id'], $matchedFormIds)) {
+                    $suggestedForm = ['id' => $match['id'], 'status' => $match['status'], 'tier' => 'name', 'match_field' => 'nom'];
+                    $matchedFormIds[] = $match['id'];
+                }
             }
         }
     }
 
-    // Tier 4: Match by name + DOB composite (strong)
-    if (!$formId && !empty($event['patient_name']) && !empty($event['dob'])) {
-        $cleanName = preg_replace('/^\[OD\]\s*-?\s*/i', '', $event['patient_name']);
-        $compositeKey = normalizeString($cleanName) . '|' . $event['dob'];
-        if (isset($formsByNameDob[$compositeKey])) {
-            $match = $formsByNameDob[$compositeKey];
-            $formId = $match['id'];
-            $formStatus = $match['status'];
-            $matchedFormIds[] = $formId;
-        }
-    }
-
-    // Tier 5: Fallback — name-only match (weakest)
-    if (!$formId && !empty($event['patient_name'])) {
-        $cleanName = preg_replace('/^\[OD\]\s*-?\s*/i', '', $event['patient_name']);
-        $nameKey = normalizeString($cleanName);
-        if (isset($formsByName[$nameKey])) {
-            $match = $formsByName[$nameKey];
-            $formId = $match['id'];
-            $formStatus = $match['status'];
-            $matchedFormIds[] = $formId;
-        }
-    }
-
-    // Check if patient exists — first from matched form's linked_patient
+    // Check if patient exists — first from matched/suggested form's linked_patient
     $isKnownPatient = false;
     $existingPatientId = null;
+    $resolvedFormId = $formId ?? ($suggestedForm['id'] ?? null);
 
-    if ($formId && !empty($formsData[$formId]['linked_patient'])) {
+    if ($resolvedFormId && !empty($formsData[$resolvedFormId]['linked_patient'])) {
         $isKnownPatient = true;
-        $existingPatientId = $formsData[$formId]['linked_patient'];
+        $existingPatientId = $formsData[$resolvedFormId]['linked_patient'];
     }
 
     if (!$isKnownPatient && !empty($event['email'])) {
@@ -375,6 +386,7 @@ foreach ($calendarEvents as $event) {
         'phone' => $event['phone'],
         'form_id' => $formId,
         'form_status' => $formStatus,
+        'suggested_form' => $suggestedForm,
         'is_known_patient' => $isKnownPatient,
         'existing_patient_id' => $existingPatientId,
         'calendar_event_id' => $event['calendar_event_id']
