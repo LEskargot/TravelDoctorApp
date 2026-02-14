@@ -142,7 +142,18 @@ const flatpickrLocaleMap = { fr: 'fr', en: 'default', it: 'it', es: 'es' };
 
 function initAppointmentPicker() {
     const el = document.getElementById('appointment_datetime');
-    if (!el || typeof flatpickr === 'undefined') return;
+    if (!el) return;
+
+    // On touch devices, use native datetime-local picker
+    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if (isTouchDevice) {
+        el.type = 'datetime-local';
+        el.removeAttribute('readonly');
+        el.min = new Date().toISOString().slice(0, 16);
+        return;
+    }
+
+    if (typeof flatpickr === 'undefined') return;
 
     appointmentPicker = flatpickr(el, {
         enableTime: true,

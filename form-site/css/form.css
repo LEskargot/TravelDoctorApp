@@ -211,27 +211,13 @@ body {
 
 /* Mobile: Hide labels */
 @media (max-width: 600px) {
-  .progress-steps {
-    min-width: 350px;
-  }
-
-  .step .step-label {
-    display: none;
-  }
-
-  .step .step-number {
-    width: 30px;
-    height: 30px;
-    font-size: 12px;
-  }
-
-  .step.completed .step-number::after {
-    font-size: 14px;
-  }
-
-  .step-line {
-    margin-top: 14px;
-  }
+  .progress-container { overflow-x: visible; padding-bottom: 0; }
+  .progress-steps { min-width: 0; }
+  .step { padding: 0 2px; }
+  .step .step-number { width: 28px; height: 28px; font-size: 11px; }
+  .step .step-label { display: none; }
+  .step.completed .step-number::after { font-size: 13px; }
+  .step-line { margin-top: 13px; min-width: 12px; }
 }
 
 /* Form Sections */
@@ -1053,6 +1039,14 @@ textarea::placeholder {
 @media (max-width: 600px) {
   .form-navigation {
     flex-direction: column-reverse;
+    position: sticky;
+    bottom: 0;
+    background: white;
+    margin: 20px -16px 0;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border-light);
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+    z-index: 50;
   }
 
   .btn {
@@ -1247,6 +1241,58 @@ textarea::placeholder {
   background: #d1ecf1;
   color: #0c5460;
   border: 1px solid #bee5eb;
+}
+
+/* CD4 input width (desktop) */
+.cd4-input { width: 100px; }
+
+/* Mobile Optimizations */
+@media (max-width: 600px) {
+  /* Container: full-width, no card look */
+  .form-container { margin: 0; padding: 16px; border-radius: 0; box-shadow: none; }
+
+  /* Prevent iOS zoom on input focus */
+  input[type="text"], input[type="email"], input[type="tel"],
+  input[type="number"], input[type="date"], select, textarea {
+    font-size: 16px;
+  }
+
+  /* Inline fields: wrap on narrow screens */
+  .inline-field { flex-wrap: wrap; margin-left: 0; padding: 10px; }
+  #hiv-cd4-field { flex-direction: column; align-items: flex-start; }
+  #hiv-cd4-field input[type="number"],
+  #hiv-cd4-field input[type="date"] { width: 100% !important; }
+
+  /* Tap targets */
+  .radio-label, .checkbox-label { padding: 6px 0; }
+  .btn-edit { font-size: 14px; padding: 8px 12px; }
+  .destination-fields input[type="date"],
+  .date-field-wrapper input[type="date"] { padding: 12px; }
+
+  /* Titles */
+  .step-title { font-size: 20px; }
+  .section-title { font-size: 15px; }
+
+  /* Conditional sections */
+  .conditional-section { padding: 14px; }
+  .comorbidity-group { padding: 10px; }
+
+  /* File dropzone */
+  .file-dropzone { padding: 24px 16px; }
+  .file-dropzone .dropzone-icon { font-size: 36px; margin-bottom: 10px; }
+
+  /* Success screen */
+  .success-screen { padding: 40px 10px; }
+  .success-screen .share-link-box { flex-direction: column; }
+  .success-screen .share-link-box .btn { width: 100%; }
+  .success-screen .share-buttons { flex-direction: column; }
+  .success-screen .share-buttons .btn { width: 100%; }
+
+  /* Autocomplete dropdown */
+  .autocomplete-dropdown { max-height: 150px; }
+
+  /* Draft indicator */
+  .draft-indicator { bottom: 0; right: 0; left: 0; border-radius: 0; justify-content: center; }
 }
 
 /* Print Styles */
