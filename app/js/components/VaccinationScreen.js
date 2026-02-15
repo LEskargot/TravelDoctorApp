@@ -25,7 +25,7 @@ export default {
     setup(props, { emit }) {
         const { userName, user, location, locationName } = useAuth();
         const { currentPatient, patientName, patientAge, medicalData } = usePatient();
-        const { currentCase, addConsultation } = useCase();
+        const { currentCase, addConsultation, createNewCase } = useCase();
         const vaccines = useVaccines();
 
         const note = Vue.ref('');
@@ -137,6 +137,24 @@ export default {
 
             saving.value = true;
             try {
+                // Ensure case exists - create if needed
+                if (!currentCase.value) {
+                    try {
+                        await createNewCase(currentPatient.value.id, {
+                            type: 'conseil_sans_voyage', // Vaccination only, no travel
+                            voyage: JSON.stringify({ destinations: [] }),
+                            medical_encrypted: '', // No medical data on vaccination-only
+                            status: 'termine',
+                            closed_at: new Date().toISOString()
+                        });
+                    } catch (error) {
+                        console.error('Failed to auto-create case:', error);
+                        alert('Erreur lors de la création du dossier: ' + error.message);
+                        saving.value = false;
+                        return;
+                    }
+                }
+
                 // Create consultation
                 const consultation = await addConsultation({
                     location: location.value,

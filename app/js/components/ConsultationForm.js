@@ -40,7 +40,7 @@ export default {
     setup(props, { emit }) {
         const { userName, user, location, locationName } = useAuth();
         const { currentPatient, patientName, medicalData, savePatient } = usePatient();
-        const { currentCase, addConsultation, updateCaseData, updateVoyage, formData: caseFormData } = useCase();
+        const { currentCase, addConsultation, updateCaseData, updateVoyage, createNewCase, formData: caseFormData } = useCase();
         const chrono = useChronometer();
         const vaccines = useVaccines();
         const prescription = usePrescription();
@@ -101,6 +101,33 @@ export default {
                     // Medical data (encrypted via PHP)
                     medical: medData
                 });
+
+                // Ensure case exists - create if needed (walk-in patient scenario)
+                if (!currentCase.value) {
+                    // Get voyage data to determine case type
+                    const voyage = voyageEditorRef.value?.getVoyageData() || { destinations: [] };
+                    const hasVoyageData = voyage.destinations && voyage.destinations.length > 0;
+                    const caseType = hasVoyageData ? 'conseil_voyage' : 'conseil_sans_voyage';
+
+                    // Encrypt medical data for case
+                    const medicalEncryptedForCase = await secureApi.encryptItems([
+                        { key: 'medical', plaintext: medData }
+                    ]);
+
+                    try {
+                        await createNewCase(patientId, {
+                            type: caseType,
+                            voyage: JSON.stringify(voyage),
+                            medical_encrypted: medicalEncryptedForCase.encrypted?.medical || '',
+                            status: 'termine', // Immediately closed after consultation
+                            closed_at: new Date().toISOString()
+                        });
+                    } catch (error) {
+                        console.error('Failed to auto-create case:', error);
+                        alert('Erreur lors de la création du dossier: ' + error.message);
+                        return;
+                    }
+                }
 
                 // Save voyage to case
                 if (currentCase.value && voyageEditorRef.value) {
