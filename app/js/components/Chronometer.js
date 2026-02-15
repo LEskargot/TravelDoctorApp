@@ -1,9 +1,6 @@
 /**
  * Chronometer Component
- * Floating consultation timer
- *
- * Before: fixed-position div + 6 functions doing getElementById (lines 3071-3127)
- * After: reactive display, no DOM manipulation
+ * Floating consultation timer with minimize/expand
  */
 import { useChronometer } from '../composables/useChronometer.js';
 
@@ -12,24 +9,38 @@ export default {
 
     setup() {
         const { display, isPaused, isRunning, finalTime, statusText, toggle, reset } = useChronometer();
-        return { display, isPaused, isRunning, finalTime, statusText, toggle, reset };
+        const isMinimized = Vue.ref(sessionStorage.getItem('chrono_minimized') === 'true');
+
+        function toggleMinimize() {
+            isMinimized.value = !isMinimized.value;
+            sessionStorage.setItem('chrono_minimized', isMinimized.value);
+        }
+
+        return { display, isPaused, isRunning, finalTime, statusText, toggle, reset, isMinimized, toggleMinimize };
     },
 
     template: `
-    <div class="chronometer-section" v-if="isRunning || finalTime">
-        <div>
-            <div class="chronometer-label">Consultation</div>
-            <div class="chronometer-display">{{ display }}</div>
-            <div class="chronometer-status">{{ statusText }}</div>
-        </div>
-        <div class="chronometer-controls" v-if="isRunning">
-            <button class="btn-small" :class="isPaused ? 'btn-success' : 'btn-secondary'" @click="toggle">
-                {{ isPaused ? 'Reprendre' : 'Pause' }}
-            </button>
-            <button class="btn-small btn-secondary" @click="reset">Reset</button>
-        </div>
+    <div class="chronometer" :class="{ minimized: isMinimized }" v-if="isRunning || finalTime"
+         @click="isMinimized && toggleMinimize()">
+        <template v-if="isMinimized">
+            <div class="chrono-time">{{ display }}</div>
+        </template>
+        <template v-else>
+            <div>
+                <div class="chrono-label">Consultation</div>
+                <div class="chrono-time">{{ display }}</div>
+                <div class="chrono-status">{{ statusText }}</div>
+            </div>
+            <div class="chrono-controls" v-if="isRunning">
+                <button class="btn-small" :class="isPaused ? 'btn-success' : 'btn-secondary'" @click="toggle">
+                    {{ isPaused ? 'Reprendre' : 'Pause' }}
+                </button>
+                <button class="btn-small btn-secondary" @click="reset">Reset</button>
+                <button class="btn-small btn-secondary" @click="toggleMinimize" title="Reduire">&minus;</button>
+            </div>
+        </template>
     </div>
-    <div v-if="finalTime" class="chronometer-final">
+    <div v-if="finalTime && !isMinimized" class="chronometer-final">
         Consultation terminee — Duree totale: <strong>{{ finalTime }}</strong>
     </div>
     `

@@ -278,15 +278,24 @@ input:focus, select:focus, textarea:focus {
     background: white; border: 2px solid #2196F3; border-radius: 12px;
     padding: 10px 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     display: flex; align-items: center; gap: 12px;
+    transition: padding 0.2s, border-radius 0.2s, gap 0.2s;
 }
+.chrono-label { font-size: 11px; color: #999; text-transform: uppercase; letter-spacing: 0.5px; }
 .chrono-time {
     font-family: 'Courier New', monospace; font-size: 20px; font-weight: 700;
     color: #333; min-width: 70px; text-align: center;
+    transition: font-size 0.2s;
 }
 .chrono-status { font-size: 11px; color: #666; }
 .chrono-controls { display: flex; gap: 6px; }
 .chrono-controls button {
     padding: 4px 10px; font-size: 12px; border-radius: 4px;
+}
+.chronometer.minimized {
+    padding: 4px 12px; gap: 0; border-radius: 20px; cursor: pointer;
+}
+.chronometer.minimized .chrono-time {
+    font-size: 14px; min-width: auto;
 }
 
 /* ==================== PATIENT EDIT FORM ==================== */
