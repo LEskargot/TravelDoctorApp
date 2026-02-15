@@ -21,6 +21,12 @@ button { padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; 
 .btn-teal { background: #009688; color: white; }
 .btn-teal:hover { background: #00796b; }
 .btn-small { padding: 6px 12px; font-size: 12px; }
+.btn-consult-standard { background: #3498db; color: white; }
+.btn-consult-standard:hover { background: #2980b9; }
+.btn-consult-tele { background: #8e44ad; color: white; }
+.btn-consult-tele:hover { background: #7d3c98; }
+.btn-consult-vacc { background: #27ae60; color: white; }
+.btn-consult-vacc:hover { background: #229954; }
 button:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .button-group { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }

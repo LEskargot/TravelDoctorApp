@@ -419,10 +419,10 @@ export default {
             </div>
             <div v-if="showConsultTypeMenu" class="consult-type-menu">
                 <template v-if="!isVaccinateur">
-                    <button class="btn-primary btn-small" @click="onStartConsultation('consultation')">Consultation</button>
-                    <button class="btn-primary btn-small" @click="onStartConsultation('teleconsultation')">Teleconsultation</button>
+                    <button class="btn-consult-standard btn-small" @click="onStartConsultation('consultation')">Consultation</button>
+                    <button class="btn-consult-tele btn-small" @click="onStartConsultation('teleconsultation')">Teleconsultation</button>
                 </template>
-                <button class="btn-success btn-small" @click="onStartConsultation('vaccination')">Vaccination</button>
+                <button class="btn-consult-vacc btn-small" @click="onStartConsultation('vaccination')">Vaccination</button>
             </div>
 
             <div v-if="consultations.length === 0 && !showConsultTypeMenu" class="no-data-message">

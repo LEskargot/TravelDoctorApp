@@ -310,9 +310,9 @@ const App = {
                             + Patient sans RDV
                         </button>
                         <div v-if="showWalkinTypeMenu" class="walkin-type-menu">
-                            <button class="btn-primary btn-small" @click="startNewPatient('consultation')">Consultation</button>
-                            <button class="btn-primary btn-small" @click="startNewPatient('teleconsultation')">Teleconsultation</button>
-                            <button class="btn-success btn-small" @click="startNewPatient('vaccination')">Vaccination</button>
+                            <button class="btn-consult-standard btn-small" @click="startNewPatient('consultation')">Consultation</button>
+                            <button class="btn-consult-tele btn-small" @click="startNewPatient('teleconsultation')">Teleconsultation</button>
+                            <button class="btn-consult-vacc btn-small" @click="startNewPatient('vaccination')">Vaccination</button>
                         </div>
                     </div>
                     <button v-if="!isVaccinateur" class="toolbar-btn toolbar-btn-stock"

@@ -262,6 +262,12 @@ export default {
             return labels[type] || 'Consultation';
         }
 
+        function consultTypeBtnClass(type) {
+            if (type === 'teleconsultation') return 'btn-consult-tele';
+            if (type === 'vaccination') return 'btn-consult-vacc';
+            return 'btn-consult-standard';
+        }
+
         async function acceptSuggestion(item) {
             const sf = item.suggested_form;
             if (!sf) return;
@@ -345,7 +351,7 @@ export default {
         return {
             forms, loading, error, searchTerm,
             groupedByDate, sortedDateKeys, today,
-            dateLabel, itemState, onClickItem, onOpenPatient, onStartConsultation, consultTypeLabel,
+            dateLabel, itemState, onClickItem, onOpenPatient, onStartConsultation, consultTypeLabel, consultTypeBtnClass,
             loadPendingForms, formatDateDisplay, emit, isVaccinateur, props,
             showLinkModal, linkModalEvent, unlinkedForms,
             onLinkFormToEvent, onSkipLink, closeLinkModal, linkFeedback,
@@ -428,7 +434,7 @@ export default {
                             <span v-if="!item.is_known_patient && itemState(item) === 'form_received'" class="form-card-badge badge-new">NOUVEAU</span>
 
                             <button v-if="itemState(item) !== 'processed'"
-                                    class="btn-primary btn-small consultation-start-btn"
+                                    :class="['btn-small', 'consultation-start-btn', consultTypeBtnClass(item.consultation_type)]"
                                     @click.stop="onStartConsultation(item)">
                                 {{ consultTypeLabel(item.consultation_type) }}
                             </button>
