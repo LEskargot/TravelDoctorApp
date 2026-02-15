@@ -118,6 +118,9 @@ input:focus, select:focus, textarea:focus {
 .toolbar-btn-stock:hover { background: #fce4ec; border-color: #f48fb1; }
 .toolbar-btn-logout { color: #c62828; }
 .toolbar-btn-logout:hover { background: #ffebee; border-color: #ef9a9a; }
+.toolbar-btn-resume { background: #2196F3; color: white; border-color: #1976D2; font-weight: 600; animation: pulse-resume 2s infinite; }
+.toolbar-btn-resume:hover { background: #1976D2; border-color: #1565C0; }
+@keyframes pulse-resume { 0%, 100% { box-shadow: 0 0 0 0 rgba(33,150,243,0.4); } 50% { box-shadow: 0 0 0 8px rgba(33,150,243,0); } }
 .walkin-type-menu { position: absolute; top: 100%; left: 0; z-index: 10; display: flex; gap: 6px; margin-top: 4px; padding: 8px; background: white; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
 
 /* ==================== PATIENT SEARCH ==================== */

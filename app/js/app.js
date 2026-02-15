@@ -25,7 +25,7 @@ import StockScreen from './components/StockScreen.js';
 import VaccinationScreen from './components/VaccinationScreen.js';
 import FormLinkModal from './components/FormLinkModal.js';
 
-const { createApp, ref, computed, watch, onMounted } = Vue;
+const { createApp, ref, computed, watch, onMounted, nextTick } = Vue;
 
 const App = {
     components: { LoginScreen, PatientSearch, CaseView, PatientHistory, ConsultationForm, PendingForms, StockScreen, VaccinationScreen, FormLinkModal },
@@ -47,6 +47,7 @@ const App = {
         const selectedLocationId = ref('');
         const consultationType = ref('consultation');
         const connectionStatus = ref('connecting');
+        const consultationActive = ref(false);
 
         // Watch login state for auto-transition
         watch(isLoggedIn, (loggedIn) => {
@@ -67,6 +68,9 @@ const App = {
                 try {
                     await loadLocations();
                     screen.value = 'location';
+                    if (chrono.isRunning.value) {
+                        consultationActive.value = true;
+                    }
                 } catch (e) {
                     console.error('Failed to load locations on restore:', e);
                     screen.value = 'location';
@@ -84,6 +88,7 @@ const App = {
         }
 
         function onLogout() {
+            consultationActive.value = false;
             logout();
             clearPatient();
             clearCases();
@@ -99,13 +104,21 @@ const App = {
 
         const showWalkinTypeMenu = ref(false);
 
-        function startNewPatient(type) {
+        async function startNewPatient(type) {
             showWalkinTypeMenu.value = false;
+            if (consultationActive.value) {
+                consultationActive.value = false;
+                await nextTick();
+            }
             clearPatient();
             clearCases();
             vaccines.clearAll();
+            prescription.clearAll();
+            chrono.reset();
             consultationType.value = type;
-            screen.value = type === 'vaccination' && isVaccinateur.value ? 'vaccination' : 'consultation';
+            const target = type === 'vaccination' && isVaccinateur.value ? 'vaccination' : 'consultation';
+            consultationActive.value = target === 'consultation';
+            screen.value = target;
         }
 
         function returnToDashboard() {
@@ -117,6 +130,20 @@ const App = {
             screen.value = 'dashboard';
         }
 
+        function suspendConsultation() {
+            if (chrono.isRunning.value && !chrono.isPaused.value) {
+                chrono.toggle();
+            }
+            screen.value = 'dashboard';
+        }
+
+        function resumeConsultation() {
+            if (chrono.isRunning.value && chrono.isPaused.value) {
+                chrono.toggle();
+            }
+            screen.value = 'consultation';
+        }
+
         // ==================== Patient/Case events ====================
 
         function onPatientSelected() {
@@ -124,6 +151,10 @@ const App = {
         }
 
         async function onStartConsultation(details) {
+            if (consultationActive.value) {
+                consultationActive.value = false;
+                await nextTick();
+            }
             consultationType.value = details.type;
             vaccines.clearAll();
             // Pre-load pending boosters for this patient
@@ -131,12 +162,18 @@ const App = {
                 await vaccines.loadPendingBoosters(currentPatient.value.id);
             }
             // Vaccinateurs go to the lean vaccination screen
-            screen.value = isVaccinateur.value ? 'vaccination' : 'consultation';
+            const target = isVaccinateur.value ? 'vaccination' : 'consultation';
+            consultationActive.value = target === 'consultation';
+            screen.value = target;
         }
 
         // ==================== Pending forms events ====================
 
         async function onFormSelected(formId, type) {
+            if (consultationActive.value) {
+                consultationActive.value = false;
+                await nextTick();
+            }
             try {
                 // Decrypt form data
                 const formResult = await secureApi.decryptForm(formId);
@@ -173,13 +210,19 @@ const App = {
                 });
 
                 consultationType.value = type || 'consultation';
-                screen.value = isVaccinateur.value ? 'vaccination' : 'consultation';
+                const target = isVaccinateur.value ? 'vaccination' : 'consultation';
+                consultationActive.value = target === 'consultation';
+                screen.value = target;
             } catch (error) {
                 alert('Erreur lors du chargement du formulaire: ' + error.message);
             }
         }
 
         async function onCalendarSelected(event) {
+            if (consultationActive.value) {
+                consultationActive.value = false;
+                await nextTick();
+            }
             vaccines.clearAll();
             // Load patient if known, otherwise clear
             if (event.is_known_patient && event.existing_patient_id) {
@@ -204,14 +247,21 @@ const App = {
             });
 
             consultationType.value = event.consultation_type || 'consultation';
-            screen.value = isVaccinateur.value ? 'vaccination' : 'consultation';
+            const target = isVaccinateur.value ? 'vaccination' : 'consultation';
+            consultationActive.value = target === 'consultation';
+            screen.value = target;
         }
 
-        function onManualEntry() {
+        async function onManualEntry() {
+            if (consultationActive.value) {
+                consultationActive.value = false;
+                await nextTick();
+            }
             clearPatient();
             clearCases();
             vaccines.clearAll();
             consultationType.value = 'consultation';
+            consultationActive.value = true;
             screen.value = 'consultation';
         }
 
@@ -223,15 +273,17 @@ const App = {
         // ==================== Consultation events ====================
 
         function onConsultationSaved() {
+            consultationActive.value = false;
             invalidatePendingFormsCache();
             returnToDashboard();
         }
 
         function onConsultationBack() {
-            returnToDashboard();
+            suspendConsultation();
         }
 
         async function onViewPatient() {
+            consultationActive.value = false;
             // Navigate to dashboard keeping current patient selected
             if (currentPatient.value?.id) {
                 await loadCasesForPatient(currentPatient.value.id);
@@ -245,9 +297,9 @@ const App = {
         return {
             screen, connectionStatus, isLoggedIn, userName, isAdmin, isVaccinateur,
             location, locationName, locations, selectedLocationId,
-            currentPatient, consultationType, showWalkinTypeMenu,
+            currentPatient, consultationType, showWalkinTypeMenu, consultationActive,
             onConfirmLocation, onLogout,
-            goToStock, startNewPatient, returnToDashboard,
+            goToStock, startNewPatient, returnToDashboard, resumeConsultation,
             onPatientSelected, onStartConsultation,
             onFormSelected, onCalendarSelected, onManualEntry, onPendingPatientSelected,
             onConsultationSaved, onConsultationBack, onViewPatient
@@ -319,6 +371,11 @@ const App = {
                             @click="goToStock" title="Gestion du stock vaccins">
                         Gestion Stock
                     </button>
+                    <button v-if="consultationActive"
+                            class="toolbar-btn toolbar-btn-resume"
+                            @click="resumeConsultation">
+                        Reprendre la consultation
+                    </button>
                     <button class="toolbar-btn toolbar-btn-logout" @click="onLogout">
                         Deconnexion
                     </button>
@@ -353,8 +410,9 @@ const App = {
                            @back="returnToDashboard"
                            @view-patient="onViewPatient" />
 
-        <!-- CONSULTATION -->
-        <ConsultationForm v-else-if="screen === 'consultation'"
+        <!-- CONSULTATION (kept alive when suspended via v-show) -->
+        <ConsultationForm v-if="consultationActive"
+                          v-show="screen === 'consultation'"
                           :consultation-type="consultationType"
                           @saved="onConsultationSaved"
                           @back="onConsultationBack"
