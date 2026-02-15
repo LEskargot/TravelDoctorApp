@@ -206,9 +206,24 @@ function parseCalendarEvent($item) {
         'dob' => $parsed['dob'],
         'email' => $parsed['email'],
         'phone' => $parsed['phone'],
+        'consultation_type' => $parsed['consultation_type'],
         'calendar_event_id' => $item['id'] ?? '',
         'source' => 'calendar'
     ];
+}
+
+/**
+ * Map OneDoc appointment type string to our consultation types
+ */
+function mapConsultationType($apptType) {
+    $lower = strtolower($apptType);
+    if (strpos($lower, 'visio') !== false || strpos($lower, 'vidéo') !== false || strpos($lower, 'video') !== false || strpos($lower, 'télé') !== false) {
+        return 'teleconsultation';
+    }
+    if (strpos($lower, 'rappel') !== false || strpos($lower, 'vaccin') !== false) {
+        return 'vaccination';
+    }
+    return 'consultation';
 }
 
 /**
@@ -221,7 +236,8 @@ function parseEventDescription($text) {
         'sex' => '',
         'dob' => '',
         'email' => '',
-        'phone' => ''
+        'phone' => '',
+        'consultation_type' => ''
     ];
 
     if (empty($text)) {
@@ -247,6 +263,12 @@ function parseEventDescription($text) {
                 break;
             }
         }
+        // Extract appointment type (lines before separator)
+        if ($sepIndex > 0) {
+            $apptType = implode(' ', array_slice($lines, 0, $sepIndex));
+            $result['consultation_type'] = mapConsultationType($apptType);
+        }
+
         // Extract all fields positionally: +1 firstName, +2 lastName, +3 sex, +4 DOB, +5 email, +6 phone
         if ($sepIndex >= 0 && isset($lines[$sepIndex + 1], $lines[$sepIndex + 2])) {
             $result['patient_name'] = trim($lines[$sepIndex + 1] . ' ' . $lines[$sepIndex + 2]);

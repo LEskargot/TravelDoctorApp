@@ -12,6 +12,7 @@ import { mapFormToPatient } from '../utils/form-mapping.js';
 
 export default {
     name: 'PatientEditForm',
+    emits: ['view-patient'],
 
     setup() {
         const { currentPatient, patientName, patientAge, sensitiveFields } = usePatient();
@@ -94,7 +95,8 @@ export default {
         <!-- Compact view -->
         <div v-if="!isEditing" class="patient-compact-view">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <strong style="font-size: 16px;">{{ form.name || '-' }}</strong>
+                <a v-if="form.name" href="#" class="patient-link" style="font-size: 16px; font-weight: 700;" @click.prevent="$emit('view-patient')">{{ form.name }}</a>
+                <strong v-else style="font-size: 16px;">-</strong>
                 <button class="btn-secondary btn-small" @click="isEditing = true">Modifier</button>
             </div>
             <div class="patient-compact-details">

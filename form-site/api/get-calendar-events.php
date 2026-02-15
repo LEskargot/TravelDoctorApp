@@ -384,6 +384,7 @@ foreach ($calendarEvents as $event) {
         'dob' => $event['dob'],
         'email' => $event['email'],
         'phone' => $event['phone'],
+        'consultation_type' => $event['consultation_type'] ?? 'consultation',
         'form_id' => $formId,
         'form_status' => $formStatus,
         'suggested_form' => $suggestedForm,

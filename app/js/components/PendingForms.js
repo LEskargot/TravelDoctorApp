@@ -112,6 +112,7 @@ export default {
                     form_status: evt.form_status || null,
                     suggested_form: evt.suggested_form || null,
                     phone: evt.phone || '',
+                    consultation_type: evt.consultation_type || 'consultation',
                     is_known_patient: evt.is_known_patient || false,
                     existing_patient_id: evt.existing_patient_id || null,
                     calendar_event_id: evt.calendar_event_id || null
@@ -227,27 +228,38 @@ export default {
 
         function onClickItem(item) {
             const state = itemState(item);
-            if (state === 'processed' && item.existing_patient_id) {
-                emit('patient-selected', item.existing_patient_id);
-                return;
-            }
-            if (state === 'form_received' && item.form_id) {
-                emit('form-selected', item.form_id);
-            } else if (state === 'draft_linked' && item.form_id) {
-                emit('form-selected', item.form_id);
-            } else if (state === 'suggested_match') {
+            if (state === 'suggested_match') {
                 // Toggle confirmation panel
                 const key = item.calendar_event_id || (item.patient_name + item.appointment_time);
                 const currentKey = confirmingItem.value?.calendar_event_id || (confirmingItem.value?.patient_name + confirmingItem.value?.appointment_time);
                 confirmingItem.value = (currentKey === key) ? null : item;
-            } else if (state === 'awaiting_form') {
-                if (unlinkedForms.value.length > 0) {
-                    linkModalEvent.value = item;
-                    showLinkModal.value = true;
-                } else {
-                    emit('calendar-selected', item);
-                }
             }
+        }
+
+        function onOpenPatient(item) {
+            if (item.existing_patient_id) {
+                emit('patient-selected', item.existing_patient_id);
+            }
+        }
+
+        function onStartConsultation(item) {
+            const type = item.consultation_type || 'consultation';
+            const state = itemState(item);
+            if ((state === 'form_received' || state === 'draft_linked') && item.form_id) {
+                emit('form-selected', item.form_id, type);
+            } else if (state === 'suggested_match') {
+                confirmingItem.value = item;
+            } else if (unlinkedForms.value.length > 0) {
+                linkModalEvent.value = item;
+                showLinkModal.value = true;
+            } else {
+                emit('calendar-selected', item);
+            }
+        }
+
+        function consultTypeLabel(type) {
+            const labels = { consultation: 'Consultation', teleconsultation: 'Teleconsultation', vaccination: 'Vaccination' };
+            return labels[type] || 'Consultation';
         }
 
         async function acceptSuggestion(item) {
@@ -333,7 +345,7 @@ export default {
         return {
             forms, loading, error, searchTerm,
             groupedByDate, sortedDateKeys, today,
-            dateLabel, itemState, onClickItem,
+            dateLabel, itemState, onClickItem, onOpenPatient, onStartConsultation, consultTypeLabel,
             loadPendingForms, formatDateDisplay, emit, isVaccinateur, props,
             showLinkModal, linkModalEvent, unlinkedForms,
             onLinkFormToEvent, onSkipLink, closeLinkModal, linkFeedback,
@@ -394,7 +406,12 @@ export default {
                             {{ item.appointment_time }}
                         </div>
                         <div class="form-card-info">
-                            <div class="form-card-name">{{ item.patient_name || 'Sans nom' }}</div>
+                            <div class="form-card-name">
+                                <a v-if="item.is_known_patient && item.existing_patient_id"
+                                   href="#" class="patient-link"
+                                   @click.stop.prevent="onOpenPatient(item)">{{ item.patient_name || 'Sans nom' }}</a>
+                                <template v-else>{{ item.patient_name || 'Sans nom' }}</template>
+                            </div>
                             <div class="form-card-details">
                                 <span v-if="item.birthdate || item.dob">{{ formatDateDisplay(item.birthdate || item.dob) }}</span>
                                 <span v-if="item.destination"> &middot; {{ item.destination }}</span>
@@ -402,14 +419,19 @@ export default {
                         </div>
                         <div class="form-card-badges">
                             <span v-if="itemState(item) === 'processed'" class="form-card-badge badge-processed">TERMINE</span>
-                            <span v-else-if="itemState(item) === 'form_received'" class="form-card-badge badge-form-received">FORMULAIRE RECU</span>
-                            <span v-else-if="itemState(item) === 'suggested_match'" class="form-card-badge badge-suggested">SUGGESTION</span>
-                            <span v-else-if="itemState(item) === 'draft_linked'" class="form-card-badge badge-draft-linked">INVITE</span>
-                            <span v-else-if="itemState(item) === 'awaiting_form'" class="form-card-badge badge-awaiting-form">EN ATTENTE</span>
+                            <span v-else-if="itemState(item) === 'form_received'" class="form-card-badge badge-form-received">FORM: CONFIRMÉ</span>
+                            <span v-else-if="itemState(item) === 'suggested_match'" class="form-card-badge badge-suggested">FORM: À CONFIRMER</span>
+                            <span v-else-if="itemState(item) === 'draft_linked'" class="form-card-badge badge-draft-linked">FORM: ENVOYÉ</span>
+                            <span v-else-if="itemState(item) === 'awaiting_form'" class="form-card-badge badge-awaiting-form">FORM: NON ENVOYÉ</span>
                             <span v-else-if="itemState(item) === 'draft'" class="form-card-badge badge-draft">BROUILLON</span>
 
-                            <span v-if="item.is_known_patient" class="form-card-badge badge-known">CONNU</span>
-                            <span v-else-if="itemState(item) === 'form_received'" class="form-card-badge badge-new">NOUVEAU</span>
+                            <span v-if="!item.is_known_patient && itemState(item) === 'form_received'" class="form-card-badge badge-new">NOUVEAU</span>
+
+                            <button v-if="itemState(item) !== 'processed'"
+                                    class="btn-primary btn-small consultation-start-btn"
+                                    @click.stop="onStartConsultation(item)">
+                                {{ consultTypeLabel(item.consultation_type) }}
+                            </button>
                         </div>
                     </div>
                     <!-- Suggestion confirmation panel -->

@@ -20,7 +20,7 @@ export default {
 
     components: { VaccinePanel },
 
-    emits: ['saved', 'back'],
+    emits: ['saved', 'back', 'view-patient'],
 
     setup(props, { emit }) {
         const { userName, user, location, locationName } = useAuth();
@@ -203,7 +203,7 @@ export default {
 
         <!-- Patient summary (read-only) -->
         <div v-if="currentPatient" class="vaccination-patient-card">
-            <div class="vaccination-patient-name">{{ patientName }}</div>
+            <a href="#" class="patient-link vaccination-patient-name" @click.prevent="$emit('view-patient')">{{ patientName }}</a>
             <div class="vaccination-patient-details">
                 <span v-if="currentPatient.dob">{{ formatDob(currentPatient.dob) }}</span>
                 <span v-if="patientAge != null"> &mdash; {{ patientAge }} ans</span>

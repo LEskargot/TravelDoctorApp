@@ -104,6 +104,10 @@ app/
 │   │   ├── useStock.js     # Stock management (admin)
 │   │   ├── usePrescription.js  # Prescription management
 │   │   └── useChronometer.js   # Consultation timer
+tests/                      # Unit tests (Node.js built-in test runner)
+├── form-link-scoring.test.js        # FormLinkModal scoring algorithm
+├── pending-forms-badge-state.test.js # PendingForms badge logic
+└── README.md               # Test documentation
 │   ├── components/         # Vue components (Options API with setup())
 │   │   ├── LoginScreen.js
 │   │   ├── PendingForms.js     # "NOUVEAU RDV" — calendar + forms view
@@ -219,16 +223,41 @@ Predefined medications with automatic pediatric dosing calculations for patients
 
 ## Testing
 
-No automated tests. Manual testing required for:
+### Automated Tests
+
+Unit tests for pure logic functions using Node.js built-in test runner (no dependencies).
+
+```bash
+# Run all tests
+npm test
+
+# Run in watch mode
+npm test:watch
+```
+
+**Current coverage:**
+- `tests/form-link-scoring.test.js` — FormLinkModal scoring algorithm (46 tests)
+  - Phone normalization (removes +41/0041, strips formatting)
+  - Name normalization (lowercase, removes accents, removes [OD] prefix)
+  - Score calculation (email +40, phone +30, name +20/+15, DOB +20, date +10)
+- `tests/pending-forms-badge-state.test.js` — PendingForms badge state logic (18 tests)
+  - Badge states (TERMINE, FORM: CONFIRMÉ, FORM: ENVOYÉ, FORM: NON ENVOYÉ, FORM: À CONFIRMER, BROUILLON)
+  - State priority and edge cases
+
+See `tests/README.md` for detailed documentation.
+
+### Manual Testing
+
+Manual testing still required for:
 - Login/logout flow
 - Location selection and persistence
 - Patient search and selection
 - Consultation save to database
 - Vaccine lots filtered by location
-- PDF extraction accuracy (depends on KoBoToolbox PDF structure)
-- Date calculations for boosters
+- Date calculations for boosters (27 vaccines with different schedules)
 - PDF generation output quality
 - Offline/connection error handling
+- Calendar integration and form matching
 
 ## Notes
 
@@ -391,7 +420,7 @@ No automated tests. Manual testing required for:
    - **`helpers.php`**: added `normalizePhone()` (strips formatting, removes +41/0041, returns last 9 digits)
    - **`link-form-calendar.php`**: new POST endpoint to manually link form → calendar event via `calendar_event_id`
    - **`FormLinkModal.js`**: new component for practitioner to manually link unmatched calendar events to forms, with similarity scoring (email +40, phone +30, name +20, DOB +20, date +10)
-   - **`PendingForms.js`**: integrated FormLinkModal; 4 visual states: FORMULAIRE RECU (green/submitted), INVITE (purple/draft linked), EN ATTENTE (orange/no form), BROUILLON (blue/manual draft); clicking INVITE or EN ATTENTE shows link modal when unlinked forms exist
+   - **`PendingForms.js`**: integrated FormLinkModal; visual states: FORM: CONFIRMÉ (green/submitted), FORM: ENVOYÉ (purple/draft linked), FORM: NON ENVOYÉ (orange/no form), FORM: À CONFIRMER (amber/suggested match), BROUILLON (blue/manual draft); clicking FORM: ENVOYÉ or FORM: NON ENVOYÉ shows link modal when unlinked forms exist
    - **PocketBase schema**: added `calendar_event_id` (text, optional) field to `patient_forms` collection ✓
    - **Deploy**: all API files + link-form-calendar.php copied to server, app served from repo at `https://app.traveldoctor.ch`
 
@@ -506,3 +535,32 @@ cp form-site/css/form.css /var/www/webroot/ROOT/css/form.css
 ```
 
 The practitioner app (`app/`) is served at `https://app.traveldoctor.ch` directly from the git repo — no copy needed. `git pull` updates it instantly. Bump `?v=N` in `app/index.html` to bust browser caches (currently `?v=10`).
+
+<!-- BACKLOG.MD MCP GUIDELINES START -->
+
+<CRITICAL_INSTRUCTION>
+
+## BACKLOG WORKFLOW INSTRUCTIONS
+
+This project uses Backlog.md MCP for all task and project management activities.
+
+**CRITICAL GUIDANCE**
+
+- If your client supports MCP resources, read `backlog://workflow/overview` to understand when and how to use Backlog for this project.
+- If your client only supports tools or the above request fails, call `backlog.get_workflow_overview()` tool to load the tool-oriented overview (it lists the matching guide tools).
+
+- **First time working here?** Read the overview resource IMMEDIATELY to learn the workflow
+- **Already familiar?** You should have the overview cached ("## Backlog.md Overview (MCP)")
+- **When to read it**: BEFORE creating tasks, or when you're unsure whether to track work
+
+These guides cover:
+- Decision framework for when to create tasks
+- Search-first workflow to avoid duplicates
+- Links to detailed guides for task creation, execution, and finalization
+- MCP tools reference
+
+You MUST read the overview resource to understand the complete workflow. The information is NOT summarized here.
+
+</CRITICAL_INSTRUCTION>
+
+<!-- BACKLOG.MD MCP GUIDELINES END -->

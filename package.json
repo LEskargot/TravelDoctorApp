@@ -1,0 +1,13 @@
+{
+  "name": "traveldoctorapp-tests",
+  "version": "1.0.0",
+  "description": "Unit tests for Travel Doctor App",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/**/*.test.js",
+    "test:watch": "node --test --watch tests/**/*.test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

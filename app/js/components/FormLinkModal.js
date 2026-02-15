@@ -152,7 +152,11 @@ export default {
                            :class="{ selected: selectedFormId === form.id }">
                         <input type="radio" :value="form.id" v-model="selectedFormId" class="form-link-radio">
                         <div class="form-link-details">
-                            <div class="form-link-name">{{ form.patient_name }}</div>
+                            <div class="form-link-name">
+                                {{ form.patient_name }}
+                                <span v-if="form.status === 'draft'" class="form-status-badge status-draft">BROUILLON</span>
+                                <span v-else-if="form.status === 'submitted'" class="form-status-badge status-submitted">SOUMIS</span>
+                            </div>
                             <div class="form-link-meta">
                                 <span v-if="form.dob">{{ formatDob(form.dob) }}</span>
                                 <span v-if="form.email"> &middot; {{ form.email }}</span>

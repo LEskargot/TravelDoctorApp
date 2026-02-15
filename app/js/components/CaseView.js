@@ -37,6 +37,7 @@ export default {
         const showNewCaseForm = Vue.ref(false);
         const newCaseType = Vue.ref('conseil_voyage');
         const newCaseDestinations = Vue.ref('');
+        const showConsultTypeMenu = Vue.ref(false);
 
         // Consultation details (auto-loaded, all expanded by default)
         const collapsedConsults = Vue.ref(new Set());
@@ -66,6 +67,7 @@ export default {
         }
 
         function onStartConsultation(type) {
+            showConsultTypeMenu.value = false;
             emit('start-consultation', {
                 caseId: currentCase.value.id,
                 type: type
@@ -269,6 +271,7 @@ export default {
         return {
             cases, currentCase, consultations, openCases,
             showNewCaseForm, newCaseType, newCaseDestinations,
+            showConsultTypeMenu,
             collapsedConsults, consultDetails, detailsLoading,
             caseMedical, caseMedicalLoading,
             selectCase, onCreateCase, closeCase, onStartConsultation,
@@ -408,9 +411,21 @@ export default {
             </div>
 
             <!-- Consultations within this case -->
-            <h5>Consultations ({{ consultations.length }})</h5>
+            <div class="consultations-header">
+                <h5>Consultations ({{ consultations.length }})</h5>
+                <button class="btn-primary btn-small" @click="showConsultTypeMenu = !showConsultTypeMenu">
+                    + Nouvelle consultation
+                </button>
+            </div>
+            <div v-if="showConsultTypeMenu" class="consult-type-menu">
+                <template v-if="!isVaccinateur">
+                    <button class="btn-primary btn-small" @click="onStartConsultation('consultation')">Consultation</button>
+                    <button class="btn-primary btn-small" @click="onStartConsultation('teleconsultation')">Teleconsultation</button>
+                </template>
+                <button class="btn-success btn-small" @click="onStartConsultation('vaccination')">Vaccination</button>
+            </div>
 
-            <div v-if="consultations.length === 0" class="no-data-message">
+            <div v-if="consultations.length === 0 && !showConsultTypeMenu" class="no-data-message">
                 Aucune consultation dans ce dossier.
             </div>
 
@@ -494,20 +509,6 @@ export default {
                 </div>
             </div>
 
-            <!-- Add consultation buttons -->
-            <div v-if="currentCase.status === 'ouvert'" class="add-consultation">
-                <template v-if="!isVaccinateur">
-                    <button class="btn-primary" @click="onStartConsultation('consultation')">
-                        Consultation
-                    </button>
-                    <button class="btn-primary" @click="onStartConsultation('teleconsultation')">
-                        Teleconsultation
-                    </button>
-                </template>
-                <button class="btn-success" @click="onStartConsultation('vaccination')">
-                    Vaccination
-                </button>
-            </div>
         </div>
         </Transition>
         </template>

@@ -97,12 +97,15 @@ const App = {
             screen.value = 'stock';
         }
 
-        function startNewPatient() {
+        const showWalkinTypeMenu = ref(false);
+
+        function startNewPatient(type) {
+            showWalkinTypeMenu.value = false;
             clearPatient();
             clearCases();
             vaccines.clearAll();
-            consultationType.value = 'consultation';
-            screen.value = 'consultation';
+            consultationType.value = type;
+            screen.value = type === 'vaccination' && isVaccinateur.value ? 'vaccination' : 'consultation';
         }
 
         function returnToDashboard() {
@@ -133,7 +136,7 @@ const App = {
 
         // ==================== Pending forms events ====================
 
-        async function onFormSelected(formId) {
+        async function onFormSelected(formId, type) {
             try {
                 // Decrypt form data
                 const formResult = await secureApi.decryptForm(formId);
@@ -169,7 +172,7 @@ const App = {
                     formData: fd
                 });
 
-                consultationType.value = 'consultation';
+                consultationType.value = type || 'consultation';
                 screen.value = isVaccinateur.value ? 'vaccination' : 'consultation';
             } catch (error) {
                 alert('Erreur lors du chargement du formulaire: ' + error.message);
@@ -200,7 +203,7 @@ const App = {
                 }
             });
 
-            consultationType.value = 'consultation';
+            consultationType.value = event.consultation_type || 'consultation';
             screen.value = isVaccinateur.value ? 'vaccination' : 'consultation';
         }
 
@@ -228,15 +231,26 @@ const App = {
             returnToDashboard();
         }
 
+        async function onViewPatient() {
+            // Navigate to dashboard keeping current patient selected
+            if (currentPatient.value?.id) {
+                await loadCasesForPatient(currentPatient.value.id);
+            }
+            vaccines.clearAll();
+            prescription.clearAll();
+            chrono.reset();
+            screen.value = 'dashboard';
+        }
+
         return {
             screen, connectionStatus, isLoggedIn, userName, isAdmin, isVaccinateur,
             location, locationName, locations, selectedLocationId,
-            currentPatient, consultationType,
+            currentPatient, consultationType, showWalkinTypeMenu,
             onConfirmLocation, onLogout,
             goToStock, startNewPatient, returnToDashboard,
             onPatientSelected, onStartConsultation,
             onFormSelected, onCalendarSelected, onManualEntry, onPendingPatientSelected,
-            onConsultationSaved, onConsultationBack
+            onConsultationSaved, onConsultationBack, onViewPatient
         };
     },
 
@@ -289,10 +303,18 @@ const App = {
                     <span v-if="isVaccinateur" class="role-badge-vaccinateur">Vaccinateur</span>
                 </div>
                 <div class="toolbar-actions">
-                    <button v-if="!isVaccinateur" class="toolbar-btn toolbar-btn-walkin"
-                            @click="startNewPatient" title="Ajouter un patient sans rendez-vous">
-                        + Patient sans RDV
-                    </button>
+                    <div v-if="!isVaccinateur" style="position: relative; display: inline-block;">
+                        <button class="toolbar-btn toolbar-btn-walkin"
+                                @click="showWalkinTypeMenu = !showWalkinTypeMenu"
+                                title="Ajouter un patient sans rendez-vous">
+                            + Patient sans RDV
+                        </button>
+                        <div v-if="showWalkinTypeMenu" class="walkin-type-menu">
+                            <button class="btn-primary btn-small" @click="startNewPatient('consultation')">Consultation</button>
+                            <button class="btn-primary btn-small" @click="startNewPatient('teleconsultation')">Teleconsultation</button>
+                            <button class="btn-success btn-small" @click="startNewPatient('vaccination')">Vaccination</button>
+                        </div>
+                    </div>
                     <button v-if="!isVaccinateur" class="toolbar-btn toolbar-btn-stock"
                             @click="goToStock" title="Gestion du stock vaccins">
                         Gestion Stock
@@ -328,13 +350,15 @@ const App = {
         <!-- VACCINATION (vaccinateur lean screen) -->
         <VaccinationScreen v-else-if="screen === 'vaccination'"
                            @saved="returnToDashboard"
-                           @back="returnToDashboard" />
+                           @back="returnToDashboard"
+                           @view-patient="onViewPatient" />
 
         <!-- CONSULTATION -->
         <ConsultationForm v-else-if="screen === 'consultation'"
                           :consultation-type="consultationType"
                           @saved="onConsultationSaved"
-                          @back="onConsultationBack" />
+                          @back="onConsultationBack"
+                          @view-patient="onViewPatient" />
 
     </div>
     `

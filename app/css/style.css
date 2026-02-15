@@ -112,6 +112,7 @@ input:focus, select:focus, textarea:focus {
 .toolbar-btn-stock:hover { background: #fce4ec; border-color: #f48fb1; }
 .toolbar-btn-logout { color: #c62828; }
 .toolbar-btn-logout:hover { background: #ffebee; border-color: #ef9a9a; }
+.walkin-type-menu { position: absolute; top: 100%; left: 0; z-index: 10; display: flex; gap: 6px; margin-top: 4px; padding: 8px; background: white; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
 
 /* ==================== PATIENT SEARCH ==================== */
 .patient-search-section {
@@ -232,7 +233,9 @@ input:focus, select:focus, textarea:focus {
 .consultation-loading { font-size: 12px; color: #999; font-style: italic; }
 .expand-indicator { margin-left: 6px; font-size: 10px; color: #999; }
 
-.add-consultation { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+.consultations-header { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+.consultations-header h5 { margin: 0; }
+.consult-type-menu { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
 
 /* ==================== NEW CASE FORM ==================== */
 .new-case-form {
@@ -588,6 +591,10 @@ input:focus, select:focus, textarea:focus {
 .badge-suggested { background: #fff3e0; color: #e65100; }
 .badge-new { background: #e8f5e9; color: #2e7d32; }
 .badge-known { background: #e3f2fd; color: #1565C0; }
+
+.patient-link { color: #3498db; text-decoration: none; }
+.patient-link:hover { text-decoration: underline; }
+.consultation-start-btn { margin-top: 4px; }
 
 /* ==================== SHARED ==================== */
 .no-data-message { text-align: center; color: #999; font-style: italic; padding: 20px; }

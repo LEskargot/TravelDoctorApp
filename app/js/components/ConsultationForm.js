@@ -14,7 +14,6 @@ import { usePrescription } from '../composables/usePrescription.js';
 import * as secureApi from '../api/secure-api.js';
 import * as pbApi from '../api/pocketbase.js';
 import { generatePrescriptionPdf } from '../utils/pdf-generator.js';
-import { downloadJson, makeBackupFilename } from '../utils/export-helpers.js';
 
 import Chronometer from './Chronometer.js';
 import PatientEditForm from './PatientEditForm.js';
@@ -35,7 +34,7 @@ export default {
         consultationType: { type: String, default: 'consultation' }
     },
 
-    emits: ['saved', 'back'],
+    emits: ['saved', 'back', 'view-patient'],
 
     setup(props, { emit }) {
         const { userName, user, location, locationName } = useAuth();
@@ -77,6 +76,18 @@ export default {
             if (!formData.dob) {
                 alert('La date de naissance est obligatoire.');
                 return;
+            }
+
+            // Check consultation is not empty
+            {
+                const selectedConseils = notesSectionRef.value?.getSelectedConseils() || [];
+                const hasNotes = !!(notes.value || selectedConseils.length);
+                const hasVaccines = vaccines.vaccines.value.some(v => v.administered);
+                const hasMedications = prescription.selectedMedications.value.length > 0;
+                if (!hasNotes && !hasVaccines && !hasMedications) {
+                    alert('Consultation vide. Ajoutez des notes, vaccins ou prescriptions avant de sauvegarder.');
+                    return;
+                }
             }
 
             saving.value = true;
@@ -174,27 +185,6 @@ export default {
                     await secureApi.markFormProcessed(caseFormData.value.formId, patientId);
                 }
 
-                // Offer backup
-                if (confirm('Consultation sauvegardee!\n\nVoulez-vous telecharger une copie de sauvegarde (JSON) ?')) {
-                    const backupData = {
-                        patient: formData,
-                        consultation: {
-                            date: new Date().toISOString().split('T')[0],
-                            type: props.consultationType,
-                            duration: chrono.finalTime.value,
-                            conseils: conseils,
-                            notes: notes.value
-                        },
-                        vaccines: vaccines.vaccines.value.map(v => ({
-                            vaccine: v.vaccine, administered: v.administered,
-                            dose: v.doseNumber, lot: v.lot, site: v.site,
-                            boosters: v.boosters.map(b => ({ dose: b.dose, date: b.date }))
-                        })),
-                        medications: prescription.selectedMedications.value.map(m => ({ name: m.name, dosing: m.dosing }))
-                    };
-                    downloadJson(backupData, makeBackupFilename(`${formData.nom} ${formData.prenom}`, formData.dob));
-                }
-
                 emit('saved');
 
             } catch (error) {
@@ -258,7 +248,7 @@ export default {
                 <span>Dossier Patient</span>
             </div>
             <div class="accordion-content" v-show="activeAccordion === 'patient'">
-                <PatientEditForm ref="patientEditRef" />
+                <PatientEditForm ref="patientEditRef" @view-patient="emit('view-patient')" />
                 <VoyageEditor ref="voyageEditorRef" />
                 <MedicalEditor ref="medicalEditorRef" />
                 <PatientHistory />

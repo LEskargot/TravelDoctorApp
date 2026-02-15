@@ -2,7 +2,7 @@
  * Unit Tests for PendingForms Badge State Logic
  *
  * Tests the itemState function that determines which badge to show
- * for each form/calendar event (FORMULAIRE RECU, INVITE, EN ATTENTE, BROUILLON, TERMINE).
+ * for each form/calendar event (FORM: CONFIRMÉ, FORM: ENVOYÉ, FORM: NON ENVOYÉ, FORM: À CONFIRMER, BROUILLON, TERMINE).
  */
 
 import { test, describe } from 'node:test';
@@ -38,7 +38,7 @@ describe('PendingForms - Badge State Logic', () => {
         assert.equal(itemState(item), 'processed');
     });
 
-    test('submitted form with calendar event shows FORMULAIRE RECU badge', () => {
+    test('submitted form with calendar event shows FORM: CONFIRMÉ badge', () => {
         const item = {
             type: 'calendar',
             form_id: 'abc123',
@@ -47,7 +47,7 @@ describe('PendingForms - Badge State Logic', () => {
         assert.equal(itemState(item), 'form_received');
     });
 
-    test('draft form with calendar event shows INVITE badge', () => {
+    test('draft form with calendar event shows FORM: ENVOYÉ badge', () => {
         const item = {
             type: 'calendar',
             form_id: 'abc123',
@@ -56,7 +56,7 @@ describe('PendingForms - Badge State Logic', () => {
         assert.equal(itemState(item), 'draft_linked');
     });
 
-    test('calendar event without form shows EN ATTENTE badge', () => {
+    test('calendar event without form shows FORM: NON ENVOYÉ badge', () => {
         const item = {
             type: 'calendar',
             form_id: null,
@@ -66,7 +66,7 @@ describe('PendingForms - Badge State Logic', () => {
         assert.equal(itemState(item), 'awaiting_form');
     });
 
-    test('calendar event with suggested form shows SUGGESTION badge', () => {
+    test('calendar event with suggested form shows FORM: À CONFIRMER badge', () => {
         const item = {
             type: 'calendar',
             form_id: null,
@@ -85,7 +85,7 @@ describe('PendingForms - Badge State Logic', () => {
         assert.equal(itemState(item), 'draft');
     });
 
-    test('form-only submitted shows FORMULAIRE RECU badge', () => {
+    test('form-only submitted shows FORM: CONFIRMÉ badge', () => {
         const item = {
             type: 'form_only',
             form_id: 'abc123',
@@ -319,25 +319,25 @@ describe('PendingForms - Badge Visual States Documentation', () => {
         assert.equal(itemState({ form_id: '1', form_status: 'processed' }), 'processed');
     });
 
-    test('form_received state shows FORMULAIRE RECU badge (green)', () => {
+    test('form_received state shows FORM: CONFIRMÉ badge (green)', () => {
         // Visual: .badge-form-received (green background)
         // Click behavior: emit('form-selected', form_id)
         assert.equal(itemState({ form_id: '1', form_status: 'submitted' }), 'form_received');
     });
 
-    test('draft_linked state shows INVITE badge (purple)', () => {
+    test('draft_linked state shows FORM: ENVOYÉ badge (purple)', () => {
         // Visual: .badge-draft-linked (purple background)
         // Click behavior: show FormLinkModal or emit('calendar-selected')
         assert.equal(itemState({ type: 'calendar', form_id: '1', form_status: 'draft' }), 'draft_linked');
     });
 
-    test('suggested_match state shows SUGGESTION badge (amber)', () => {
+    test('suggested_match state shows FORM: À CONFIRMER badge (amber)', () => {
         // Visual: .badge-suggested (amber/orange background)
         // Click behavior: show inline confirmation panel (accept/refuse)
         assert.equal(itemState({ type: 'calendar', form_id: null, suggested_form: { id: '1', status: 'submitted', tier: 'email', match_field: 'email' } }), 'suggested_match');
     });
 
-    test('awaiting_form state shows EN ATTENTE badge (orange)', () => {
+    test('awaiting_form state shows FORM: NON ENVOYÉ badge (orange)', () => {
         // Visual: .badge-awaiting-form (orange background)
         // Click behavior: show FormLinkModal or emit('calendar-selected')
         assert.equal(itemState({ type: 'calendar', form_id: null, suggested_form: null }), 'awaiting_form');

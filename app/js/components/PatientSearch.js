@@ -136,7 +136,7 @@ export default {
                  class="search-result-item"
                  @click="onSelectPatient(patient.id)">
                 <div>
-                    <div class="search-result-name">{{ patient.nom }} {{ patient.prenom }}</div>
+                    <div class="search-result-name patient-link">{{ patient.nom }} {{ patient.prenom }}</div>
                     <div class="search-result-info">
                         {{ formatDate(patient.dob) }}
                         <span v-if="patient.sexe" style="margin-left: 8px;">{{ patient.sexe === 'm' ? 'H' : patient.sexe === 'f' ? 'F' : '' }}</span>
